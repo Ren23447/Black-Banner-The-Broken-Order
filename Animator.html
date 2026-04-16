@@ -434,7 +434,7 @@ function buildHelpers(){
   helperGroup=new THREE.Group();
   boneHelpers=[];
   bones.forEach(function(bone,i){
-    var geo=new THREE.SphereGeometry(0.028*Math.max(1,modelScale*0.012),8,8);
+    var geo=new THREE.SphereGeometry(0.012*Math.max(1,modelScale*0.0002),8,8);
     var mat=new THREE.MeshBasicMaterial({color:boneColors[i],depthTest:false,transparent:true,opacity:0.85});
     var mesh=new THREE.Mesh(geo,mat);
     mesh.userData.bi=i;
@@ -627,8 +627,7 @@ function delKF(){
 function clearKF(){
   if(!confirm('Clear all keyframes?')) return;
   keyframes=[];
-  bones.forEach(function(b){ b.position.set(0,0,0); b.quaternion.set(0,0,0,1); });
-  drawTL(); renderXForm();
+  drawTL();
 }
 
 // ── INTERPOLATION ────────────────────────────────────────────────────
@@ -715,19 +714,80 @@ document.getElementById('kf-add').addEventListener('click',addKF);
 document.getElementById('kf-del').addEventListener('click',delKF);
 
 // ── TIMELINE ──────────────────────────────────────────────────────────
+// Keyframe drag state – track by object reference so array re-sorts don't lose it
+var kfDragRef=null; // the keyframe object being dragged, null = none
+
+function hitTestKF(x,y){
+  var rH=20;
+  if(y>rH+6) return null; // only the gold ruler row
+  for(var i=0;i<keyframes.length;i++){
+    if(Math.abs(x-fToX(keyframes[i].frame))<=8) return keyframes[i];
+  }
+  return null;
+}
+
 function initTL(){
   tlCanvas=document.getElementById('tl-cv');
   tlCtx=tlCanvas.getContext('2d');
   resizeTL();
-  tlCanvas.addEventListener('mousedown',function(e){ tlDragging=true; seekTL(e); });
-  tlCanvas.addEventListener('mousemove',function(e){ if(tlDragging) seekTL(e); });
-  tlCanvas.addEventListener('mouseup',function(){ tlDragging=false; });
-  tlCanvas.addEventListener('mouseleave',function(){ tlDragging=false; });
+
+  tlCanvas.addEventListener('mousedown',function(e){
+    if(e.button!==0) return;
+    var r=tlCanvas.getBoundingClientRect();
+    var mx=e.clientX-r.left, my=e.clientY-r.top;
+    var hit=hitTestKF(mx,my);
+    if(hit){
+      kfDragRef=hit;
+      tlCanvas.style.cursor='ew-resize';
+    } else {
+      tlDragging=true;
+      seekTL(e);
+    }
+  });
+
+  tlCanvas.addEventListener('mousemove',function(e){
+    var r=tlCanvas.getBoundingClientRect();
+    var mx=e.clientX-r.left, my=e.clientY-r.top;
+
+    if(kfDragRef){
+      var newF=xToF(mx);
+      // Only move if the slot isn't taken by a different keyframe
+      var blocked=false;
+      for(var i=0;i<keyframes.length;i++){
+        if(keyframes[i]!==kfDragRef&&keyframes[i].frame===newF){blocked=true;break;}
+      }
+      if(!blocked){
+        kfDragRef.frame=newF;
+        // Re-sort so the lane diamonds stay in order – kfDragRef stays valid (same object)
+        keyframes.sort(function(a,b){return a.frame-b.frame;});
+        drawTL();
+      }
+    } else if(tlDragging){
+      seekTL(e);
+    } else {
+      tlCanvas.style.cursor=hitTestKF(mx,my)?'ew-resize':'crosshair';
+    }
+  });
+
+  function endDrag(){
+    if(kfDragRef){
+      keyframes.sort(function(a,b){return a.frame-b.frame;});
+      kfDragRef=null;
+      drawTL();
+    }
+    tlDragging=false;
+    tlCanvas.style.cursor='crosshair';
+  }
+
+  tlCanvas.addEventListener('mouseup', endDrag);
+  tlCanvas.addEventListener('mouseleave', endDrag);
+
   tlCanvas.addEventListener('contextmenu',function(e){
     e.preventDefault();
-    var f=xToF(e.clientX-tlCanvas.getBoundingClientRect().left);
+    var r=tlCanvas.getBoundingClientRect();
+    var f=xToF(e.clientX-r.left);
     for(var i=0;i<keyframes.length;i++){
-      if(Math.abs(keyframes[i].frame-f)<=1){keyframes.splice(i,1);break;}
+      if(Math.abs(keyframes[i].frame-f)<=2){keyframes.splice(i,1);break;}
     }
     drawTL();
   });
@@ -781,13 +841,35 @@ function drawTL(){
   }
 
   for(var ki=0;ki<keyframes.length;ki++){
-    var kx=fToX(keyframes[ki].frame);
-    tlCtx.strokeStyle='#c8a04a80'; tlCtx.lineWidth=1; tlCtx.setLineDash([3,3]);
+    var kfObj=keyframes[ki];
+    var kx=fToX(kfObj.frame);
+    var isDragging=(kfObj===kfDragRef);
+
+    // Vertical guide line
+    tlCtx.strokeStyle=isDragging?'#ffffff55':'#c8a04a55';
+    tlCtx.lineWidth=isDragging?2:1;
+    tlCtx.setLineDash(isDragging?[]:[3,3]);
     tlCtx.beginPath(); tlCtx.moveTo(kx,0); tlCtx.lineTo(kx,rH); tlCtx.stroke();
     tlCtx.setLineDash([]);
+
+    // Gold diamond in ruler – larger + outlined when dragging
+    var ds=isDragging?8:5;
     tlCtx.save(); tlCtx.translate(kx,rH/2); tlCtx.rotate(Math.PI/4);
-    tlCtx.fillStyle='#c8a04a'; tlCtx.fillRect(-5,-5,10,10);
+    if(isDragging){
+      tlCtx.strokeStyle='#fff'; tlCtx.lineWidth=1.5;
+      tlCtx.strokeRect(-ds,-ds,ds*2,ds*2);
+    }
+    tlCtx.fillStyle=isDragging?'#ffe080':'#c8a04a';
+    tlCtx.fillRect(-ds,-ds,ds*2,ds*2);
     tlCtx.restore();
+
+    // Frame number label while dragging so user knows exact position
+    if(isDragging){
+      tlCtx.fillStyle='#fff';
+      tlCtx.font='bold 9px monospace';
+      tlCtx.textAlign='center';
+      tlCtx.fillText(kfObj.frame, kx, rH-2);
+    }
   }
 
   var ph=fToX(curFrame);
