@@ -12,17 +12,75 @@
 
         #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
 
+        /* ===== AAA MEDIEVAL CROSSHAIR ===== */
         #crosshair {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 20px; height: 20px;
+            width: 72px; height: 72px;
             pointer-events: none; z-index: 5; display: none;
         }
-        #crosshair::before, #crosshair::after {
-            content: ''; position: absolute; background: rgba(220,200,160,0.85);
+
+        /* Central diamond sigil — matches the ◆ motif of the game UI */
+        .ch-center {
+            position: absolute;
+            width: 7px; height: 7px;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            background: rgba(200,169,110,0.95);
+            box-shadow:
+                0 0 0 1px rgba(0,0,0,0.9),
+                0 0 8px rgba(200,169,110,0.8),
+                0 0 18px rgba(200,169,110,0.3);
+            transition: transform 0.1s ease, opacity 0.1s ease;
         }
-        #crosshair::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
-        #crosshair::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+        #crosshair.moving .ch-center {
+            transform: translate(-50%, -50%) rotate(45deg) scale(0.7);
+            opacity: 0.55;
+        }
+
+        /* Cardinal lines — thin, with a gap from center */
+        .ch-line {
+            position: absolute;
+            background: linear-gradient(to var(--dir, right), rgba(230,205,145,1), rgba(200,169,110,0.55));
+            box-shadow: 0 0 0 0.5px rgba(0,0,0,0.85), 0 0 4px rgba(0,0,0,0.7), 0 0 6px rgba(200,169,110,0.2);
+            transition: transform 0.09s ease;
+        }
+        .ch-top, .ch-bottom {
+            width: 1.5px; height: 11px; left: 50%; transform: translateX(-50%);
+        }
+        .ch-left, .ch-right {
+            height: 1.5px; width: 11px; top: 50%; transform: translateY(-50%);
+        }
+        .ch-top    { --dir: bottom; bottom: calc(50% + 7px); }
+        .ch-bottom { --dir: top;    top:    calc(50% + 7px); }
+        .ch-left   { --dir: right;  right:  calc(50% + 7px); }
+        .ch-right  { --dir: left;   left:   calc(50% + 7px); }
+
+        /* Movement spread — lines push outward, center dims */
+        #crosshair.moving .ch-top    { transform: translateX(-50%) translateY(-5px); }
+        #crosshair.moving .ch-bottom { transform: translateX(-50%) translateY( 5px); }
+        #crosshair.moving .ch-left   { transform: translateY(-50%) translateX(-5px); }
+        #crosshair.moving .ch-right  { transform: translateY(-50%) translateX( 5px); }
+
+        /* Corner L-brackets — heraldic/targeting frame */
+        .ch-corner {
+            position: absolute;
+            width: 11px; height: 11px;
+            border-color: rgba(200,169,110,0.70);
+            border-style: solid;
+            box-shadow: inset 0 0 0 0 transparent, 0 0 5px rgba(0,0,0,0.6);
+            transition: transform 0.09s ease, opacity 0.09s ease;
+        }
+        .ch-tl { top:    9px; left:  9px; border-width: 1.5px 0 0 1.5px; }
+        .ch-tr { top:    9px; right: 9px; border-width: 1.5px 1.5px 0 0; }
+        .ch-bl { bottom: 9px; left:  9px; border-width: 0 0 1.5px 1.5px; }
+        .ch-br { bottom: 9px; right: 9px; border-width: 0 1.5px 1.5px 0; }
+
+        /* Corners spread outward on movement */
+        #crosshair.moving .ch-tl { transform: translate(-3px, -3px); opacity: 0.45; }
+        #crosshair.moving .ch-tr { transform: translate( 3px, -3px); opacity: 0.45; }
+        #crosshair.moving .ch-bl { transform: translate(-3px,  3px); opacity: 0.45; }
+        #crosshair.moving .ch-br { transform: translate( 3px,  3px); opacity: 0.45; }
 
         #hud {
             position: absolute; bottom: 30px; left: 30px;
@@ -641,7 +699,17 @@
 <body>
 
 <div id="ui-layer">
-    <div id="crosshair"></div>
+    <div id="crosshair">
+        <div class="ch-center"></div>
+        <div class="ch-line ch-top"></div>
+        <div class="ch-line ch-bottom"></div>
+        <div class="ch-line ch-left"></div>
+        <div class="ch-line ch-right"></div>
+        <div class="ch-corner ch-tl"></div>
+        <div class="ch-corner ch-tr"></div>
+        <div class="ch-corner ch-bl"></div>
+        <div class="ch-corner ch-br"></div>
+    </div>
     <div id="hud">
         <div class="hud-row">
             <div class="hud-top"><span>Vitality</span><span class="hud-value" id="health-value">100%</span></div>
@@ -854,6 +922,11 @@
             <input type="range" class="med-slider" id="walk-slider" min="0" max="1" step="0.05" value="1.0">
             <div class="setting-val" id="walk-val">1.0</div>
         </div>
+        <div class="setting-row">
+            <div class="setting-label">Render Distance</div>
+            <input type="range" class="med-slider" id="renderdist-slider" min="10" max="70" step="1" value="35">
+            <div class="setting-val" id="renderdist-val">35</div>
+        </div>
     </div>
     <button class="menu-btn" id="btn-settings-back" style="margin-top:30px;">Back</button>
 </div>
@@ -904,6 +977,13 @@ let masterVolume = 1.0, ambientVolume = 1.0, walkVolumeAmt = 1.0, controllerSens
 const collidableMeshes = [];
 let floorMesh = null;
 
+// Third-person camera state
+const tpCamPos = new THREE.Vector3();
+let tpCamInitialized = false;
+let tpYaw = 0;        // independent TP camera horizontal angle
+let prevCamYaw = 0;   // to extract per-frame mouse yaw delta
+let modelFacing = 0;  // world-space angle the knight faces
+
 let currentGamepad = null;
 let gpJumpPressed = false, gpInteractPressed = false, gpInventoryPressed = false;
 
@@ -950,7 +1030,19 @@ function init() {
         ]);
     };
 
-    scene.fog = new THREE.Fog(0x2a1e10, 15, 180);
+    let renderDistance = 35;
+    scene.fog = new THREE.Fog(0x2a1e10, renderDistance * 0.4, renderDistance * 5);
+    window._renderDistance = renderDistance;
+    window._updateRenderDistance = function(val) {
+        renderDistance = val;
+        window._renderDistance = val;
+        scene.fog.near = val * 0.4;
+        scene.fog.far = val * 5;
+        if (camera) camera.far = val * 6;
+        if (tpCamera) tpCamera.far = val * 6;
+        if (camera) camera.updateProjectionMatrix();
+        if (tpCamera) tpCamera.updateProjectionMatrix();
+    };
 
     const ambient = new THREE.AmbientLight(0xffeedd, 0.5);
     scene.add(ambient);
@@ -972,11 +1064,12 @@ function init() {
     buildMap();
 
     // FPS camera
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const initFar = renderDistance * 6;
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, initFar);
     camera.position.set(8, baseHeightOffset, 12);
 
     // Third-person camera (separate, follows behind)
-    tpCamera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+    tpCamera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, initFar);
 
     controls = new PointerLockControls(camera, document.body);
     scene.add(controls.getObject());
@@ -1004,10 +1097,12 @@ function init() {
         (gltf) => {
             knightModel = gltf.scene;
             knightModel.scale.set(1, 1, 1);
-            knightModel.position.set(0, -1.75, 0.5);
+            // Place in world space at the player's foot position (camera starts at eye height 1.75)
+            knightModel.position.set(8, 0, 12);
             knightModel.rotation.y = Math.PI;
             knightModel.visible = false; // start hidden (FPS default)
-            controls.getObject().add(knightModel);
+            // Add to scene directly — NOT to the camera, so pitch never tilts the model
+            scene.add(knightModel);
             if (gltf.animations && gltf.animations.length > 0) {
                 knightMixer = new THREE.AnimationMixer(knightModel);
                 gltf.animations.forEach(clip => { knightActions[clip.name] = knightMixer.clipAction(clip); });
@@ -1210,6 +1305,7 @@ function buildMap() {
         rock.castShadow = true;
         rock.receiveShadow = true;
         scene.add(rock);
+        collidableMeshes.push(rock); // rocks are climbable surfaces
         return rock;
     };
 
@@ -1228,6 +1324,13 @@ function buildMap() {
             crown.receiveShadow = true;
             scene.add(crown);
         }
+        // Invisible box collider for the trunk so the player cannot walk through trees
+        const trunkW = 0.5 * s;
+        const colliderGeo = new THREE.BoxGeometry(trunkW, 2.15 * s, trunkW);
+        const colliderMesh = new THREE.Mesh(colliderGeo, new THREE.MeshBasicMaterial({ visible: false }));
+        colliderMesh.position.set(x, y + 1.05 * s, z);
+        scene.add(colliderMesh);
+        collidableMeshes.push(colliderMesh);
     };
 
     const addGrassTuft = (x, z, s = 1) => {
@@ -1251,6 +1354,7 @@ function buildMap() {
         stone.castShadow = false;
         stone.receiveShadow = true;
         scene.add(stone);
+        collidableMeshes.push(stone); // path stones are walkable surfaces
     };
 
     const addBanner = (x, y, z, ry = 0) => {
@@ -1842,22 +1946,32 @@ function setViewMode(mode) {
     viewMode = mode;
     document.getElementById('btn-view-first').classList.toggle('active', mode === 'first');
     document.getElementById('btn-view-third').classList.toggle('active', mode === 'third');
-    if (knightModel) knightModel.visible = (mode === 'third');
+    if (knightModel) {
+        knightModel.visible = (mode === 'third');
+        // World position is synced every frame in animate(); just toggle visibility here
+    }
+    tpCamInitialized = false; // snap camera on next frame
     if (gameState === 'PLAYING') {
         document.getElementById('view-indicator').style.display = mode === 'third' ? 'block' : 'none';
     }
 }
 
 function setupSettingsSliders() {
-    const bind = (id, valId, onChange) => {
+    const bind = (id, valId, onChange, fmt) => {
         const el = document.getElementById(id), val = document.getElementById(valId);
-        el.addEventListener('input', () => { val.textContent = parseFloat(el.value).toFixed(1); onChange(parseFloat(el.value)); });
+        if (!el || !val) return;
+        el.addEventListener('input', () => {
+            const v = parseFloat(el.value);
+            val.textContent = fmt ? fmt(v) : v.toFixed(1);
+            onChange(v);
+        });
     };
     bind('sens-slider','sens-val', v => { if (controls) controls.pointerSpeed = v; });
     bind('csens-slider','csens-val', v => controllerSens = v);
     bind('vol-slider','vol-val', v => { masterVolume = v; if (window._ambientAudio) window._ambientAudio.volume = masterVolume * ambientVolume * 0.35; });
     bind('amb-slider','amb-val', v => { ambientVolume = v; if (window._ambientAudio) window._ambientAudio.volume = masterVolume * ambientVolume * 0.35; });
     bind('walk-slider','walk-val', v => walkVolumeAmt = v);
+    bind('renderdist-slider','renderdist-val', v => { if (window._updateRenderDistance) window._updateRenderDistance(v); }, v => Math.round(v));
 }
 
 // ——— Input ———
@@ -2212,12 +2326,103 @@ function animate() {
         updateWalkSound();
     }
 
-    // Render: third-person uses offset camera
+    // Crosshair spread on movement
+    if (gameState === 'PLAYING') {
+        const ch = document.getElementById('crosshair');
+        const isMoving = keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD;
+        ch && ch.classList.toggle('moving', isMoving);
+    }
+
+    // Render: third-person follow camera
     if (viewMode === 'third' && gameState === 'PLAYING') {
-        const back = new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion);
-        tpCamera.position.copy(camera.position).addScaledVector(back, 3.8);
-        tpCamera.position.y += 0.6;
-        tpCamera.quaternion.copy(camera.quaternion);
+        const pPos = controls.getObject().position;
+
+        // Read FPS camera quaternion — contains pitch (preserved) + yaw (we'll override)
+        const _eTP = new THREE.Euler().setFromQuaternion(
+            controls.getObject().quaternion, 'YXZ'
+        );
+        const camYaw = _eTP.y; // yaw PointerLockControls set this frame
+
+        // ── First frame after switching: snap everything ──
+        if (!tpCamInitialized) {
+            tpYaw       = camYaw;
+            prevCamYaw  = camYaw; // baseline so first delta = 0
+            modelFacing = camYaw + Math.PI;
+            tpCamPos.set(
+                pPos.x + Math.sin(tpYaw) * 4.5,
+                pPos.y - baseHeightOffset + 1.2 + 2.2,
+                pPos.z + Math.cos(tpYaw) * 4.5
+            );
+            tpCamInitialized = true;
+        }
+
+        // ── Isolate only the new mouse movement added this frame ──
+        // prevCamYaw always equals tpYaw at end of last frame (see below),
+        // so the delta contains ONLY fresh PointerLockControls mouse input.
+        let yawDelta = camYaw - prevCamYaw;
+        if (yawDelta >  Math.PI) yawDelta -= Math.PI * 2;
+        if (yawDelta < -Math.PI) yawDelta += Math.PI * 2;
+        tpYaw += yawDelta;
+
+        // ── Walking: model faces move direction; camera lazily follows ──
+        const fw = keys.KeyW ? 1 : 0, bk = keys.KeyS ? 1 : 0;
+        const rt = keys.KeyD ? 1 : 0, lf = keys.KeyA ? 1 : 0;
+        const isMovingTP = fw || bk || rt || lf;
+
+        if (isMovingTP) {
+            const fwBk = fw - bk, rtLf = rt - lf;
+            // World-space move vector based on TP camera yaw
+            const moveX = fwBk * (-Math.sin(tpYaw)) + rtLf * Math.cos(tpYaw);
+            const moveZ = fwBk * (-Math.cos(tpYaw)) + rtLf * (-Math.sin(tpYaw));
+            if (Math.abs(moveX) > 0.001 || Math.abs(moveZ) > 0.001) {
+                const targetFacing = Math.atan2(moveX, moveZ);
+                let fd = targetFacing - modelFacing;
+                if (fd >  Math.PI) fd -= Math.PI * 2;
+                if (fd < -Math.PI) fd += Math.PI * 2;
+                modelFacing += fd * Math.min(1, 12 * dt); // snappy turn
+            }
+            // Camera lazily drifts to sit directly behind player
+            const targetCamYaw = modelFacing + Math.PI;
+            let cd = targetCamYaw - tpYaw;
+            if (cd >  Math.PI) cd -= Math.PI * 2;
+            if (cd < -Math.PI) cd += Math.PI * 2;
+            tpYaw += cd * Math.min(1, 1.8 * dt);
+        }
+        // Standing still → tpYaw stays where the mouse aimed it (free orbit)
+
+        // ── KEY FIX: sync FPS camera yaw to tpYaw ──
+        // This makes controls.moveForward/Right (used in updatePhysics) move
+        // the player in the direction the TP camera is actually showing,
+        // so WASD feels correct from the player's perspective.
+        _eTP.y = tpYaw;
+        controls.getObject().quaternion.setFromEuler(_eTP); // pitch is preserved in _eTP.x
+
+        // Save tpYaw as the new baseline; next frame's delta = fresh mouse input only
+        prevCamYaw = tpYaw;
+
+        // ── TP camera position ──
+        const hDist = 4.5, vOffset = 2.2;
+        const lookTarget = new THREE.Vector3(
+            pPos.x,
+            pPos.y - baseHeightOffset + 1.2,
+            pPos.z
+        );
+        const desired = new THREE.Vector3(
+            lookTarget.x + Math.sin(tpYaw) * hDist,
+            Math.max(pPos.y - baseHeightOffset + 0.5, lookTarget.y + vOffset),
+            lookTarget.z + Math.cos(tpYaw) * hDist
+        );
+        const alpha = 1 - Math.pow(0.002, dt);
+        tpCamPos.lerp(desired, alpha);
+        tpCamera.position.copy(tpCamPos);
+        tpCamera.lookAt(lookTarget);
+
+        // ── Knight model: world position, model facing angle only (no tilt ever) ──
+        if (knightModel) {
+            knightModel.position.set(pPos.x, pPos.y - baseHeightOffset, pPos.z);
+            knightModel.rotation.set(0, modelFacing, 0);
+        }
+
         renderer.render(scene, tpCamera);
     } else {
         renderer.render(scene, camera);
