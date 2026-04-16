@@ -189,6 +189,11 @@
             padding-bottom: 16px; border-bottom: 1px solid rgba(200,169,110,0.2); margin-bottom: 20px;
         }
         .inv-section-title { color: #8a7550; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 10px; }
+        .inv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .inv-stat-card { padding: 12px 14px; background: linear-gradient(135deg, rgba(200,169,110,0.10), rgba(0,0,0,0.24)); border: 1px solid rgba(200,169,110,0.24); box-shadow: inset 0 0 18px rgba(0,0,0,0.28); clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%, 0 9px); }
+        .inv-stat-label { color: rgba(200,169,110,0.58); font-size: 9px; letter-spacing: 2.8px; text-transform: uppercase; margin-bottom: 5px; }
+        .inv-stat-value { color: #ead6a8; font-size: 18px; letter-spacing: 2px; text-shadow: 0 0 12px rgba(200,169,110,0.22); }
+        .inv-stat-sub { color: rgba(226,210,174,0.50); font-size: 10px; letter-spacing: 1.5px; margin-top: 3px; }
         .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
         .inv-slot {
             aspect-ratio: 1; background: rgba(200,169,110,0.04);
@@ -228,6 +233,26 @@
             font-family: 'Palatino Linotype', Palatino, Georgia, serif; transition: all 0.2s;
         }
         .inv-use-btn:hover { background: rgba(200,169,110,0.25); border-color: #c8a96e; box-shadow: 0 0 8px rgba(200,169,110,0.3); }
+        .inv-quickbar { margin: 4px 0 18px; padding: 14px; border: 1px solid rgba(200,169,110,0.18); background: linear-gradient(135deg, rgba(200,169,110,0.045), rgba(0,0,0,0.18)); box-shadow: inset 0 0 22px rgba(0,0,0,0.34); }
+        .inv-quickbar-title { color: #9d875d; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; text-align: center; }
+        .inv-quickbar-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .inv-qslot { min-height: 70px; padding: 8px; border: 1px solid rgba(200,169,110,0.22); background: radial-gradient(circle at 50% 15%, rgba(200,169,110,0.07), rgba(0,0,0,0.20)); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.18s ease; position: relative; overflow: hidden; }
+        .inv-qslot::before { content: attr(data-label); position: absolute; top: 5px; left: 7px; color: rgba(200,169,110,0.36); font-size: 8px; letter-spacing: 1.5px; }
+        .inv-qslot:hover { border-color: rgba(232,208,160,0.70); background: radial-gradient(circle at 50% 15%, rgba(200,169,110,0.15), rgba(0,0,0,0.24)); box-shadow: 0 0 14px rgba(200,169,110,0.16), inset 0 0 16px rgba(0,0,0,0.28); }
+        .inv-qslot.empty { color: rgba(200,169,110,0.28); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .inv-qslot-icon { font-size: 24px; filter: drop-shadow(0 0 9px rgba(232,208,160,0.35)); }
+        .inv-qslot-name { color: #a89263; font-size: 9px; letter-spacing: 1px; text-align: center; margin-top: 4px; }
+        .inv-qslot-return { margin-top: 6px; color: rgba(232,208,160,0.62); font-size: 8px; letter-spacing: 1.4px; text-transform: uppercase; }
+        #item-tooltip { position: fixed; display: none; z-index: 40; width: 285px; pointer-events: none; padding: 14px 16px; background: linear-gradient(135deg, rgba(16,11,6,0.97), rgba(3,3,2,0.96)); border: 1px solid rgba(232,208,160,0.46); border-left: 3px solid rgba(232,208,160,0.82); box-shadow: 0 20px 45px rgba(0,0,0,0.72), inset 0 0 26px rgba(200,169,110,0.06), 0 0 24px rgba(200,169,110,0.10); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); opacity: 0; transform: translateY(6px) scale(0.98); transition: opacity 0.12s ease, transform 0.12s ease; }
+        #item-tooltip.visible { opacity: 1; transform: translateY(0) scale(1); }
+        .tooltip-title { color: #e8d0a0; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 7px; text-shadow: 0 0 10px rgba(200,169,110,0.28); }
+        .tooltip-desc { color: rgba(226,210,174,0.82); font-size: 12px; line-height: 1.5; }
+        .tooltip-type { margin-top: 9px; color: rgba(200,169,110,0.50); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
+        #reward-toast { position: absolute; left: 50%; top: 22%; transform: translate(-50%, 16px) scale(0.96); z-index: 35; min-width: 330px; padding: 18px 26px; display: none; opacity: 0; text-align: center; pointer-events: none; background: radial-gradient(circle at 50% 0, rgba(255,218,114,0.18), rgba(14,9,4,0.94) 58%, rgba(3,2,1,0.96)); border: 1px solid rgba(255,223,143,0.56); border-left: 3px solid rgba(255,223,143,0.92); border-right: 3px solid rgba(255,223,143,0.92); box-shadow: 0 24px 60px rgba(0,0,0,0.76), inset 0 0 30px rgba(255,214,113,0.08), 0 0 28px rgba(255,207,95,0.16); clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%); transition: opacity 0.35s ease, transform 0.35s cubic-bezier(.2,.85,.25,1.12); }
+        #reward-toast.show { display: block; opacity: 1; transform: translate(-50%, 0) scale(1); }
+        .reward-title { color: #ffe0a0; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 14px rgba(255,211,103,0.45); }
+        .reward-amount { margin-top: 6px; color: #fff1c7; font-size: 28px; letter-spacing: 3px; text-shadow: 0 0 18px rgba(255,211,103,0.70); }
+        .reward-sub { margin-top: 4px; color: rgba(236,214,166,0.72); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
         .inv-close-hint { text-align: center; color: #4a4030; font-size: 11px; letter-spacing: 3px; margin-top: 14px; text-transform: uppercase; }
 
         #ctrl-indicator { position: absolute; top: 20px; right: 20px; color: #c8a96e; font-size: 12px; letter-spacing: 2px; display: none; }
@@ -393,110 +418,215 @@
         #home-screen .menu-btn:nth-child(2) { animation: home-fade-in 0.8s ease-out 1.0s both; }
         #home-screen .menu-btn:nth-child(3) { animation: home-fade-in 0.8s ease-out 1.2s both; }
 
-        /* ===== DARK SOULS HUD ===== */
         #hud {
             position: absolute !important;
-            bottom: 28px !important; left: 28px !important;
-            flex-direction: column !important;
-            gap: 2px !important;
-            width: 240px !important;
+            bottom: 28px !important; left: 168px !important;
+            display: none; flex-direction: column !important;
+            gap: 8px !important;
+            width: 360px !important;
+            padding: 14px 16px 13px;
+            background: linear-gradient(135deg, rgba(4,3,2,0.78), rgba(16,10,6,0.54) 58%, rgba(4,3,2,0.30));
+            border: 1px solid rgba(214,178,100,0.28);
+            border-left: 3px solid rgba(214,178,100,0.58);
+            box-shadow: 0 18px 45px rgba(0,0,0,0.65), inset 0 0 28px rgba(0,0,0,0.45), 0 0 22px rgba(214,178,100,0.06);
+            clip-path: polygon(14px 0, 100% 0, calc(100% - 18px) 100%, 0 100%, 0 14px);
         }
-        .hud-label {
-            font-size: 0px !important;
-            height: 0 !important; margin: 0 !important; padding: 0 !important;
-            overflow: hidden;
+        #hud::before {
+            content: '';
+            position: absolute; inset: 3px;
+            border: 1px solid rgba(214,178,100,0.12);
+            clip-path: polygon(11px 0, 100% 0, calc(100% - 15px) 100%, 0 100%, 0 11px);
+            pointer-events: none;
         }
+        .hud-row { position: relative; z-index: 1; }
+        .hud-top {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 10px; letter-spacing: 2.8px; text-transform: uppercase;
+            color: rgba(231,204,144,0.86);
+            text-shadow: 0 0 8px rgba(214,178,100,0.32);
+        }
+        .hud-value { color: rgba(255,236,184,0.94); letter-spacing: 1.5px; font-size: 10px; }
         .hud-track {
-            width: 100% !important; height: 12px !important;
-            background: rgba(15,6,6,0.88) !important;
-            border: 1px solid rgba(60,45,30,0.5) !important;
-            clip-path: none !important;
-            border-radius: 0 !important;
-            box-shadow: inset 0 2px 6px rgba(0,0,0,0.9), 0 1px 0 rgba(200,169,110,0.06);
+            width: 100% !important; height: 17px !important;
+            background: linear-gradient(180deg, rgba(2,1,1,0.95), rgba(24,14,10,0.92)) !important;
+            border: 1px solid rgba(226,190,115,0.28) !important;
+            position: relative; overflow: hidden;
+            clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%) !important;
+            box-shadow: inset 0 3px 8px rgba(0,0,0,0.92), 0 1px 0 rgba(255,230,170,0.08);
+        }
+        .hud-track::before {
+            content: '';
+            position: absolute; inset: 2px;
+            background: repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 18px);
+            z-index: 3; pointer-events: none;
         }
         .hud-track::after {
             content: '';
             position: absolute; inset: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 35%, rgba(0,0,0,0.25) 100%);
-            z-index: 2; pointer-events: none;
+            background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.02) 34%, rgba(0,0,0,0.38) 100%);
+            z-index: 4; pointer-events: none;
+        }
+        .hud-fill { height: 100%; transition: width 0.18s ease-out; position: relative; }
+        .hud-fill::after {
+            content: '';
+            position: absolute; top: 0; bottom: 0; right: -8px; width: 18px;
+            background: radial-gradient(circle, rgba(255,255,255,0.72), rgba(255,255,255,0));
+            opacity: 0.58;
         }
         #health-fill {
-            background: linear-gradient(180deg, #c42020 0%, #8a1212 45%, #5a0808 100%) !important;
-            box-shadow: 0 0 8px rgba(180,25,25,0.35), inset 0 1px 0 rgba(255,90,90,0.2) !important;
+            background: linear-gradient(90deg, #5b0506 0%, #b51115 48%, #ff3a24 100%) !important;
+            box-shadow: 0 0 18px rgba(220,30,20,0.50), inset 0 1px 0 rgba(255,160,120,0.34) !important;
         }
         #stamina-fill {
-            background: linear-gradient(180deg, #3a9020 0%, #286a12 45%, #184808 100%) !important;
-            box-shadow: 0 0 6px rgba(50,130,25,0.3), inset 0 1px 0 rgba(90,200,70,0.12) !important;
+            background: linear-gradient(90deg, #174610 0%, #4d9d25 52%, #b8ef5a 100%) !important;
+            box-shadow: 0 0 16px rgba(120,220,65,0.35), inset 0 1px 0 rgba(210,255,155,0.25) !important;
         }
-        #hud-frame {
-            position: absolute;
-            bottom: 20px; left: 20px;
-            width: 256px; padding: 6px 8px;
-            border: 1px solid rgba(60,45,30,0.3);
-            background: rgba(5,3,2,0.5);
-            pointer-events: none; z-index: 9;
-            display: none;
-        }
-
-        /* ===== QUICK MENU (D-PAD CROSS) ===== */
         #quick-menu {
             position: absolute;
-            bottom: 26px; left: 290px;
-            width: 110px; height: 110px;
+            bottom: 18px; left: 18px;
+            width: 156px; height: 156px;
             display: none;
             pointer-events: none; z-index: 15;
+            filter: drop-shadow(0 20px 28px rgba(0,0,0,0.72));
+        }
+        #quick-menu::before {
+            content: '';
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(45deg);
+            width: 62px; height: 62px;
+            background: linear-gradient(135deg, rgba(236,213,155,0.14), rgba(27,20,12,0.96) 32%, rgba(6,5,4,0.98) 68%, rgba(236,213,155,0.10));
+            border: 1px solid rgba(238,219,164,0.50);
+            box-shadow: inset 0 0 24px rgba(0,0,0,0.86), 0 0 18px rgba(238,219,164,0.14);
+        }
+        #quick-menu::after {
+            content: '';
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 22px; height: 22px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,239,190,0.46), rgba(114,84,39,0.16) 48%, transparent 70%);
+            border: 1px solid rgba(255,239,190,0.30);
+            box-shadow: 0 0 20px rgba(238,219,164,0.18);
         }
         .qm-slot {
             position: absolute;
-            width: 34px; height: 34px;
-            background: rgba(8,6,4,0.6);
-            border: 1px solid rgba(200,169,110,0.18);
+            width: 54px; height: 54px;
+            background: radial-gradient(circle at 50% 28%, rgba(92,70,38,0.42), rgba(18,14,10,0.96) 50%, rgba(3,3,3,0.98));
+            border: 1px solid rgba(220,202,153,0.42);
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
-            color: rgba(200,169,110,0.45);
-            transition: all 0.2s;
+            font-size: 17px;
+            color: rgba(226,210,164,0.68);
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, filter 0.18s ease;
             pointer-events: auto;
             cursor: pointer;
+            clip-path: polygon(50% 0, 92% 16%, 100% 50%, 92% 84%, 50% 100%, 8% 84%, 0 50%, 8% 16%);
+            box-shadow: inset 0 0 22px rgba(0,0,0,0.82), inset 0 1px 0 rgba(255,246,214,0.14), 0 0 0 1px rgba(0,0,0,0.70), 0 10px 22px rgba(0,0,0,0.52);
+        }
+        .qm-slot::before {
+            content: '';
+            position: absolute; inset: 5px;
+            border: 1px solid rgba(255,236,185,0.16);
+            clip-path: polygon(50% 0, 92% 16%, 100% 50%, 92% 84%, 50% 100%, 8% 84%, 0 50%, 8% 16%);
+            pointer-events: none;
+        }
+        .qm-slot::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(160deg, rgba(255,255,255,0.16), transparent 30%, rgba(0,0,0,0.44) 78%);
+            pointer-events: none;
         }
         .qm-slot:hover {
-            background: rgba(200,169,110,0.1);
-            border-color: rgba(200,169,110,0.45);
+            background: radial-gradient(circle at 50% 25%, rgba(167,128,63,0.72), rgba(36,26,15,0.98) 56%, rgba(5,4,3,0.98));
+            border-color: rgba(255,240,194,0.94);
+            box-shadow: inset 0 0 22px rgba(0,0,0,0.58), inset 0 1px 0 rgba(255,246,214,0.22), 0 0 26px rgba(238,219,164,0.34), 0 12px 27px rgba(0,0,0,0.62);
+            filter: brightness(1.18) saturate(1.10);
         }
         .qm-slot.qm-active {
-            border-color: rgba(200,169,110,0.5);
-            background: rgba(200,169,110,0.08);
-            box-shadow: 0 0 10px rgba(200,169,110,0.1);
+            border-color: rgba(255,244,205,0.98);
+            background: radial-gradient(circle at 50% 30%, rgba(190,145,68,0.86), rgba(45,31,15,0.98) 58%, rgba(5,4,3,0.98));
+            color: rgba(255,244,213,0.98);
+            box-shadow: inset 0 0 23px rgba(0,0,0,0.54), inset 0 1px 0 rgba(255,246,214,0.26), 0 0 28px rgba(238,219,164,0.42), 0 10px 30px rgba(0,0,0,0.64);
         }
         .qm-up { left: 50%; top: 0; transform: translateX(-50%); }
         .qm-down { left: 50%; bottom: 0; transform: translateX(-50%); }
         .qm-left { left: 0; top: 50%; transform: translateY(-50%); }
         .qm-right { right: 0; top: 50%; transform: translateY(-50%); }
-        .qm-center {
-            position: absolute;
-            left: 50%; top: 50%;
-            transform: translate(-50%, -50%);
-            width: 10px; height: 10px;
-            border: 1px solid rgba(200,169,110,0.1);
-            pointer-events: none;
-        }
-        .qm-slot-icon { font-size: 15px; line-height: 1; }
+        .qm-up:hover { transform: translateX(-50%) translateY(-5px) scale(1.04); }
+        .qm-down:hover { transform: translateX(-50%) translateY(5px) scale(1.04); }
+        .qm-left:hover { transform: translateY(-50%) translateX(-5px) scale(1.04); }
+        .qm-right:hover { transform: translateY(-50%) translateX(5px) scale(1.04); }
+        .qm-center { display: none; }
+        .qm-slot-icon { position: relative; z-index: 2; font-size: 23px; line-height: 1; filter: drop-shadow(0 0 12px rgba(255,231,172,0.62)); }
         .qm-key-hint {
             position: absolute;
-            font-size: 7px;
-            color: rgba(200,169,110,0.2);
+            right: 8px; bottom: 5px;
+            z-index: 2;
+            font-size: 8px;
+            color: rgba(255,239,198,0.58);
             letter-spacing: 1px;
             pointer-events: none;
         }
-        .qm-up .qm-key-hint { top: -12px; left: 50%; transform: translateX(-50%); }
-        .qm-down .qm-key-hint { bottom: -12px; left: 50%; transform: translateX(-50%); }
-        .qm-left .qm-key-hint { left: -4px; bottom: -12px; }
-        .qm-right .qm-key-hint { right: -4px; bottom: -12px; }
-
-        /* ===== COMPASS AAA TRANSPARENCY ===== */
         #compass-canvas {
-            opacity: 0.4 !important;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            position: absolute !important;
+            top: 10px !important; left: 50% !important; transform: translateX(-50%) !important;
+            width: 620px !important; height: 76px !important;
+            opacity: 0.98 !important;
+            filter: drop-shadow(0 14px 30px rgba(0,0,0,0.62));
         }
+        #quest-tracker {
+            position: absolute; top: 92px; right: 28px;
+            width: 310px; padding: 14px 16px;
+            display: none;
+            background: linear-gradient(135deg, rgba(6,4,2,0.82), rgba(21,14,8,0.62));
+            border: 1px solid rgba(226,190,115,0.25);
+            border-right: 3px solid rgba(226,190,115,0.55);
+            clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+            box-shadow: 0 16px 38px rgba(0,0,0,0.55), inset 0 0 24px rgba(0,0,0,0.45);
+            pointer-events: none; z-index: 16;
+        }
+        #quest-tracker-title { color: #e8ca7e; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 7px; }
+        #quest-tracker-text { color: rgba(238,219,174,0.86); font-size: 14px; line-height: 1.35; }
+        #quest-waypoint {
+            --waypoint-scale: 1;
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.52);
+            display: none; opacity: 0; pointer-events: none; z-index: 18; text-align: center;
+            color: #ffe3a0; text-shadow: 0 0 10px rgba(255,212,118,0.95), 0 2px 12px rgba(0,0,0,0.9);
+            transition: opacity 0.34s ease, transform 0.34s cubic-bezier(.2,.85,.25,1.2), filter 0.34s ease;
+            filter: blur(2px) saturate(0.8);
+        }
+        #quest-waypoint.visible { opacity: 1; transform: translate(-50%, -50%) scale(var(--waypoint-scale)); filter: blur(0) saturate(1); }
+        #quest-waypoint-symbol { font-size: 38px; line-height: 1; letter-spacing: 1px; }
+        #quest-waypoint-distance {
+            margin-top: 2px; padding: 2px 8px;
+            background: rgba(7,5,3,0.74); border: 1px solid rgba(226,190,115,0.34);
+            font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase;
+            clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+        }
+        #quest-book-screen {
+            position: absolute; inset: 0; z-index: 28;
+            display: none; align-items: center; justify-content: center;
+            background: radial-gradient(ellipse at center, rgba(18,11,5,0.46), rgba(0,0,0,0.78));
+            backdrop-filter: blur(3px); pointer-events: auto;
+        }
+        #quest-book-screen.open { display: flex; }
+        #quest-book-panel {
+            width: 620px; min-height: 410px; padding: 38px 46px;
+            background: linear-gradient(90deg, #b9975b 0%, #ead29a 48%, #c5a063 50%, #f0d99d 52%, #aa8550 100%);
+            color: #2a1608; border: 2px solid #5d3417;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.80), inset 0 0 80px rgba(85,44,16,0.38);
+            font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+            transform: rotate(-0.4deg);
+        }
+        #quest-book-title { text-align: center; font-size: 34px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; color: #3a1d0b; }
+        #quest-book-body { font-size: 17px; line-height: 1.55; color: #3d2412; text-align: center; margin: 16px 0 24px; }
+        #quest-book-actions { display: flex; justify-content: center; gap: 16px; }
+        .quest-btn {
+            min-width: 150px; padding: 10px 18px;
+            border: 1px solid rgba(58,29,11,0.64);
+            background: rgba(58,29,11,0.10); color: #2a1608;
+            font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+            font-size: 14px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+            transition: all 0.18s ease;
+        }
+        .quest-btn:hover { background: rgba(58,29,11,0.24); box-shadow: inset 0 0 14px rgba(58,29,11,0.18); }
     </style>
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script type="importmap">
@@ -513,10 +643,14 @@
 <div id="ui-layer">
     <div id="crosshair"></div>
     <div id="hud">
-        <div class="hud-label">Vitality</div>
-        <div class="hud-track"><div class="hud-fill" id="health-fill"></div></div>
-        <div class="hud-label" style="margin-top:4px;">Endurance</div>
-        <div class="hud-track"><div class="hud-fill" id="stamina-fill"></div></div>
+        <div class="hud-row">
+            <div class="hud-top"><span>Vitality</span><span class="hud-value" id="health-value">100%</span></div>
+            <div class="hud-track"><div class="hud-fill" id="health-fill"></div></div>
+        </div>
+        <div class="hud-row">
+            <div class="hud-top"><span>Endurance</span><span class="hud-value" id="stamina-value">100%</span></div>
+            <div class="hud-track"><div class="hud-fill" id="stamina-fill"></div></div>
+        </div>
     </div>
     <div id="interact-prompt">
         <div class="interact-box">
@@ -529,8 +663,7 @@
     <div id="notif"></div>
     <!-- Compass -->
     <canvas id="compass-canvas" width="640" height="80"
-        style="position:absolute;top:14px;left:50%;transform:translateX(-50%);width:320px;height:40px;
-               pointer-events:none;z-index:15;display:none;border-radius:1px;"></canvas>
+        style="pointer-events:none;z-index:15;display:none;border-radius:1px;"></canvas>
     <!-- Quick Menu (D-Pad Cross) -->
     <div id="quick-menu">
         <div class="qm-slot qm-up" data-slot="0" title="Up slot">
@@ -547,20 +680,58 @@
             <span class="qm-key-hint">2</span>
         </div>
     </div>
+    <div id="quest-tracker">
+        <div id="quest-tracker-title">Mission Request</div>
+        <div id="quest-tracker-text"></div>
+    </div>
+    <div id="quest-waypoint">
+        <div id="quest-waypoint-symbol">❖</div>
+        <div id="quest-waypoint-distance">0m</div>
+    </div>
+</div>
+
+<div id="quest-book-screen">
+    <div id="quest-book-panel">
+        <div id="quest-book-title">Arena Notice</div>
+        <div class="ornament" style="color:#5d3417;text-align:center;opacity:0.65;">◆ ◆ ◆</div>
+        <div id="quest-book-body"></div>
+        <div id="quest-book-actions">
+            <button class="quest-btn" id="quest-accept">Accept</button>
+            <button class="quest-btn" id="quest-deny">Deny</button>
+        </div>
+    </div>
 </div>
 
 <!-- Inventory Overlay -->
 <div id="inventory-screen">
     <div id="inventory-inner">
         <div id="inventory-title">&#9764; Inventory &#9764;</div>
+        <div class="inv-stats">
+            <div class="inv-stat-card">
+                <div class="inv-stat-label">Gold</div>
+                <div class="inv-stat-value" id="gold-value">300</div>
+                <div class="inv-stat-sub">Crowns carried</div>
+            </div>
+            <div class="inv-stat-card">
+                <div class="inv-stat-label">Carry Weight</div>
+                <div class="inv-stat-value" id="carry-value">0 / 100</div>
+                <div class="inv-stat-sub">Equipment burden</div>
+            </div>
+        </div>
         <div class="inv-section-title">Equipment &amp; Items</div>
         <div class="inv-grid" id="inv-grid"></div>
+        <div class="inv-quickbar" id="inv-quickbar">
+            <div class="inv-quickbar-title">Quick Slots — click a filled slot to move it back</div>
+            <div class="inv-quickbar-slots" id="inv-quickbar-slots"></div>
+        </div>
         <div class="inv-detail" id="inv-detail">
             <div style="color:#4a4030; font-size:13px; text-align:center; padding-top:20px;">Select an item to inspect it.</div>
         </div>
         <div class="inv-close-hint">I — Close Inventory &nbsp;|&nbsp; Click slot to select &nbsp;|&nbsp; Use consumables from detail panel</div>
     </div>
 </div>
+<div id="item-tooltip"></div>
+<div id="reward-toast"></div>
 
 <!-- Loading -->
 <div id="loading-screen" class="screen">
@@ -738,11 +909,22 @@ let gpJumpPressed = false, gpInteractPressed = false, gpInventoryPressed = false
 
 const INTERACT_RADIUS = 2.5;
 let interactables = [];
+let questBookOpen = false;
+let questState = 'available';
+let questBookInteractable = null;
+let questBookGroup = null;
+const QUEST_BOOK_POSITION = new THREE.Vector3(4, 1.25, 12);
+const QUEST_ARENA_POSITION = new THREE.Vector3(15, 0.65, 5);
+const WAYPOINT_VISIBLE_RANGE = 34;
 
 const MAX_SLOTS = 15;
 let inventoryOpen = false;
 let selectedSlot = -1;
 let inventoryItems = new Array(MAX_SLOTS).fill(null);
+let quickSlots = [null, null, null, null];
+let playerGold = 300;
+const MAX_CARRY_WEIGHT = 100;
+const TEST_QUEST_REWARD_GOLD = 100;
 
 init();
 animate();
@@ -785,13 +967,7 @@ function init() {
     fill.position.set(-20, 30, -20);
     scene.add(fill);
 
-    const floorGeo = new THREE.PlaneGeometry(300, 300);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x5a4830, roughness: 0.95, metalness: 0.0 });
-    floorMesh = new THREE.Mesh(floorGeo, floorMat);
-    floorMesh.rotation.x = -Math.PI / 2;
-    floorMesh.receiveShadow = true;
-    scene.add(floorMesh);
-    collidableMeshes.push(floorMesh);
+    createHandAuthoredTerrain();
 
     buildMap();
 
@@ -872,6 +1048,7 @@ function init() {
     initParticles();
     initHomeEmbers();
     initQuickMenu();
+    setupQuestBookUI();
 }
 
 function initParticles() {
@@ -918,12 +1095,86 @@ function updateLoadingBar(pct) {
     document.getElementById('loading-pct').innerText = pct + '%';
 }
 
+// ——— Hand-authored terrain ———
+function terrainFalloff(x, z, cx, cz, radius) {
+    const d = Math.hypot(x - cx, z - cz);
+    return Math.max(0, 1 - d / radius);
+}
+
+function authoredTerrainHeight(x, z) {
+    const yard = terrainFalloff(x, z, 0, 0, 33);
+    let h = 0;
+    h += Math.sin(x * 0.145 + 0.8) * 0.24;
+    h += Math.cos(z * 0.132 - 0.4) * 0.22;
+    h += Math.sin((x + z) * 0.076) * 0.18;
+    h += terrainFalloff(x, z, -20, -18, 15) * 1.05;
+    h += terrainFalloff(x, z, 23, 18, 16) * 0.78;
+    h += terrainFalloff(x, z, -23, 19, 13) * 0.54;
+    h -= terrainFalloff(x, z, -7, 9, 8) * 0.34;
+    h *= yard;
+
+    const path1 = Math.max(0, 1 - Math.abs(x - 5) / 4.5) * Math.max(0, 1 - Math.abs(z - 9) / 24);
+    const path2 = Math.max(0, 1 - Math.abs(z - 4.8) / 3.8) * Math.max(0, 1 - Math.abs(x - 9) / 16);
+    h *= 1 - Math.max(path1, path2) * 0.72;
+
+    const flatSpots = [
+        { x: 8, z: 12, r: 7 },
+        { x: QUEST_BOOK_POSITION.x, z: QUEST_BOOK_POSITION.z, r: 5.5 },
+        { x: QUEST_ARENA_POSITION.x, z: QUEST_ARENA_POSITION.z, r: 8.5 },
+        { x: 0, z: -4, r: 7 },
+        { x: -5, z: -24.5, r: 6 }
+    ];
+    for (const s of flatSpots) {
+        const f = terrainFalloff(x, z, s.x, s.z, s.r);
+        h *= 1 - Math.min(1, f * 1.2);
+    }
+    return Math.max(-0.45, Math.min(1.2, h));
+}
+
+function createHandAuthoredTerrain() {
+    const size = 300;
+    const segments = 128;
+    const floorGeo = new THREE.PlaneGeometry(size, size, segments, segments);
+    const pos = floorGeo.attributes.position;
+    const colors = [];
+    const color = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = -pos.getY(i);
+        const h = authoredTerrainHeight(x, z);
+        pos.setZ(i, h);
+        const path = Math.max(
+            Math.max(0, 1 - Math.abs(x - 5) / 4.8) * Math.max(0, 1 - Math.abs(z - 9) / 24),
+            Math.max(0, 1 - Math.abs(z - 4.8) / 4.1) * Math.max(0, 1 - Math.abs(x - 9) / 16)
+        );
+        if (path > 0.18) color.setRGB(0.36 + path * 0.12, 0.29 + path * 0.08, 0.19 + path * 0.05);
+        else if (h > 0.55) color.setRGB(0.28, 0.30, 0.22);
+        else if (h < -0.15) color.setRGB(0.25, 0.22, 0.16);
+        else color.setRGB(0.31, 0.36, 0.22);
+        colors.push(color.r, color.g, color.b);
+    }
+    floorGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    floorGeo.computeVertexNormals();
+    const floorMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0.0 });
+    floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+    collidableMeshes.push(floorMesh);
+}
+
 // ——— Map ———
 function buildMap() {
     const stoneMat   = new THREE.MeshStandardMaterial({ color: 0x5c5045, roughness: 0.9, metalness: 0.1 });
     const darkStone  = new THREE.MeshStandardMaterial({ color: 0x3a2e28, roughness: 0.95, metalness: 0.05 });
     const woodMat    = new THREE.MeshStandardMaterial({ color: 0x5a3e28, roughness: 0.85, metalness: 0.0 });
     const wallMat    = new THREE.MeshStandardMaterial({ color: 0x7a6050, roughness: 0.9, metalness: 0.1 });
+    const mossMat    = new THREE.MeshStandardMaterial({ color: 0x304226, roughness: 0.98, metalness: 0.0 });
+    const pineMat    = new THREE.MeshStandardMaterial({ color: 0x1f3325, roughness: 0.94, metalness: 0.0 });
+    const barkMat    = new THREE.MeshStandardMaterial({ color: 0x3b2415, roughness: 0.92, metalness: 0.0 });
+    const bannerMat  = new THREE.MeshStandardMaterial({ color: 0x2b0710, roughness: 0.72, metalness: 0.0, side: THREE.DoubleSide });
+    const ropeMat    = new THREE.MeshStandardMaterial({ color: 0x8a7048, roughness: 0.88, metalness: 0.0 });
+    const groundY = (x, z) => authoredTerrainHeight(x, z);
 
     const addBox = (w, h, d, x, y, z, mat, ry = 0, collide = true, ramp = false) => {
         const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -938,6 +1189,85 @@ function buildMap() {
         return mesh;
     };
 
+    const addCylinder = (radiusTop, radiusBottom, height, radialSegments, x, y, z, mat, ry = 0, collide = false) => {
+        const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments), mat);
+        mesh.position.set(x, y, z);
+        mesh.rotation.y = ry;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+        if (collide) collidableMeshes.push(mesh);
+        return mesh;
+    };
+
+    const addRock = (x, z, s = 1, ry = 0) => {
+        const geo = new THREE.IcosahedronGeometry(1, 1);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x4f4b40, roughness: 0.98, metalness: 0.04 });
+        const rock = new THREE.Mesh(geo, mat);
+        rock.position.set(x, groundY(x, z) + 0.34 * s, z);
+        rock.scale.set(1.05 * s, 0.58 * s, 0.82 * s);
+        rock.rotation.set(0.28, ry, -0.18);
+        rock.castShadow = true;
+        rock.receiveShadow = true;
+        scene.add(rock);
+        return rock;
+    };
+
+    const addPine = (x, z, s = 1, lean = 0) => {
+        const y = groundY(x, z);
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, 2.15 * s, 8), barkMat);
+        trunk.position.set(x, y + 1.05 * s, z);
+        trunk.rotation.z = lean;
+        trunk.castShadow = true;
+        scene.add(trunk);
+        for (let i = 0; i < 3; i++) {
+            const crown = new THREE.Mesh(new THREE.ConeGeometry((1.08 - i * 0.18) * s, 1.75 * s, 9), pineMat);
+            crown.position.set(x + Math.sin(lean) * i * 0.14, y + (2.0 + i * 0.72) * s, z);
+            crown.rotation.y = i * 0.7;
+            crown.castShadow = true;
+            crown.receiveShadow = true;
+            scene.add(crown);
+        }
+    };
+
+    const addGrassTuft = (x, z, s = 1) => {
+        const y = groundY(x, z);
+        for (let i = 0; i < 3; i++) {
+            const blade = new THREE.Mesh(new THREE.ConeGeometry(0.055 * s, 0.62 * s, 5), mossMat);
+            blade.position.set(x + (i - 1) * 0.13 * s, y + 0.28 * s, z + Math.sin(i * 1.9) * 0.08 * s);
+            blade.rotation.z = (i - 1) * 0.18;
+            blade.rotation.y = i * 1.4;
+            blade.castShadow = true;
+            scene.add(blade);
+        }
+    };
+
+    const addPathStone = (x, z, sx = 1, sz = 1, ry = 0) => {
+        const y = groundY(x, z) + 0.035;
+        const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.075, 9), stoneMat);
+        stone.position.set(x, y, z);
+        stone.scale.set(sx, 1, sz);
+        stone.rotation.y = ry;
+        stone.castShadow = false;
+        stone.receiveShadow = true;
+        scene.add(stone);
+    };
+
+    const addBanner = (x, y, z, ry = 0) => {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 2.3, 8), ropeMat);
+        pole.position.set(x, y + 1.15, z);
+        pole.castShadow = true;
+        scene.add(pole);
+        const cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 1.25, 3, 5), bannerMat);
+        const pos = cloth.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) pos.setZ(i, Math.sin(pos.getY(i) * 5 + pos.getX(i) * 3) * 0.045);
+        cloth.geometry.computeVertexNormals();
+        cloth.position.set(x + Math.sin(ry) * 0.08, y + 1.55, z + Math.cos(ry) * 0.08);
+        cloth.rotation.y = ry;
+        cloth.castShadow = true;
+        scene.add(cloth);
+    };
+
     // Castle walls
     const wallH = 8, wallT = 2.5, wallR = 30;
     addBox(wallT, wallH, 60, -wallR, wallH/2, 0, wallMat);
@@ -948,9 +1278,15 @@ function buildMap() {
     // Corner towers
     for (const [tx, tz] of [[-wallR,-wallR],[wallR,-wallR],[-wallR,wallR],[wallR,wallR]]) {
         addBox(8, wallH+3, 8, tx, (wallH+3)/2, tz, darkStone);
-        for (let b = 0; b < 4; b++) {
-            const ba = (b/4)*Math.PI*2;
-            addBox(1.2, 2, 1.2, tx+Math.cos(ba)*3, wallH+3+1, tz+Math.sin(ba)*3, darkStone);
+        addCylinder(4.9, 5.25, wallH + 3.4, 18, tx, (wallH + 3.4) / 2, tz, darkStone, 0, false);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(5.35, 3.6, 18), new THREE.MeshStandardMaterial({ color: 0x211917, roughness: 0.92, metalness: 0.03 }));
+        roof.position.set(tx, wallH + 5.2, tz);
+        roof.rotation.y = 0.2;
+        roof.castShadow = true;
+        scene.add(roof);
+        for (let b = 0; b < 6; b++) {
+            const ba = (b/6)*Math.PI*2;
+            addBox(0.95, 1.7, 0.95, tx+Math.cos(ba)*3.8, wallH+3+0.85, tz+Math.sin(ba)*3.8, darkStone, ba, false);
         }
     }
 
@@ -1038,13 +1374,13 @@ function buildMap() {
         const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.1, 0.14), torchIronMat);
         bracket.position.set(wallX + 0.05, ty - 0.08, tz);
         scene.add(bracket);
-        // Wooden handle angled outward: rotation.z = +LEAN tilts top toward +x
+        // Wooden handle angled outward: negative Z lean tilts top toward +x
         const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, TORCH_LEN, 7), torchWoodMat);
         // Center of handle offset so bracket end touches the wall
         const hcx = wallX + Math.sin(LEAN) * TORCH_LEN * 0.5;
         const hcy = ty + Math.cos(LEAN) * TORCH_LEN * 0.5 - 0.08;
         handle.position.set(hcx, hcy, tz);
-        handle.rotation.z = LEAN;
+        handle.rotation.z = -LEAN;
         handle.castShadow = true;
         scene.add(handle);
         // Flame tip at top of handle
@@ -1072,6 +1408,40 @@ function buildMap() {
     addTorch(torchWallX, 4.0,   9);
     addTorch(torchWallX, 4.0,  18);
 
+    const rockPlacements = [
+        [-24,-24,1.8,0.2],[-20,-21,1.2,1.1],[-16,-25,1.0,2.0],[24,21,1.55,0.7],[20,24,0.9,1.8],[-24,18,1.05,0.4],[-21,14,0.75,2.4],
+        [-12,14,0.55,1.0],[-4,18,0.45,2.2],[6,18,0.52,0.9],[22,-10,0.82,1.6],[24,-14,1.15,0.3],[-20,-5,0.7,1.8]
+    ];
+    rockPlacements.forEach(r => addRock(r[0], r[1], r[2], r[3]));
+
+    const pinePlacements = [
+        [-25,23,1.25,0.05],[-22,26,0.95,-0.04],[-17,24,1.15,0.02],[24,25,1.2,-0.03],[27,20,0.9,0.04],[-26,-12,0.95,0.02],[25,-5,0.85,-0.03]
+    ];
+    pinePlacements.forEach(t => addPine(t[0], t[1], t[2], t[3]));
+
+    const grassPlacements = [
+        [-18,12],[-16,10],[-14,13],[-10,17],[-6,15],[-2,18],[3,17],[9,16],[13,14],[19,16],[22,12],[-24,4],[-25,-2],[-18,-8],[5,-18],[9,-15],[16,-13],[22,-8],[-12,24],[0,23]
+    ];
+    grassPlacements.forEach((g, i) => addGrassTuft(g[0], g[1], 0.75 + (i % 4) * 0.16));
+
+    for (let i = 0; i < 11; i++) addPathStone(5 + Math.sin(i * 0.8) * 0.8, -1 + i * 2.3, 0.9 + (i % 3) * 0.12, 0.62, i * 0.37);
+    for (let i = 0; i < 8; i++) addPathStone(2 + i * 2.1, 5 + Math.sin(i * 0.9) * 0.65, 0.72, 0.52 + (i % 2) * 0.18, i * 0.51);
+
+    addCylinder(1.8, 2.15, 0.7, 16, -8, groundY(-8, 8) + 0.35, 8, stoneMat, 0, false);
+    addCylinder(0.9, 1.0, 0.38, 16, -8, groundY(-8, 8) + 0.9, 8, darkStone, 0, false);
+
+    addCylinder(1.0, 1.15, 4.2, 12, -23.5, groundY(-23.5, -18) + 2.1, -18, darkStone, 0.2, false);
+    addCylinder(0.85, 1.0, 3.1, 12, -18.8, groundY(-18.8, -15) + 1.55, -15, darkStone, -0.15, false);
+    addBox(5.4, 0.65, 1.0, -21.1, groundY(-21.1, -16.5) + 3.8, -16.5, stoneMat, -0.58, false);
+    addBanner(-24.2, groundY(-24.2, -15.8), -15.8, Math.PI * 0.55);
+    addBanner(-18.1, groundY(-18.1, -13.3), -13.3, Math.PI * 0.55);
+
+    addCylinder(3.1, 3.4, 0.28, 18, 15, groundY(15, 5) + 0.18, 5, woodMat, 0, false);
+    addCylinder(0.18, 0.18, 2.2, 8, 10.4, groundY(10.4, 0.2) + 1.1, 0.2, woodMat, 0, false);
+    addCylinder(0.18, 0.18, 2.2, 8, 19.6, groundY(19.6, 0.2) + 1.1, 0.2, woodMat, 0, false);
+    addBanner(10.4, groundY(10.4, 0.2) + 0.35, 0.2, 0);
+    addBanner(19.6, groundY(19.6, 0.2) + 0.35, 0.2, 0);
+
     // Archery range wall
     addBox(0.5, 4, 20, -22, 2, 0, stoneMat);
 
@@ -1090,6 +1460,21 @@ function buildMap() {
 
     // ——— Interactables ———
 
+    addBox(2.4, 0.18, 1.35, QUEST_BOOK_POSITION.x, 0.82, QUEST_BOOK_POSITION.z, woodMat);
+    addBox(0.18, 1.25, 0.18, QUEST_BOOK_POSITION.x - 0.95, 0.38, QUEST_BOOK_POSITION.z - 0.48, woodMat);
+    addBox(0.18, 1.25, 0.18, QUEST_BOOK_POSITION.x + 0.95, 0.38, QUEST_BOOK_POSITION.z - 0.48, woodMat);
+    addBox(0.18, 1.25, 0.18, QUEST_BOOK_POSITION.x - 0.95, 0.38, QUEST_BOOK_POSITION.z + 0.48, woodMat);
+    addBox(0.18, 1.25, 0.18, QUEST_BOOK_POSITION.x + 0.95, 0.38, QUEST_BOOK_POSITION.z + 0.48, woodMat);
+    questBookGroup = createQuestBook(QUEST_BOOK_POSITION.x, QUEST_BOOK_POSITION.y, QUEST_BOOK_POSITION.z);
+    const questLight = new THREE.PointLight(0xffc46e, 1.25, 5);
+    questLight.position.set(QUEST_BOOK_POSITION.x, QUEST_BOOK_POSITION.y + 0.55, QUEST_BOOK_POSITION.z);
+    scene.add(questLight);
+    questBookInteractable = {
+        mesh: questBookGroup, light: questLight, type: 'quest', static: true, label: 'Read Mission Request',
+        onInteract: () => openQuestBook()
+    };
+    interactables.push(questBookInteractable);
+
     // Potion bottle (health pickup → goes to inventory, must be used from there)
     const potionGroup = createPotionBottle(-8, 1.5, 8, 0x44ddaa, 0x00cc88);
     const potionLight = new THREE.PointLight(0x00ffaa, 1.5, 5);
@@ -1103,6 +1488,7 @@ function buildMap() {
             icon: '🧪',
             type: 'consumable',
             desc: 'A flask of shimmering emerald liquid. Restores 40 Vitality when consumed.',
+            weight: 0.5,
             use: () => {
                 playerHealth = Math.min(playerMaxHealth, playerHealth + 40);
                 updateHUD();
@@ -1110,11 +1496,8 @@ function buildMap() {
             }
         },
         onInteract: () => {
-            const slot = inventoryItems.findIndex(s => s === null);
-            if (slot === -1) { showNotif('Inventory Full'); return; }
             const entry = interactables.find(i => i.mesh === potionGroup);
-            inventoryItems[slot] = entry.item;
-            renderInventoryGrid();
+            if (!addItemToInventory(entry.item)) return;
             scene.remove(potionGroup);
             scene.remove(potionLight);
             interactables = interactables.filter(i => i.mesh !== potionGroup);
@@ -1132,12 +1515,10 @@ function buildMap() {
     interactables.push({
         mesh: swordGlow, light: swordLight,
         type: 'item', label: 'Pick up Longsword Shard',
-        item: { name: 'Longsword Shard', icon: '⚔', type: 'misc', desc: 'A fragment of a shattered longsword. Ancient runes line the broken blade — a relic of the Broken Order.' },
+        item: { name: 'Longsword Shard', icon: '⚔', type: 'misc', weight: 3, desc: 'A fragment of a shattered longsword. Ancient runes line the broken blade — a relic of the Broken Order.' },
         onInteract: () => {
-            const slot = inventoryItems.findIndex(s => s === null);
-            if (slot === -1) { showNotif('Inventory Full'); return; }
-            inventoryItems[slot] = interactables.find(i => i.mesh === swordGlow).item;
-            renderInventoryGrid();
+            const entry = interactables.find(i => i.mesh === swordGlow);
+            if (!addItemToInventory(entry.item)) return;
             scene.remove(swordGlow); scene.remove(swordLight);
             interactables = interactables.filter(i => i.mesh !== swordGlow);
             showNotif('Acquired: Longsword Shard');
@@ -1146,6 +1527,27 @@ function buildMap() {
 }
 
 // ——— Potion bottle shape ———
+function createQuestBook(x, y, z) {
+    const group = new THREE.Group();
+    const coverMat = new THREE.MeshStandardMaterial({ color: 0x4c1f12, roughness: 0.68, metalness: 0.05, emissive: 0x150704, emissiveIntensity: 0.18 });
+    const pageMat = new THREE.MeshStandardMaterial({ color: 0xd8bf82, roughness: 0.92, metalness: 0.0 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0xc8a96e, roughness: 0.34, metalness: 0.75, emissive: 0x2a1a05, emissiveIntensity: 0.14 });
+    const pages = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.08, 0.62), pageMat);
+    const cover = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.06, 0.72), coverMat);
+    const spine = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.10, 0.76), trimMat);
+    const clasp = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.035, 0.20), trimMat);
+    pages.position.y = 0.02;
+    cover.position.y = 0.09;
+    spine.position.set(-0.49, 0.12, 0);
+    clasp.position.set(0.34, 0.15, 0);
+    group.add(pages, cover, spine, clasp);
+    group.position.set(x, y, z);
+    group.rotation.y = -0.35;
+    group.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+    scene.add(group);
+    return group;
+}
+
 function createPotionBottle(x, y, z, color, emissiveColor) {
     const group = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({
@@ -1176,7 +1578,47 @@ function createPotionBottle(x, y, z, color, emissiveColor) {
 
 // ——— Inventory ———
 function setupInventoryUI() {
+    renderInventoryStats();
     renderInventoryGrid();
+    renderInventoryQuickSlots();
+}
+
+function getItemWeight(item) {
+    if (!item) return 0;
+    return typeof item.weight === 'number' ? item.weight : 1;
+}
+
+function getCurrentCarryWeight() {
+    const invWeight = inventoryItems.reduce((sum, item) => sum + getItemWeight(item), 0);
+    const quickWeight = quickSlots.reduce((sum, item) => sum + getItemWeight(item), 0);
+    return invWeight + quickWeight;
+}
+
+function formatWeight(value) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function renderInventoryStats() {
+    const goldEl = document.getElementById('gold-value');
+    const carryEl = document.getElementById('carry-value');
+    if (goldEl) goldEl.textContent = playerGold.toLocaleString();
+    if (carryEl) carryEl.textContent = formatWeight(getCurrentCarryWeight()) + ' / ' + MAX_CARRY_WEIGHT;
+}
+
+function addItemToInventory(item) {
+    if (!item) return false;
+    const weightAfter = getCurrentCarryWeight() + getItemWeight(item);
+    if (weightAfter > MAX_CARRY_WEIGHT) {
+        showNotif('You are carrying too much');
+        return false;
+    }
+    const slot = inventoryItems.findIndex(s => s === null);
+    if (slot === -1) { showNotif('Inventory Full'); return false; }
+    inventoryItems[slot] = item;
+    renderInventoryStats();
+    renderInventoryGrid();
+    renderInventoryQuickSlots();
+    return true;
 }
 
 function renderInventoryGrid() {
@@ -1196,6 +1638,9 @@ function renderInventoryGrid() {
             name.textContent = inventoryItems[i].name || '';
             slot.appendChild(icon);
             slot.appendChild(name);
+            slot.addEventListener('mouseenter', (e) => showItemTooltip(inventoryItems[i], e));
+            slot.addEventListener('mousemove', moveItemTooltip);
+            slot.addEventListener('mouseleave', hideItemTooltip);
         }
         slot.addEventListener('click', () => {
             selectedSlot = i;
@@ -1229,8 +1674,8 @@ function renderInventoryGrid() {
                     document.querySelectorAll('.qm-assign-btn').forEach(btn => {
                         btn.addEventListener('click', () => {
                             const qIdx = parseInt(btn.dataset.qslot);
-                            assignToQuickSlot(qIdx, item);
-                            showNotif('Assigned to Quick Slot');
+                            assignToQuickSlot(qIdx, item, selectedSlot);
+                            showNotif('Moved to Quick Slot');
                         });
                     });
                 }
@@ -1242,13 +1687,66 @@ function renderInventoryGrid() {
     }
 }
 
+function renderInventoryQuickSlots() {
+    const wrap = document.getElementById('inv-quickbar-slots');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const labels = ['Q1 ▲', 'Q3 ◄', 'Q4 ►', 'Q2 ▼'];
+    for (let i = 0; i < quickSlots.length; i++) {
+        const item = quickSlots[i];
+        const slot = document.createElement('div');
+        slot.className = 'inv-qslot' + (item ? '' : ' empty');
+        slot.dataset.label = labels[i] || ('Q' + (i + 1));
+        if (item) {
+            slot.innerHTML = '<div class="inv-qslot-icon">' + (item.icon || '?') + '</div><div class="inv-qslot-name">' + (item.name || '') + '</div><div class="inv-qslot-return">Return</div>';
+            slot.addEventListener('click', () => moveQuickSlotToInventory(i));
+            slot.addEventListener('mouseenter', (e) => showItemTooltip(item, e));
+            slot.addEventListener('mousemove', moveItemTooltip);
+            slot.addEventListener('mouseleave', hideItemTooltip);
+        } else {
+            slot.textContent = 'Empty';
+        }
+        wrap.appendChild(slot);
+    }
+}
+
+function showItemTooltip(item, event) {
+    if (!item) return;
+    const tooltip = document.getElementById('item-tooltip');
+    if (!tooltip) return;
+    tooltip.innerHTML = '<div class="tooltip-title">' + (item.icon || '') + ' ' + (item.name || 'Unknown Item') + '</div><div class="tooltip-desc">' + (item.desc || 'No description available.') + '</div><div class="tooltip-type">' + (item.type || 'item') + '  •  Weight ' + formatWeight(getItemWeight(item)) + '</div>';
+    tooltip.style.display = 'block';
+    requestAnimationFrame(() => tooltip.classList.add('visible'));
+    moveItemTooltip(event);
+}
+
+function moveItemTooltip(event) {
+    const tooltip = document.getElementById('item-tooltip');
+    if (!tooltip || tooltip.style.display === 'none') return;
+    const pad = 18;
+    const rectW = 285;
+    const x = Math.min(window.innerWidth - rectW - pad, event.clientX + 18);
+    const y = Math.min(window.innerHeight - 130, event.clientY + 18);
+    tooltip.style.left = Math.max(pad, x) + 'px';
+    tooltip.style.top = Math.max(pad, y) + 'px';
+}
+
+function hideItemTooltip() {
+    const tooltip = document.getElementById('item-tooltip');
+    if (!tooltip) return;
+    tooltip.classList.remove('visible');
+    setTimeout(() => { if (!tooltip.classList.contains('visible')) tooltip.style.display = 'none'; }, 130);
+}
+
 function useInventoryItem(slot) {
     const item = inventoryItems[slot];
     if (!item || !item.use) return;
     item.use();
     inventoryItems[slot] = null;
     selectedSlot = -1;
+    renderInventoryStats();
     renderInventoryGrid();
+    renderInventoryQuickSlots();
     document.getElementById('inv-detail').innerHTML =
         '<div style="color:#4a4030;font-size:13px;text-align:center;padding-top:20px;">Select an item to inspect it.</div>';
 }
@@ -1300,6 +1798,8 @@ function setupMenuButtons() {
         document.getElementById('home-screen').classList.remove('hidden');
         document.getElementById('quick-menu').style.display = 'none';
         document.getElementById('hud').style.display = 'none';
+        document.getElementById('quest-tracker').style.display = 'none';
+        document.getElementById('quest-waypoint').style.display = 'none';
         velocity.set(0,0,0);
     });
 
@@ -1318,6 +1818,7 @@ function setupMenuButtons() {
         document.getElementById('view-indicator').style.display = viewMode === 'third' ? 'block' : 'none';
         document.getElementById('compass-canvas').style.display = 'block';
         document.getElementById('quick-menu').style.display = 'block';
+        updateQuestTracker();
         if (window._ambientAudio && window._ambientAudio.paused) {
             window._ambientAudio.volume = masterVolume * ambientVolume * 0.35;
             window._ambientAudio.play().catch(() => {});
@@ -1325,7 +1826,7 @@ function setupMenuButtons() {
     });
 
     controls.addEventListener('unlock', () => {
-        if (inventoryOpen) return;
+        if (inventoryOpen || questBookOpen) return;
         if (gameState === 'PLAYING') {
             gameState = 'PAUSED';
             document.getElementById('crosshair').style.display = 'none';
@@ -1479,6 +1980,130 @@ function tryInteract() {
     if (ia) ia.onInteract();
 }
 
+function setupQuestBookUI() {
+    document.getElementById('quest-accept').addEventListener('click', acceptQuest);
+    document.getElementById('quest-deny').addEventListener('click', closeQuestBook);
+}
+
+function openQuestBook() {
+    if (questState === 'completed') return;
+    questBookOpen = true;
+    const body = document.getElementById('quest-book-body');
+    const actions = document.getElementById('quest-book-actions');
+    if (questState === 'readyTurnIn') {
+        body.innerHTML = 'The arena marshal has marked the request complete.<br><br>Return this notice to close the assignment and claim your reward:<br><br><strong>100 gold crowns.</strong>';
+        actions.innerHTML = '<button class="quest-btn" id="quest-turn-in">Turn In</button>';
+        document.getElementById('quest-turn-in').addEventListener('click', completeQuest);
+    } else if (questState === 'accepted') {
+        body.innerHTML = 'Mission active:<br><br><strong>Go stand at the arena.</strong><br><br>Reward on turn-in: <strong>100 gold crowns.</strong><br><br>The waypoint has been marked with ❖. Reach the wooden training arena, then return here.';
+        actions.innerHTML = '<button class="quest-btn" id="quest-close">Close</button>';
+        document.getElementById('quest-close').addEventListener('click', closeQuestBook);
+    } else {
+        body.innerHTML = 'Mission request:<br><br><strong>Go stand at the arena.</strong><br><br>Reward: <strong>100 gold crowns.</strong><br><br>Accept this request and a waypoint will be marked in the yard. If you deny it, this book can be opened again later.';
+        actions.innerHTML = '<button class="quest-btn" id="quest-accept">Accept</button><button class="quest-btn" id="quest-deny">Deny</button>';
+        document.getElementById('quest-accept').addEventListener('click', acceptQuest);
+        document.getElementById('quest-deny').addEventListener('click', closeQuestBook);
+    }
+    document.getElementById('quest-book-screen').classList.add('open');
+    if (gameState === 'PLAYING') controls.unlock();
+}
+
+function closeQuestBook() {
+    questBookOpen = false;
+    document.getElementById('quest-book-screen').classList.remove('open');
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') controls.lock();
+}
+
+function acceptQuest() {
+    questState = 'accepted';
+    closeQuestBook();
+    updateQuestTracker();
+    showNotif('Mission Accepted: Reward 100 Gold');
+}
+
+function completeQuest() {
+    questState = 'completed';
+    questBookOpen = false;
+    document.getElementById('quest-book-screen').classList.remove('open');
+    document.getElementById('quest-tracker').style.display = 'none';
+    document.getElementById('quest-waypoint').style.display = 'none';
+    if (questBookInteractable) interactables = interactables.filter(i => i !== questBookInteractable);
+    if (questBookGroup) questBookGroup.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0x000000); });
+    playerGold += TEST_QUEST_REWARD_GOLD;
+    renderInventoryStats();
+    showRewardToast(TEST_QUEST_REWARD_GOLD, 'Quest Reward Received');
+    showNotif('Mission Complete');
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') controls.lock();
+}
+
+function checkQuestProgress() {
+    if (questState !== 'accepted') return;
+    const d = controls.getObject().position.distanceTo(QUEST_ARENA_POSITION);
+    if (d <= 3.6) {
+        questState = 'readyTurnIn';
+        updateQuestTracker();
+        showNotif('Objective Complete: Return to the book');
+    }
+}
+
+function updateQuestTracker() {
+    const tracker = document.getElementById('quest-tracker');
+    const text = document.getElementById('quest-tracker-text');
+    if (!tracker || !text || gameState !== 'PLAYING') return;
+    if (questState === 'accepted') {
+        tracker.style.display = 'block';
+        text.textContent = 'Go stand at the arena.';
+    } else if (questState === 'readyTurnIn') {
+        tracker.style.display = 'block';
+        text.textContent = 'Return to the mission book.';
+    } else {
+        tracker.style.display = 'none';
+    }
+}
+
+function getQuestTargetPosition() {
+    if (questState === 'accepted') return QUEST_ARENA_POSITION;
+    if (questState === 'readyTurnIn') return QUEST_BOOK_POSITION;
+    return null;
+}
+
+function setQuestWaypointVisible(marker, visible) {
+    clearTimeout(marker._hideTimeout);
+    if (visible) {
+        marker.style.display = 'block';
+        requestAnimationFrame(() => marker.classList.add('visible'));
+    } else {
+        marker.classList.remove('visible');
+        marker._hideTimeout = setTimeout(() => {
+            if (!marker.classList.contains('visible')) marker.style.display = 'none';
+        }, 360);
+    }
+}
+
+function updateQuestWaypoint() {
+    const marker = document.getElementById('quest-waypoint');
+    if (!marker || gameState !== 'PLAYING') { if (marker) setQuestWaypointVisible(marker, false); return; }
+    const target = getQuestTargetPosition();
+    if (!target) { setQuestWaypointVisible(marker, false); return; }
+    const playerPos = controls.getObject().position;
+    const dist = playerPos.distanceTo(target);
+    const distanceScale = Math.max(0.56, Math.min(1, 1 - (dist / WAYPOINT_VISIBLE_RANGE) * 0.34));
+    marker.style.setProperty('--waypoint-scale', distanceScale.toFixed(2));
+    if (dist > WAYPOINT_VISIBLE_RANGE) { setQuestWaypointVisible(marker, false); return; }
+    const projected = target.clone();
+    projected.y += 1.15;
+    projected.project(viewMode === 'third' && gameState === 'PLAYING' ? tpCamera : camera);
+    const x = (projected.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-projected.y * 0.5 + 0.5) * window.innerHeight;
+    const behind = projected.z > 1;
+    const clampedX = Math.max(42, Math.min(window.innerWidth - 42, behind ? window.innerWidth - x : x));
+    const clampedY = Math.max(92, Math.min(window.innerHeight - 92, behind ? window.innerHeight - y : y));
+    marker.style.left = clampedX + 'px';
+    marker.style.top = clampedY + 'px';
+    setQuestWaypointVisible(marker, true);
+    document.getElementById('quest-waypoint-distance').textContent = Math.max(1, Math.round(dist)) + 'm';
+}
+
 // ——— Notification ———
 function showNotif(msg) {
     const el = document.getElementById('notif');
@@ -1488,10 +2113,29 @@ function showNotif(msg) {
     window._notifTimeout = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
+function showRewardToast(amount, title = 'Reward Received') {
+    const el = document.getElementById('reward-toast');
+    if (!el) return;
+    el.innerHTML = '<div class="reward-title">' + title + '</div><div class="reward-amount">+' + amount + ' Gold</div><div class="reward-sub">Crowns added to your purse</div>';
+    el.style.display = 'block';
+    requestAnimationFrame(() => el.classList.add('show'));
+    clearTimeout(window._rewardToastTimeout);
+    window._rewardToastTimeout = setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => { if (!el.classList.contains('show')) el.style.display = 'none'; }, 360);
+    }, 3600);
+}
+
 // ——— Vitals ———
 function updateHUD() {
-    document.getElementById('health-fill').style.width = (playerHealth / playerMaxHealth * 100) + '%';
-    document.getElementById('stamina-fill').style.width = stamina + '%';
+    const healthPct = Math.max(0, Math.min(100, playerHealth / playerMaxHealth * 100));
+    const staminaPct = Math.max(0, Math.min(100, stamina));
+    document.getElementById('health-fill').style.width = healthPct + '%';
+    document.getElementById('stamina-fill').style.width = staminaPct + '%';
+    const hv = document.getElementById('health-value');
+    const sv = document.getElementById('stamina-value');
+    if (hv) hv.textContent = Math.round(healthPct) + '%';
+    if (sv) sv.textContent = Math.round(staminaPct) + '%';
 }
 
 function damagePlayer(dmg) {
@@ -1511,6 +2155,8 @@ function killPlayer() {
     document.getElementById('hud').style.display = 'none';
     document.getElementById('view-indicator').style.display = 'none';
     document.getElementById('quick-menu').style.display = 'none';
+    document.getElementById('quest-tracker').style.display = 'none';
+    document.getElementById('quest-waypoint').style.display = 'none';
 }
 
 function respawn() {
@@ -1547,16 +2193,21 @@ function animate() {
 
     updateParticles(dt);
     updateCompass();
+    updateQuestWaypoint();
 
     // Float interactables
     for (const ia of interactables) {
-        ia.mesh.position.y += Math.sin(clock.elapsedTime * 2.5) * 0.002;
-        ia.mesh.rotation.y += dt * 1.2;
-        if (ia.light) ia.light.position.y = ia.mesh.position.y;
+        if (!ia.static) {
+            ia.mesh.position.y += Math.sin(clock.elapsedTime * 2.5) * 0.002;
+            ia.mesh.rotation.y += dt * 1.2;
+            if (ia.light) ia.light.position.y = ia.mesh.position.y;
+        }
     }
 
     if (gameState === 'PLAYING') {
         updatePhysics(dt);
+        checkQuestProgress();
+        updateQuestTracker();
         updateInteractionPrompt();
         updateWalkSound();
     }
@@ -1765,8 +2416,6 @@ function initHomeEmbers() {
 }
 
 // ——— Quick Menu (D-Pad) ———
-let quickSlots = [null, null, null, null];
-
 function initQuickMenu() {
     const slots = document.querySelectorAll('.qm-slot');
     slots.forEach(slot => {
@@ -1777,9 +2426,46 @@ function initQuickMenu() {
     });
 }
 
-function assignToQuickSlot(slotIdx, item) {
-    if (slotIdx < 0 || slotIdx > 3) return;
+function moveQuickSlotToInventory(slotIdx) {
+    const item = quickSlots[slotIdx];
+    if (!item) return;
+    const emptySlot = inventoryItems.findIndex(s => s === null);
+    if (emptySlot === -1) {
+        showNotif('Inventory Full');
+        return;
+    }
+    inventoryItems[emptySlot] = item;
+    quickSlots[slotIdx] = null;
+    selectedSlot = emptySlot;
+    renderInventoryStats();
+    renderInventoryGrid();
+    renderInventoryQuickSlots();
+    renderQuickMenu();
+    showNotif('Moved to Inventory');
+}
+
+function assignToQuickSlot(slotIdx, item, sourceInventorySlot = -1) {
+    if (slotIdx < 0 || slotIdx > 3 || !item) return;
+    for (let i = 0; i < quickSlots.length; i++) {
+        if (quickSlots[i] === item) quickSlots[i] = null;
+    }
+    const replacedItem = quickSlots[slotIdx];
     quickSlots[slotIdx] = item;
+    if (sourceInventorySlot >= 0 && inventoryItems[sourceInventorySlot] === item) {
+        inventoryItems[sourceInventorySlot] = null;
+    }
+    if (replacedItem && replacedItem !== item) {
+        const returnSlot = sourceInventorySlot >= 0 && inventoryItems[sourceInventorySlot] === null
+            ? sourceInventorySlot
+            : inventoryItems.findIndex(s => s === null);
+        if (returnSlot !== -1) inventoryItems[returnSlot] = replacedItem;
+    }
+    selectedSlot = -1;
+    renderInventoryStats();
+    renderInventoryGrid();
+    renderInventoryQuickSlots();
+    const detail = document.getElementById('inv-detail');
+    if (detail) detail.innerHTML = '<div style="color:#4a4030;font-size:13px;text-align:center;padding-top:20px;">Select an item to inspect it.</div>';
     renderQuickMenu();
 }
 
@@ -1793,6 +2479,8 @@ function useQuickSlot(idx) {
         renderInventoryGrid();
     }
     quickSlots[idx] = null;
+    renderInventoryStats();
+    renderInventoryQuickSlots();
     renderQuickMenu();
 }
 
@@ -1812,124 +2500,154 @@ function renderQuickMenu() {
         } else {
             slot.classList.remove('qm-active');
         }
+        slot.title = item ? (item.name || 'Quick slot') : 'Empty quick slot';
     });
 }
 
-// ——— Compass HUD (Borderlands-style scrolling bar) ———
+// ——— Compass HUD (custom Skyrim-inspired fantasy bar) ———
 function updateCompass() {
     const canvas = document.getElementById('compass-canvas');
     if (!canvas || canvas.style.display === 'none') return;
     const ctx = canvas.getContext('2d');
-    const W = 640, H = 80; // 2× pixel density
-
+    const W = 640, H = 80;
     ctx.clearRect(0, 0, W, H);
 
-    ctx.fillStyle = 'rgba(3,2,1,0.25)';
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.strokeStyle = 'rgba(200,169,110,0.15)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(1, 1, W-2, H-2);
-
-    // Get camera yaw
-    const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
-    const yaw = euler.y;
-    // heading: 0=North, +PI/2=East (clockwise). Derived as heading = -yaw
-    const heading = -yaw;
-
-    // Compass strip shows 100° arc across W pixels
-    const FOV_RAD = 100 * Math.PI / 180;
-    const pixPerRad = W / FOV_RAD;
     const cx = W / 2;
-
-    // Minor ticks every 11.25° (32 per revolution)
-    const MINOR_RAD = 11.25 * Math.PI / 180;
-    const numMinor = Math.ceil((FOV_RAD/2 + MINOR_RAD) / MINOR_RAD) + 1;
-    const baseMinor = Math.round(heading / MINOR_RAD) * MINOR_RAD;
-    for (let k = -numMinor; k <= numMinor; k++) {
-        const angle = baseMinor + k * MINOR_RAD;
+    const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+    const heading = -euler.y;
+    const FOV_RAD = 92 * Math.PI / 180;
+    const pixPerRad = 500 / FOV_RAD;
+    const normalizeDiff = (angle) => {
         let diff = angle - heading;
-        while (diff >  Math.PI) diff -= Math.PI*2;
-        while (diff < -Math.PI) diff += Math.PI*2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        return diff;
+    };
+
+    const runeGlow = ctx.createRadialGradient(cx, 48, 18, cx, 48, 235);
+    runeGlow.addColorStop(0, 'rgba(238,223,177,0.10)');
+    runeGlow.addColorStop(0.42, 'rgba(238,223,177,0.035)');
+    runeGlow.addColorStop(1, 'rgba(238,223,177,0.00)');
+    ctx.fillStyle = runeGlow;
+    ctx.fillRect(70, 20, W - 140, 48);
+
+    const line = ctx.createLinearGradient(66, 0, W - 66, 0);
+    line.addColorStop(0, 'rgba(215,198,154,0.00)');
+    line.addColorStop(0.18, 'rgba(215,198,154,0.30)');
+    line.addColorStop(0.50, 'rgba(238,223,177,0.72)');
+    line.addColorStop(0.82, 'rgba(215,198,154,0.30)');
+    line.addColorStop(1, 'rgba(215,198,154,0.00)');
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(72, 49);
+    ctx.lineTo(W - 72, 49);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(238,223,177,0.34)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(96, 43);
+    ctx.quadraticCurveTo(cx, 31, W - 96, 43);
+    ctx.stroke();
+
+    const drawDiamond = (x, y, r, alpha) => {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.PI * 0.25);
+        ctx.fillStyle = 'rgba(226,210,164,' + alpha + ')';
+        ctx.shadowColor = 'rgba(0,0,0,0.85)';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(-r, -r, r * 2, r * 2);
+        ctx.restore();
+    };
+    drawDiamond(80, 49, 3.5, 0.36);
+    drawDiamond(W - 80, 49, 3.5, 0.36);
+
+    const MINOR_RAD = 7.5 * Math.PI / 180;
+    const baseMinor = Math.round(heading / MINOR_RAD) * MINOR_RAD;
+    for (let k = -11; k <= 11; k++) {
+        const angle = baseMinor + k * MINOR_RAD;
+        const diff = normalizeDiff(angle);
         const x = cx + diff * pixPerRad;
-        if (x < 0 || x > W) continue;
-        const alpha = Math.max(0, 1 - Math.abs(diff)/(FOV_RAD*0.55)) * 0.45;
-        ctx.strokeStyle = `rgba(180,145,70,${alpha})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(x, H-10); ctx.lineTo(x, H-5); ctx.stroke();
+        if (x < 78 || x > W - 78) continue;
+        const fade = Math.max(0, 1 - Math.abs(diff) / (FOV_RAD * 0.56));
+        const major = Math.abs((angle / (Math.PI / 4)) - Math.round(angle / (Math.PI / 4))) < 0.002;
+        ctx.strokeStyle = 'rgba(226,210,164,' + (fade * (major ? 0.70 : 0.30)) + ')';
+        ctx.lineWidth = major ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(x, 49);
+        ctx.lineTo(x, major ? 35 : 42);
+        ctx.stroke();
     }
 
-    // Baseline tick line
-    ctx.strokeStyle = 'rgba(200,169,110,0.28)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, H-10); ctx.lineTo(W, H-10); ctx.stroke();
-
-    // Cardinal & intercardinal labels
-    // heading=0→North(-Z), heading=PI/2→East(+X), etc.
-    // bearings: N=0, NE=PI/4, E=PI/2, SE=3PI/4, S=PI, SW=-3PI/4, W=-PI/2, NW=-PI/4
     const DIRS = [
         {n:'N', b:0}, {n:'NE', b:Math.PI*0.25}, {n:'E', b:Math.PI*0.5},
         {n:'SE', b:Math.PI*0.75}, {n:'S', b:Math.PI}, {n:'SW', b:-Math.PI*0.75},
         {n:'W', b:-Math.PI*0.5}, {n:'NW', b:-Math.PI*0.25},
-        // Extra copies for wrap
-        {n:'N', b:-Math.PI*2}, {n:'N', b:Math.PI*2},
-        {n:'E', b:-Math.PI*1.5}, {n:'W', b:Math.PI*1.5},
-        {n:'S', b:-Math.PI}, {n:'S', b:Math.PI*3},
+        {n:'N', b:-Math.PI*2}, {n:'N', b:Math.PI*2}, {n:'S', b:-Math.PI}, {n:'S', b:Math.PI*3},
+        {n:'E', b:-Math.PI*1.5}, {n:'W', b:Math.PI*1.5}
     ];
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
     for (const d of DIRS) {
-        let diff = d.b - heading;
-        while (diff >  Math.PI) diff -= Math.PI*2;
-        while (diff < -Math.PI) diff += Math.PI*2;
+        const diff = normalizeDiff(d.b);
         const x = cx + diff * pixPerRad;
-        if (x < -30 || x > W+30) continue;
-        const fade = Math.max(0, 1 - Math.abs(diff)/(FOV_RAD*0.52));
+        if (x < 48 || x > W - 48) continue;
+        const fade = Math.max(0, 1 - Math.abs(diff) / (FOV_RAD * 0.48));
         const isCard = d.n.length === 1;
-        if (isCard) {
-            // Tall tick
-            ctx.strokeStyle = `rgba(200,169,110,${fade*0.9})`;
-            ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(x, H-10); ctx.lineTo(x, H-28); ctx.stroke();
-            // Bold label
-            ctx.font = `bold 30px "Palatino Linotype", Georgia, serif`;
-            ctx.fillStyle = `rgba(230,195,125,${fade})`;
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(d.n, x, H-30);
-        } else {
-            // Medium tick
-            ctx.strokeStyle = `rgba(165,130,65,${fade*0.75})`;
-            ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(x, H-10); ctx.lineTo(x, H-20); ctx.stroke();
-            // Smaller label
-            ctx.font = `19px "Palatino Linotype", Georgia, serif`;
-            ctx.fillStyle = `rgba(170,138,75,${fade*0.9})`;
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(d.n, x, H-21);
+        ctx.font = (isCard ? 'bold 31px' : '16px') + ' "Palatino Linotype", Georgia, serif';
+        ctx.fillStyle = isCard ? 'rgba(242,229,188,' + fade + ')' : 'rgba(202,184,138,' + (fade * 0.84) + ')';
+        ctx.shadowColor = 'rgba(0,0,0,0.95)';
+        ctx.shadowBlur = 10;
+        ctx.fillText(d.n, x, isCard ? 31 : 39);
+        ctx.shadowBlur = 0;
+    }
+
+    const target = getQuestTargetPosition();
+    if (target && controls) {
+        const p = controls.getObject().position;
+        const dx = target.x - p.x;
+        const dz = target.z - p.z;
+        const bearing = Math.atan2(dx, -dz);
+        const diff = normalizeDiff(bearing);
+        if (Math.abs(diff) <= FOV_RAD * 0.5) {
+            const x = cx + diff * pixPerRad;
+            ctx.save();
+            ctx.translate(x, 56);
+            ctx.rotate(Math.PI * 0.25);
+            ctx.fillStyle = 'rgba(255,225,135,0.98)';
+            ctx.shadowColor = 'rgba(255,202,92,0.90)';
+            ctx.shadowBlur = 15;
+            ctx.fillRect(-5.5, -5.5, 11, 11);
+            ctx.restore();
         }
     }
 
-    // Edge vignette fade
-    const vigGrad = ctx.createLinearGradient(0,0,W,0);
-    vigGrad.addColorStop(0,   'rgba(0,0,0,0.72)');
-    vigGrad.addColorStop(0.14,'rgba(0,0,0,0)');
-    vigGrad.addColorStop(0.86,'rgba(0,0,0,0)');
-    vigGrad.addColorStop(1,   'rgba(0,0,0,0.72)');
-    ctx.fillStyle = vigGrad;
+    const edge = ctx.createLinearGradient(0, 0, W, 0);
+    edge.addColorStop(0, 'rgba(0,0,0,0.00)');
+    edge.addColorStop(0.12, 'rgba(0,0,0,0.18)');
+    edge.addColorStop(0.30, 'rgba(0,0,0,0.00)');
+    edge.addColorStop(0.70, 'rgba(0,0,0,0.00)');
+    edge.addColorStop(0.88, 'rgba(0,0,0,0.18)');
+    edge.addColorStop(1, 'rgba(0,0,0,0.00)');
+    ctx.fillStyle = edge;
     ctx.fillRect(0, 0, W, H);
 
-    // Center chevron notch (pointing down from top)
-    ctx.strokeStyle = '#c8a96e';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(242,229,188,0.94)';
+    ctx.lineWidth = 2.4;
     ctx.lineJoin = 'round';
     ctx.beginPath();
-    ctx.moveTo(cx-12, 3);
-    ctx.lineTo(cx,    18);
-    ctx.lineTo(cx+12, 3);
+    ctx.moveTo(cx - 17, 9);
+    ctx.lineTo(cx, 30);
+    ctx.lineTo(cx + 17, 9);
     ctx.stroke();
-    // Thin center guide line
-    ctx.strokeStyle = 'rgba(200,169,110,0.22)';
+    ctx.strokeStyle = 'rgba(242,229,188,0.22)';
     ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, 31);
+    ctx.lineTo(cx, 66);
+    ctx.stroke();
 }
 </script>
 </body>
