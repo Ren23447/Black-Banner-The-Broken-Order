@@ -241,6 +241,262 @@
             background: rgba(5,4,2,0.7); padding: 8px 20px; border: 1px solid rgba(200,169,110,0.3);
         }
         #notif.show { opacity: 1; }
+
+        /* ===== AAA HOME MENU UPGRADE ===== */
+        #home-screen {
+            background: radial-gradient(ellipse at 20% 45%, rgba(35,22,8,0.97) 0%, rgba(8,5,2,0.99) 55%, rgba(0,0,0,1) 100%) !important;
+            overflow: hidden;
+        }
+        #home-screen::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 50% 100%, rgba(200,120,30,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 15% 70%, rgba(200,169,110,0.03) 0%, transparent 35%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        #home-screen::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 35%;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            pointer-events: none;
+            z-index: 1;
+        }
+        #home-embers {
+            position: absolute; inset: 0;
+            overflow: hidden; pointer-events: none; z-index: 1;
+        }
+        .ember {
+            position: absolute; border-radius: 50%; pointer-events: none; opacity: 0;
+        }
+        @keyframes ember-rise {
+            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+            6% { opacity: 0.9; }
+            60% { opacity: 0.5; }
+            100% { transform: translateY(-105vh) translateX(var(--drift)) scale(0.2); opacity: 0; }
+        }
+        .home-crest {
+            position: absolute;
+            left: 6%; top: 50%; transform: translateY(-55%);
+            opacity: 0.025; pointer-events: none; z-index: 1;
+        }
+        .game-title {
+            font-size: 78px !important;
+            background: linear-gradient(180deg, #f4dfa0 0%, #c8a96e 30%, #9a7540 65%, #6a4820 100%) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+            filter: drop-shadow(0 2px 10px rgba(200,169,110,0.5)) drop-shadow(0 0 50px rgba(200,169,110,0.12));
+            letter-spacing: 10px !important;
+            text-shadow: none !important;
+            position: relative;
+        }
+        .game-title::after {
+            content: '';
+            position: absolute;
+            bottom: -6px; left: 0;
+            width: 140px; height: 1px;
+            background: linear-gradient(90deg, rgba(200,169,110,0.5), transparent);
+        }
+        .game-subtitle {
+            font-size: 13px !important;
+            color: #5a4830 !important;
+            letter-spacing: 14px !important;
+            margin-bottom: 55px !important;
+            font-style: normal !important;
+            margin-top: 10px;
+        }
+        .ornament {
+            color: #4a3820 !important;
+            letter-spacing: 10px !important;
+            font-size: 8px !important;
+            opacity: 0.4 !important;
+            margin-bottom: 12px !important;
+        }
+        .menu-btn {
+            background: transparent !important;
+            border: none !important;
+            color: #6a5a40 !important;
+            padding: 11px 0 11px 28px !important;
+            font-size: 19px !important;
+            letter-spacing: 5px !important;
+            transition: all 0.4s ease !important;
+            width: 340px !important;
+            position: relative;
+            margin: 1px 0 !important;
+        }
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 2px;
+            background: rgba(200,169,110,0.1);
+            transition: all 0.4s ease;
+        }
+        .menu-btn::after {
+            content: '◆';
+            position: absolute;
+            left: 10px; top: 50%;
+            transform: translateY(-50%) scale(0);
+            font-size: 5px; color: #c8a96e;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+        .menu-btn:hover {
+            color: #e8d0a0 !important;
+            transform: translateX(14px) !important;
+            text-shadow: 0 0 25px rgba(200,169,110,0.35) !important;
+            padding-left: 32px !important;
+            border-left: none !important;
+        }
+        .menu-btn:hover::before {
+            width: 3px;
+            background: #c8a96e;
+            box-shadow: 0 0 14px rgba(200,169,110,0.5), 0 0 30px rgba(200,169,110,0.15);
+        }
+        .menu-btn:hover::after {
+            transform: translateY(-50%) scale(1);
+            opacity: 1;
+        }
+        .keybinds-panel {
+            background: rgba(6,5,3,0.88) !important;
+            border: 1px solid rgba(200,169,110,0.1) !important;
+            box-shadow: 0 0 80px rgba(0,0,0,0.95), inset 0 1px 0 rgba(200,169,110,0.06) !important;
+            backdrop-filter: blur(10px);
+        }
+        #home-version {
+            position: absolute;
+            bottom: 28px; left: 10%;
+            color: rgba(200,169,110,0.12);
+            font-size: 9px; letter-spacing: 5px;
+            text-transform: uppercase; z-index: 2;
+        }
+        #home-press-start {
+            position: absolute;
+            bottom: 55px; left: 10%;
+            color: rgba(200,169,110,0.25);
+            font-size: 10px; letter-spacing: 6px;
+            text-transform: uppercase; z-index: 2;
+            animation: pulse 2.5s ease-in-out infinite;
+        }
+        @keyframes home-fade-in {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #home-screen .game-title { animation: home-fade-in 1.2s ease-out 0.2s both; }
+        #home-screen .game-subtitle { animation: home-fade-in 1.2s ease-out 0.5s both; }
+        #home-screen .menu-btn:nth-child(1) { animation: home-fade-in 0.8s ease-out 0.8s both; }
+        #home-screen .menu-btn:nth-child(2) { animation: home-fade-in 0.8s ease-out 1.0s both; }
+        #home-screen .menu-btn:nth-child(3) { animation: home-fade-in 0.8s ease-out 1.2s both; }
+
+        /* ===== DARK SOULS HUD ===== */
+        #hud {
+            position: absolute !important;
+            bottom: 28px !important; left: 28px !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            width: 240px !important;
+        }
+        .hud-label {
+            font-size: 0px !important;
+            height: 0 !important; margin: 0 !important; padding: 0 !important;
+            overflow: hidden;
+        }
+        .hud-track {
+            width: 100% !important; height: 12px !important;
+            background: rgba(15,6,6,0.88) !important;
+            border: 1px solid rgba(60,45,30,0.5) !important;
+            clip-path: none !important;
+            border-radius: 0 !important;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.9), 0 1px 0 rgba(200,169,110,0.06);
+        }
+        .hud-track::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 35%, rgba(0,0,0,0.25) 100%);
+            z-index: 2; pointer-events: none;
+        }
+        #health-fill {
+            background: linear-gradient(180deg, #c42020 0%, #8a1212 45%, #5a0808 100%) !important;
+            box-shadow: 0 0 8px rgba(180,25,25,0.35), inset 0 1px 0 rgba(255,90,90,0.2) !important;
+        }
+        #stamina-fill {
+            background: linear-gradient(180deg, #3a9020 0%, #286a12 45%, #184808 100%) !important;
+            box-shadow: 0 0 6px rgba(50,130,25,0.3), inset 0 1px 0 rgba(90,200,70,0.12) !important;
+        }
+        #hud-frame {
+            position: absolute;
+            bottom: 20px; left: 20px;
+            width: 256px; padding: 6px 8px;
+            border: 1px solid rgba(60,45,30,0.3);
+            background: rgba(5,3,2,0.5);
+            pointer-events: none; z-index: 9;
+            display: none;
+        }
+
+        /* ===== QUICK MENU (D-PAD CROSS) ===== */
+        #quick-menu {
+            position: absolute;
+            bottom: 26px; left: 290px;
+            width: 110px; height: 110px;
+            display: none;
+            pointer-events: none; z-index: 15;
+        }
+        .qm-slot {
+            position: absolute;
+            width: 34px; height: 34px;
+            background: rgba(8,6,4,0.6);
+            border: 1px solid rgba(200,169,110,0.18);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            color: rgba(200,169,110,0.45);
+            transition: all 0.2s;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .qm-slot:hover {
+            background: rgba(200,169,110,0.1);
+            border-color: rgba(200,169,110,0.45);
+        }
+        .qm-slot.qm-active {
+            border-color: rgba(200,169,110,0.5);
+            background: rgba(200,169,110,0.08);
+            box-shadow: 0 0 10px rgba(200,169,110,0.1);
+        }
+        .qm-up { left: 50%; top: 0; transform: translateX(-50%); }
+        .qm-down { left: 50%; bottom: 0; transform: translateX(-50%); }
+        .qm-left { left: 0; top: 50%; transform: translateY(-50%); }
+        .qm-right { right: 0; top: 50%; transform: translateY(-50%); }
+        .qm-center {
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px; height: 10px;
+            border: 1px solid rgba(200,169,110,0.1);
+            pointer-events: none;
+        }
+        .qm-slot-icon { font-size: 15px; line-height: 1; }
+        .qm-key-hint {
+            position: absolute;
+            font-size: 7px;
+            color: rgba(200,169,110,0.2);
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+        .qm-up .qm-key-hint { top: -12px; left: 50%; transform: translateX(-50%); }
+        .qm-down .qm-key-hint { bottom: -12px; left: 50%; transform: translateX(-50%); }
+        .qm-left .qm-key-hint { left: -4px; bottom: -12px; }
+        .qm-right .qm-key-hint { right: -4px; bottom: -12px; }
+
+        /* ===== COMPASS AAA TRANSPARENCY ===== */
+        #compass-canvas {
+            opacity: 0.4 !important;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
     </style>
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script type="importmap">
@@ -275,6 +531,22 @@
     <canvas id="compass-canvas" width="640" height="80"
         style="position:absolute;top:14px;left:50%;transform:translateX(-50%);width:320px;height:40px;
                pointer-events:none;z-index:15;display:none;border-radius:1px;"></canvas>
+    <!-- Quick Menu (D-Pad Cross) -->
+    <div id="quick-menu">
+        <div class="qm-slot qm-up" data-slot="0" title="Up slot">
+            <span class="qm-key-hint">1</span>
+        </div>
+        <div class="qm-slot qm-left" data-slot="1" title="Left slot">
+            <span class="qm-key-hint">3</span>
+        </div>
+        <div class="qm-center"></div>
+        <div class="qm-slot qm-right" data-slot="2" title="Right slot">
+            <span class="qm-key-hint">4</span>
+        </div>
+        <div class="qm-slot qm-down" data-slot="3" title="Down slot">
+            <span class="qm-key-hint">2</span>
+        </div>
+    </div>
 </div>
 
 <!-- Inventory Overlay -->
@@ -302,8 +574,16 @@
 
 <!-- Home -->
 <div id="home-screen" class="screen hidden" style="align-items:flex-start; padding-left:10%;">
+    <div id="home-embers"></div>
+    <svg class="home-crest" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 2 L98 22 L98 65 Q98 100 50 118 Q2 100 2 65 L2 22 Z" fill="none" stroke="#c8a96e" stroke-width="2"/>
+        <path d="M50 14 L85 30 L85 62 Q85 88 50 104 Q15 88 15 62 L15 30 Z" fill="none" stroke="#c8a96e" stroke-width="1"/>
+        <line x1="50" y1="26" x2="50" y2="96" stroke="#c8a96e" stroke-width="0.8"/>
+        <line x1="22" y1="55" x2="78" y2="55" stroke="#c8a96e" stroke-width="0.8"/>
+        <path d="M50 35 L65 55 L50 75 L35 55 Z" fill="none" stroke="#c8a96e" stroke-width="0.6"/>
+    </svg>
     <div style="z-index:2;">
-        <div class="ornament">&#9670; &#9670; &#9670;</div>
+        <div class="ornament">&#9670; &nbsp; &#9670; &nbsp; &#9670;</div>
         <div class="game-title">Blackbanner</div>
         <div class="game-subtitle">The Broken Order</div>
         <div style="display:flex; flex-direction:column; align-items:flex-start; margin-top:10px;">
@@ -323,6 +603,7 @@
         <div class="kb-row"><span class="kb-key">F</span><span class="kb-desc">Interact</span></div>
         <div class="kb-row"><span class="kb-key">Esc</span><span class="kb-desc">Pause</span></div>
     </div>
+    <div id="home-version">Ver 0.1.0 &mdash; Early Access</div>
 </div>
 
 <!-- Controls -->
@@ -589,6 +870,8 @@ function init() {
     setupInputListeners();
     setupGamepadListeners();
     initParticles();
+    initHomeEmbers();
+    initQuickMenu();
 }
 
 function initParticles() {
@@ -924,14 +1207,31 @@ function renderInventoryGrid() {
                 if (item.type === 'consumable') {
                     useBtn = `<button class="inv-use-btn" id="inv-use-btn">&#9670; Consume</button>`;
                 }
+                let qAssign = '';
+                if (item.type === 'consumable') {
+                    qAssign = `<div style="margin-top:8px;display:flex;gap:4px;">
+                        <button class="inv-use-btn qm-assign-btn" data-qslot="0" style="padding:3px 10px;font-size:10px;">Q1 &#9650;</button>
+                        <button class="inv-use-btn qm-assign-btn" data-qslot="3" style="padding:3px 10px;font-size:10px;">Q2 &#9660;</button>
+                        <button class="inv-use-btn qm-assign-btn" data-qslot="1" style="padding:3px 10px;font-size:10px;">Q3 &#9664;</button>
+                        <button class="inv-use-btn qm-assign-btn" data-qslot="2" style="padding:3px 10px;font-size:10px;">Q4 &#9654;</button>
+                    </div>`;
+                }
                 detail.innerHTML = `
                     <div class="inv-detail-name">${item.icon || ''} ${item.name}</div>
                     <div class="inv-detail-desc">${item.desc || ''}</div>
                     ${useBtn}
+                    ${qAssign}
                 `;
                 if (item.type === 'consumable') {
                     document.getElementById('inv-use-btn').addEventListener('click', () => {
                         useInventoryItem(selectedSlot);
+                    });
+                    document.querySelectorAll('.qm-assign-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const qIdx = parseInt(btn.dataset.qslot);
+                            assignToQuickSlot(qIdx, item);
+                            showNotif('Assigned to Quick Slot');
+                        });
                     });
                 }
             } else {
@@ -998,6 +1298,8 @@ function setupMenuButtons() {
         gameState = 'HOME';
         document.getElementById('pause-screen').classList.add('hidden');
         document.getElementById('home-screen').classList.remove('hidden');
+        document.getElementById('quick-menu').style.display = 'none';
+        document.getElementById('hud').style.display = 'none';
         velocity.set(0,0,0);
     });
 
@@ -1015,6 +1317,7 @@ function setupMenuButtons() {
         document.getElementById('hud').style.display = 'flex';
         document.getElementById('view-indicator').style.display = viewMode === 'third' ? 'block' : 'none';
         document.getElementById('compass-canvas').style.display = 'block';
+        document.getElementById('quick-menu').style.display = 'block';
         if (window._ambientAudio && window._ambientAudio.paused) {
             window._ambientAudio.volume = masterVolume * ambientVolume * 0.35;
             window._ambientAudio.play().catch(() => {});
@@ -1022,12 +1325,12 @@ function setupMenuButtons() {
     });
 
     controls.addEventListener('unlock', () => {
-        // If inventory is opening, don't show pause screen
         if (inventoryOpen) return;
         if (gameState === 'PLAYING') {
             gameState = 'PAUSED';
             document.getElementById('crosshair').style.display = 'none';
             document.getElementById('view-indicator').style.display = 'none';
+            document.getElementById('quick-menu').style.display = 'none';
             document.getElementById('pause-screen').classList.remove('hidden');
             if (window._ambientAudio) window._ambientAudio.pause();
         }
@@ -1070,6 +1373,10 @@ function setupInputListeners() {
 
         if (gameState !== 'PLAYING') return;
         if (e.code === 'KeyF') tryInteract();
+        if (e.code === 'Digit1') useQuickSlot(0);
+        if (e.code === 'Digit2') useQuickSlot(1);
+        if (e.code === 'Digit3') useQuickSlot(2);
+        if (e.code === 'Digit4') useQuickSlot(3);
     });
     document.addEventListener('keyup', e => {
         if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
@@ -1203,6 +1510,7 @@ function killPlayer() {
     document.getElementById('crosshair').style.display = 'none';
     document.getElementById('hud').style.display = 'none';
     document.getElementById('view-indicator').style.display = 'none';
+    document.getElementById('quick-menu').style.display = 'none';
 }
 
 function respawn() {
@@ -1429,6 +1737,84 @@ function updateParticles(dt) {
     geo.attributes.color.needsUpdate    = true;
 }
 
+// ——— Home Screen Embers ———
+function initHomeEmbers() {
+    const container = document.getElementById('home-embers');
+    if (!container) return;
+    const EMBER_COUNT = 35;
+    for (let i = 0; i < EMBER_COUNT; i++) {
+        const ember = document.createElement('div');
+        ember.className = 'ember';
+        const size = 1.5 + Math.random() * 3;
+        const startX = Math.random() * 100;
+        const drift = (Math.random() - 0.5) * 80;
+        const duration = 6 + Math.random() * 10;
+        const delay = Math.random() * duration;
+        const hue = 20 + Math.random() * 25;
+        const lightness = 45 + Math.random() * 20;
+        ember.style.cssText = `
+            width: ${size}px; height: ${size}px;
+            left: ${startX}%; bottom: -10px;
+            background: radial-gradient(circle, hsla(${hue},90%,${lightness}%,0.9), transparent);
+            box-shadow: 0 0 ${size*2}px hsla(${hue},80%,${lightness}%,0.4);
+            --drift: ${drift}px;
+            animation: ember-rise ${duration}s linear ${delay}s infinite;
+        `;
+        container.appendChild(ember);
+    }
+}
+
+// ——— Quick Menu (D-Pad) ———
+let quickSlots = [null, null, null, null];
+
+function initQuickMenu() {
+    const slots = document.querySelectorAll('.qm-slot');
+    slots.forEach(slot => {
+        slot.addEventListener('click', () => {
+            const idx = parseInt(slot.dataset.slot);
+            useQuickSlot(idx);
+        });
+    });
+}
+
+function assignToQuickSlot(slotIdx, item) {
+    if (slotIdx < 0 || slotIdx > 3) return;
+    quickSlots[slotIdx] = item;
+    renderQuickMenu();
+}
+
+function useQuickSlot(idx) {
+    const item = quickSlots[idx];
+    if (!item || !item.use) return;
+    item.use();
+    const invIdx = inventoryItems.indexOf(item);
+    if (invIdx !== -1) {
+        inventoryItems[invIdx] = null;
+        renderInventoryGrid();
+    }
+    quickSlots[idx] = null;
+    renderQuickMenu();
+}
+
+function renderQuickMenu() {
+    const slots = document.querySelectorAll('.qm-slot');
+    slots.forEach(slot => {
+        const idx = parseInt(slot.dataset.slot);
+        const item = quickSlots[idx];
+        const existingIcon = slot.querySelector('.qm-slot-icon');
+        if (existingIcon) existingIcon.remove();
+        if (item) {
+            slot.classList.add('qm-active');
+            const icon = document.createElement('span');
+            icon.className = 'qm-slot-icon';
+            icon.textContent = item.icon || '?';
+            slot.insertBefore(icon, slot.firstChild);
+        } else {
+            slot.classList.remove('qm-active');
+        }
+    });
+}
+
 // ——— Compass HUD (Borderlands-style scrolling bar) ———
 function updateCompass() {
     const canvas = document.getElementById('compass-canvas');
@@ -1438,13 +1824,11 @@ function updateCompass() {
 
     ctx.clearRect(0, 0, W, H);
 
-    // Background
-    ctx.fillStyle = 'rgba(3,2,1,0.80)';
+    ctx.fillStyle = 'rgba(3,2,1,0.25)';
     ctx.fillRect(0, 0, W, H);
 
-    // Border
-    ctx.strokeStyle = 'rgba(200,169,110,0.55)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(200,169,110,0.15)';
+    ctx.lineWidth = 1;
     ctx.strokeRect(1, 1, W-2, H-2);
 
     // Get camera yaw
