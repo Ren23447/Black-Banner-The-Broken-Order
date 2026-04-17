@@ -21,8 +21,84 @@ body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui
 .hbtn:hover { background:var(--accent); color:#000; }
 .hbtn.danger:hover { background:var(--red); color:#fff; }
 #anim-name { background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:5px 9px; border-radius:4px; font-size:12px; width:130px; }
+#skel-scale-wrap { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text2); white-space:nowrap; }
+#skel-scale-wrap label { color:var(--text2); }
+#skel-scale-slider { width:90px; height:4px; accent-color:var(--accent); cursor:pointer; }
+#skel-scale-val { font-size:11px; color:var(--text); font-variant-numeric:tabular-nums; min-width:30px; }
 #load-status { color:var(--text2); font-size:11px; margin-left:auto; white-space:nowrap; }
 input[type=file] { display:none; }
+
+/* IMPORT DROPDOWN */
+.import-wrap { position:relative; display:inline-flex; }
+.import-wrap .hbtn.split-main { border-right:none; border-radius:4px 0 0 4px; }
+.import-wrap .split-arrow { background:var(--panel2); border:1px solid var(--border); border-left:1px solid #3a3d4a; color:var(--text); padding:5px 7px; border-radius:0 4px 4px 0; cursor:pointer; font-size:10px; transition:background .15s; display:flex; align-items:center; }
+.import-wrap .split-arrow:hover { background:var(--accent); color:#000; }
+.import-menu { display:none; position:absolute; top:calc(100% + 4px); left:0; min-width:190px; background:var(--panel2); border:1px solid var(--border); border-radius:5px; z-index:200; box-shadow:0 8px 24px #000a; overflow:hidden; }
+.import-menu.open { display:block; }
+.import-menu .mi { padding:9px 13px; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:8px; transition:background .12s; border-bottom:1px solid var(--border); }
+.import-menu .mi:last-child { border-bottom:none; }
+.import-menu .mi:hover { background:#c8a04422; color:var(--accent); }
+.import-menu .mi .mi-icon { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
+.import-menu .mi .mi-label { flex:1; }
+.import-menu .mi .mi-sub { font-size:10px; color:var(--text2); display:block; }
+
+/* FBX PROGRESS OVERLAY */
+#fbx-overlay { display:none; position:fixed; inset:0; background:#000b; z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+#fbx-overlay.show { display:flex; }
+#fbx-overlay .fbx-box { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:28px 36px; text-align:center; min-width:320px; }
+#fbx-overlay .fbx-box h2 { color:var(--accent); font-size:14px; margin-bottom:10px; }
+#fbx-overlay .fbx-bar-wrap { background:var(--panel2); border-radius:4px; height:8px; margin-top:12px; overflow:hidden; }
+#fbx-overlay .fbx-bar { background:var(--accent); height:100%; width:0%; transition:width .2s; border-radius:4px; }
+#fbx-overlay .fbx-msg { color:var(--text2); font-size:11px; margin-top:8px; }
+
+/* FBX BONE MAP MODAL */
+#bonemap-modal { display:none; position:fixed; inset:0; background:#000b; z-index:9998; align-items:flex-start; justify-content:center; padding-top:40px; }
+#bonemap-modal.show { display:flex; }
+#bonemap-box { background:var(--panel); border:1px solid var(--border); border-radius:8px; width:580px; max-height:82vh; display:flex; flex-direction:column; }
+#bonemap-box h2 { color:var(--accent); font-size:13px; font-weight:700; padding:14px 16px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
+#bonemap-box .bm-hint { font-size:11px; color:var(--text2); padding:8px 16px; border-bottom:1px solid var(--border); flex-shrink:0; line-height:1.5; }
+
+/* Match stats bar */
+#bm-stats { padding:7px 16px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; gap:10px; font-size:11px; }
+#bm-stats .bm-stat-count { font-weight:700; }
+#bm-stats .bm-stat-count.all-good { color:#22c55e; }
+#bm-stats .bm-stat-count.partial { color:var(--accent); }
+#bm-stats .bm-stat-count.bad { color:#ef4444; }
+.bm-pips { display:flex; gap:2px; flex-wrap:wrap; flex:1; }
+.bm-pip { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+.bm-pip.matched { background:#22c55e88; }
+.bm-pip.unmatched { background:#ef444488; }
+
+#bonemap-body { flex:1; overflow-y:auto; padding:10px 16px; display:flex; flex-direction:column; gap:4px; }
+#bonemap-body::-webkit-scrollbar { width:4px; }
+#bonemap-body::-webkit-scrollbar-thumb { background:var(--border); }
+.bm-row { display:flex; align-items:center; gap:8px; font-size:11px; padding:3px 6px; border-radius:4px; border:1px solid transparent; transition:background .1s,border-color .1s; }
+.bm-row.matched { background:#22c55e0d; border-color:#22c55e22; }
+.bm-row.unmatched { background:#ef44440d; border-color:#ef444422; }
+.bm-row .bm-fbx { min-width:175px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
+.bm-row.matched .bm-fbx { color:#22c55e; }
+.bm-row.unmatched .bm-fbx { color:#ef4444; }
+.bm-row .bm-badge { font-size:9px; font-weight:700; letter-spacing:.06em; padding:1px 5px; border-radius:3px; flex-shrink:0; white-space:nowrap; }
+.bm-row.matched .bm-badge { background:#22c55e22; color:#22c55e; }
+.bm-row.unmatched .bm-badge { background:#ef444422; color:#ef4444; }
+.bm-row select { flex:1; background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:11px; }
+.bm-row select option { background:var(--panel2); }
+
+/* Footer with scale slider */
+#bonemap-footer { padding:10px 16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
+#bm-scale-row { display:flex; align-items:center; gap:8px; font-size:11px; }
+#bm-scale-row label { color:var(--text2); white-space:nowrap; }
+#bm-scale-slider { flex:1; height:4px; accent-color:var(--accent); }
+#bm-scale-num { width:72px; background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:11px; text-align:right; }
+#bm-scale-hint { color:var(--text2); font-size:10px; white-space:nowrap; }
+#bm-footer-btns { display:flex; gap:8px; justify-content:flex-end; }
+#bonemap-footer button { padding:6px 16px; border-radius:4px; cursor:pointer; font-size:12px; border:1px solid var(--border); }
+#bm-cancel { background:var(--panel2); color:var(--text); }
+#bm-cancel:hover { background:#333; }
+#bm-apply { background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+#bm-apply:hover { background:#e0b45a; }
+#bm-auto { background:var(--panel2); color:var(--text); }
+#bm-auto:hover { background:#333; }
 
 /* MAIN */
 #main { display:flex; flex:1; overflow:hidden; }
@@ -91,15 +167,79 @@ input[type=file] { display:none; }
 </head>
 <body>
 
+<!-- FBX PROGRESS OVERLAY -->
+<div id="fbx-overlay">
+  <div class="fbx-box">
+    <h2>Loading FBX Animation</h2>
+    <div id="fbx-status-msg">Parsing file…</div>
+    <div class="fbx-bar-wrap"><div class="fbx-bar" id="fbx-bar"></div></div>
+    <div class="fbx-msg" id="fbx-sub-msg">Please wait</div>
+  </div>
+</div>
+
+<!-- BONE MAP MODAL -->
+<div id="bonemap-modal">
+  <div id="bonemap-box">
+    <h2>Map FBX Bones → Knight Bones</h2>
+    <div class="bm-hint">Bones are auto-mapped on load using the Mixamo preset library. Green rows are matched, red rows need manual attention. Adjust the Position Scale if the animation looks too large or too small.</div>
+    <div id="bm-stats">
+      <span class="bm-stat-count" id="bm-stat-count">— / —</span>
+      <span style="color:var(--text2)">bones matched</span>
+      <div class="bm-pips" id="bm-pips"></div>
+    </div>
+    <div id="bonemap-body"></div>
+    <div id="bonemap-footer">
+      <div id="bm-scale-row">
+        <label for="bm-scale-slider">Position Scale</label>
+        <input type="range" id="bm-scale-slider" min="-4" max="0" step="0.01" value="-2">
+        <input type="number" id="bm-scale-num" min="0.0001" max="1" step="0.0001" value="0.01">
+        <span id="bm-scale-hint">÷100 (cm→m)</span>
+      </div>
+      <div id="bm-footer-btns">
+        <button id="bm-cancel">Cancel</button>
+        <button id="bm-auto">Re-run Auto-Map</button>
+        <button id="bm-apply">Apply &amp; Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="header">
   <h1>Blackbanner <span>/ Animator</span></h1>
   <input type="text" id="anim-name" placeholder="Anim name…" value="Idle">
+
   <button class="hbtn" onclick="document.getElementById('mdl-in').click()">Load Model</button>
   <input type="file" id="mdl-in" accept=".glb,.gltf">
-  <button class="hbtn" onclick="document.getElementById('anim-in').click()">Import Anim</button>
+
+  <!-- IMPORT ANIM DROPDOWN -->
+  <div class="import-wrap" id="import-wrap">
+    <button class="hbtn split-main" onclick="triggerImportJS()">Import Anim</button>
+    <button class="split-arrow" onclick="toggleImportMenu(event)" title="More import options">&#9660;</button>
+    <div class="import-menu" id="import-menu">
+      <div class="mi" onclick="triggerImportJS(); closeImportMenu()">
+        <span class="mi-icon">📄</span>
+        <span class="mi-label">Import JS Animation<span class="mi-sub">Standard .js export format</span></span>
+      </div>
+      <div class="mi" onclick="triggerImportFBX(); closeImportMenu()">
+        <span class="mi-icon">🎭</span>
+        <span class="mi-label">Import FBX (Mixamo)<span class="mi-sub">Retarget Mixamo .fbx onto skeleton</span></span>
+      </div>
+    </div>
+  </div>
   <input type="file" id="anim-in" accept=".js">
+  <input type="file" id="fbx-in" accept=".fbx">
+
   <button class="hbtn" onclick="exportAnim()">Export JS</button>
   <button class="hbtn danger" onclick="clearKF()">Clear All</button>
+
+  <div id="skel-scale-wrap" title="Rescale FBX animation motion. Affects only bone displacement — never the model geometry. Drag, then click Bake to make it permanent.">
+    <label for="skel-scale-slider">Anim Scale</label>
+    <input type="range" id="skel-scale-slider" min="0.01" max="4" step="0.01" value="1">
+    <span id="skel-scale-val">1.00×</span>
+    <button class="hbtn" id="skel-scale-bake" style="padding:3px 8px;font-size:10px;" title="Permanently bake current scale into keyframe data, then reset slider to 1×">Bake</button>
+    <button class="hbtn" id="skel-scale-reset" style="padding:3px 7px;font-size:10px;" title="Reset to 1×">↺</button>
+  </div>
+
   <span id="load-status">Initialising…</span>
 </div>
 
@@ -108,7 +248,6 @@ input[type=file] { display:none; }
     <canvas id="cv"></canvas>
     <div id="bone-tip"></div>
 
-    <!-- VIEWPORT TOOLBAR -->
     <div id="vp-toolbar">
       <button class="vtb active" id="btn-translate" title="Translate (G)" onclick="setMode('translate')">↔</button>
       <button class="vtb" id="btn-rotate" title="Rotate (R)" onclick="setMode('rotate')">↻</button>
@@ -144,10 +283,14 @@ input[type=file] { display:none; }
   <div id="tl-cv-wrap"><canvas id="tl-cv"></canvas></div>
 </div>
 
+<!-- Three.js core + loaders -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/controls/TransformControls.js"></script>
+<!-- FBXLoader for Mixamo imports -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/libs/fflate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/loaders/FBXLoader.js"></script>
 
 <script>
 'use strict';
@@ -160,17 +303,42 @@ function boneColor(i){ return PALETTE[i%PALETTE.length]; }
 // ── GLOBALS ────────────────────────────────────────────────────────────
 var renderer, scene, camera, orbitControls, transformControls;
 var model=null, bones=[], boneHelpers=[], boneColors=[], helperGroup=null;
+var boneRestPose={}; // snapshot of each bone's initial local pos+rot, captured on model load
+var skelAnimScale=1.0; // multiplier applied to bone position DISPLACEMENTS during playback (never scales model.scale)
 var selIdx=-1, tcMode='translate', tcSpace='local';
 var keyframes=[];
 var curFrame=0, fps=24, duration=3, totalFrames=72;
 var playing=false;
-// Time-based smooth playback (float frames, driven by rAF clock)
 var playStartTime=0, playStartFrame=0, playFloatF=0;
 var tlCanvas, tlCtx, tlDragging=false;
 var zoomVel=0;
 var ZOOM_DECAY=0.82, ZOOM_STRENGTH=0.0015, ZOOM_MIN=0.15, ZOOM_MAX=150;
 var raycaster=new THREE.Raycaster(), mousePick=new THREE.Vector2();
-var modelScale=1; // used to set sensible slider ranges
+var modelScale=1;
+
+// FBX state
+var fbxClipData=null;   // parsed FBX AnimationClip from Three.js
+var fbxBoneNames=[];    // bone names found in the FBX clip tracks
+
+// ── IMPORT MENU ───────────────────────────────────────────────────────
+function toggleImportMenu(e){
+  e.stopPropagation();
+  document.getElementById('import-menu').classList.toggle('open');
+}
+function closeImportMenu(){
+  document.getElementById('import-menu').classList.remove('open');
+}
+document.addEventListener('click',function(e){
+  var wrap=document.getElementById('import-wrap');
+  if(!wrap.contains(e.target)) closeImportMenu();
+});
+
+function triggerImportJS(){
+  document.getElementById('anim-in').click();
+}
+function triggerImportFBX(){
+  document.getElementById('fbx-in').click();
+}
 
 // ── UNDO / REDO ────────────────────────────────────────────────────────
 var undoStack=[], redoStack=[], MAX_HIST=60;
@@ -183,13 +351,11 @@ function snapshotPose(){
   });
   return snap;
 }
-
 function pushHistory(snap){
   undoStack.push(snap||snapshotPose());
   if(undoStack.length>MAX_HIST) undoStack.shift();
   redoStack=[];
 }
-
 function restorePose(snap){
   bones.forEach(function(b){
     var d=snap[b.name]; if(!d) return;
@@ -198,13 +364,11 @@ function restorePose(snap){
   });
   renderXForm();
 }
-
 function undo(){
   if(!undoStack.length) return;
   redoStack.push(snapshotPose());
   restorePose(undoStack.pop());
 }
-
 function redo(){
   if(!redoStack.length) return;
   undoStack.push(snapshotPose());
@@ -231,14 +395,12 @@ function setMode(m){
   document.getElementById('btn-rotate').classList.toggle('active',m==='rotate');
   updateModeLabel();
 }
-
 function toggleSpace(){
   tcSpace=(tcSpace==='local')?'world':'local';
   if(transformControls) transformControls.setSpace(tcSpace);
   document.getElementById('btn-local').textContent=tcSpace==='local'?'L':'W';
   updateModeLabel();
 }
-
 function updateModeLabel(){
   document.getElementById('mode-label').textContent=
     (tcMode==='translate'?'Translate':'Rotate')+' · '+(tcSpace==='local'?'Local':'World')+' — G=Move R=Rotate';
@@ -249,27 +411,21 @@ function initThree(){
   var vp=document.getElementById('vp');
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0x07080d);
-
   camera=new THREE.PerspectiveCamera(45,vp.clientWidth/vp.clientHeight,0.01,1000);
   camera.position.set(0,1.5,5);
-
   var cv=document.getElementById('cv');
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
-  // Lights
   scene.add(new THREE.AmbientLight(0xfff0d0,0.75));
   var sun=new THREE.DirectionalLight(0xffe8c0,1.8);
   sun.position.set(5,10,7); sun.castShadow=true; scene.add(sun);
   var fill=new THREE.DirectionalLight(0xb0c0ff,0.4);
   fill.position.set(-6,3,-4); scene.add(fill);
-
-  // Grid
   scene.add(new THREE.GridHelper(80,80,0x252830,0x1a1c24));
 
-  // Orbit controls
   orbitControls=new THREE.OrbitControls(camera,renderer.domElement);
   orbitControls.target.set(0,1,0);
   orbitControls.enableDamping=true;
@@ -280,28 +436,22 @@ function initThree(){
   orbitControls.screenSpacePanning=true;
   orbitControls.mouseButtons={LEFT:THREE.MOUSE.ROTATE,MIDDLE:THREE.MOUSE.PAN,RIGHT:THREE.MOUSE.PAN};
 
-  // TransformControls – the 3D gizmo with colored X/Y/Z arrows
   transformControls=new THREE.TransformControls(camera,renderer.domElement);
   transformControls.setMode(tcMode);
   transformControls.setSpace(tcSpace);
   transformControls.setSize(0.9);
   scene.add(transformControls);
 
-  // While dragging gizmo, disable orbit so they don't fight
   var dragSnap=null;
   transformControls.addEventListener('mouseDown',function(){
-    dragSnap=snapshotPose();
-    orbitControls.enabled=false;
+    dragSnap=snapshotPose(); orbitControls.enabled=false;
   });
   transformControls.addEventListener('mouseUp',function(){
     if(dragSnap){ undoStack.push(dragSnap); if(undoStack.length>MAX_HIST) undoStack.shift(); redoStack=[]; dragSnap=null; }
     orbitControls.enabled=true;
   });
-  transformControls.addEventListener('change',function(){
-    renderXForm(); // keep side panel in sync
-  });
+  transformControls.addEventListener('change',function(){ renderXForm(); });
 
-  // Smooth zoom
   cv.addEventListener('wheel',function(e){
     e.preventDefault();
     var dy=e.deltaY;
@@ -325,12 +475,10 @@ function sizeRenderer(){
   drawTL();
 }
 
-var lastTLFrame=-1; // for throttled TL redraws during play
+var lastTLFrame=-1;
 
 function mainLoop(){
   requestAnimationFrame(mainLoop);
-
-  // Smooth zoom
   if(Math.abs(zoomVel)>0.000008){
     var off=new THREE.Vector3().subVectors(camera.position,orbitControls.target);
     var dist=off.length();
@@ -340,22 +488,14 @@ function mainLoop(){
     zoomVel*=ZOOM_DECAY;
   } else { zoomVel=0; }
 
-  // ── TIME-BASED SMOOTH PLAYBACK ───────────────────────────────────────
-  // Driven here at 60fps with a FLOAT frame value so every render call
-  // gets a precise sub-frame position – this is what makes interpolation smooth.
   if(playing){
-    var elapsed=(performance.now()-playStartTime)/1000; // seconds since play pressed
+    var elapsed=(performance.now()-playStartTime)/1000;
     playFloatF=((playStartFrame + elapsed*fps) % totalFrames + totalFrames) % totalFrames;
     var iFrame=Math.floor(playFloatF);
-
-    // Apply pose at float frame (catmull+slerp gives in-between values at 60fps)
     applyAtFrame(playFloatF);
-
-    // Update integer display and TL (throttled – only when integer frame changes)
     if(iFrame!==lastTLFrame){
       curFrame=iFrame;
-      document.getElementById('fr-disp').textContent=
-        'Frame '+iFrame+' / '+(iFrame/Math.max(fps,1)).toFixed(2)+'s';
+      document.getElementById('fr-disp').textContent='Frame '+iFrame+' / '+(iFrame/Math.max(fps,1)).toFixed(2)+'s';
       drawTL();
       lastTLFrame=iFrame;
     }
@@ -392,12 +532,10 @@ function onLoaded(gltf){
   model=gltf.scene;
   scene.add(model);
   model.traverse(function(o){ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });
-
   var box=new THREE.Box3().setFromObject(model);
   var size=box.getSize(new THREE.Vector3());
   model.position.y-=box.min.y;
   modelScale=Math.max(size.x,size.y,size.z);
-
   var box2=new THREE.Box3().setFromObject(model);
   var c=box2.getCenter(new THREE.Vector3());
   var halfFov=THREE.MathUtils.degToRad(camera.fov/2);
@@ -405,15 +543,21 @@ function onLoaded(gltf){
   camera.position.set(c.x,c.y*0.75,c.z+dist);
   orbitControls.target.set(c.x,c.y*0.5,c.z);
   orbitControls.update();
-
   bones=[];
   model.traverse(function(o){
     if(o.isSkinnedMesh&&o.skeleton)
       o.skeleton.bones.forEach(function(b){ if(bones.indexOf(b)<0) bones.push(b); });
   });
   if(!bones.length) model.traverse(function(o){ if(o.isBone) bones.push(o); });
-
   boneColors=bones.map(function(_,i){ return boneColor(i); });
+  // Snapshot T-pose so Clear All can restore it
+  boneRestPose={};
+  bones.forEach(function(b){
+    boneRestPose[b.name]={
+      pos:[b.position.x,b.position.y,b.position.z],
+      rot:[b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w]
+    };
+  });
   buildHelpers();
   renderBoneList();
   undoStack=[]; redoStack=[];
@@ -428,7 +572,7 @@ function unloadModel(){
   renderBoneList(); renderXForm();
 }
 
-// ── BONE HELPERS (clickable dots) ─────────────────────────────────────
+// ── BONE HELPERS ──────────────────────────────────────────────────────
 function buildHelpers(){
   if(helperGroup) scene.remove(helperGroup);
   helperGroup=new THREE.Group();
@@ -461,7 +605,6 @@ var cvEl=document.getElementById('cv');
 var tipEl=document.getElementById('bone-tip');
 
 cvEl.addEventListener('click',function(e){
-  // Don't interfere with TransformControls clicks
   if(transformControls.dragging) return;
   if(!boneHelpers.length) return;
   var uv=getUV(e);
@@ -498,17 +641,11 @@ function getUV(e){
 }
 
 function selectBone(i){
-  selIdx=i;
-  renderBoneList();
-  renderXForm();
+  selIdx=i; renderBoneList(); renderXForm();
   if(bones[i]) transformControls.attach(bones[i]);
 }
-
 function deselectBone(){
-  selIdx=-1;
-  transformControls.detach();
-  renderBoneList();
-  renderXForm();
+  selIdx=-1; transformControls.detach(); renderBoneList(); renderXForm();
 }
 
 // ── BONE LIST ─────────────────────────────────────────────────────────
@@ -529,7 +666,6 @@ function renderBoneList(){
 }
 
 // ── TRANSFORM PANEL ───────────────────────────────────────────────────
-var sliderRange=2; // updated after model load
 var xfSnapBefore=null;
 
 function renderXForm(){
@@ -543,24 +679,22 @@ function renderXForm(){
   var d=function(v){return THREE.MathUtils.radToDeg(v);};
   var px=b.position.x,py=b.position.y,pz=b.position.z;
   var rx=d(eu.x),ry=d(eu.y),rz=d(eu.z);
-  var r=modelScale*0.5; // position range relative to model
-
+  var r=modelScale*0.5;
   panel.innerHTML=
-  '<div class="xg"><div class="xl">Position (local)</div>'+
-  '<div class="ar ax"><span class="at">X</span><input type="range" id="px" min="-'+r+'" max="'+r+'" step="0.001" value="'+px+'"><input type="number" id="px-n" step="0.001" value="'+px.toFixed(4)+'"></div>'+
-  '<div class="ar ay"><span class="at">Y</span><input type="range" id="py" min="-'+r+'" max="'+r+'" step="0.001" value="'+py+'"><input type="number" id="py-n" step="0.001" value="'+py.toFixed(4)+'"></div>'+
-  '<div class="ar az"><span class="at">Z</span><input type="range" id="pz" min="-'+r+'" max="'+r+'" step="0.001" value="'+pz+'"><input type="number" id="pz-n" step="0.001" value="'+pz.toFixed(4)+'"></div></div>'+
-  '<div class="xg"><div class="xl">Rotation (deg)</div>'+
-  '<div class="ar ax"><span class="at">X</span><input type="range" id="rx" min="-180" max="180" step="0.1" value="'+rx+'"><input type="number" id="rx-n" step="0.1" value="'+rx.toFixed(2)+'"></div>'+
-  '<div class="ar ay"><span class="at">Y</span><input type="range" id="ry" min="-180" max="180" step="0.1" value="'+ry+'"><input type="number" id="ry-n" step="0.1" value="'+ry.toFixed(2)+'"></div>'+
-  '<div class="ar az"><span class="at">Z</span><input type="range" id="rz" min="-180" max="180" step="0.1" value="'+rz+'"><input type="number" id="rz-n" step="0.1" value="'+rz.toFixed(2)+'"></div></div>'+
-  '<div class="xf-btns"><button onclick="resetBone()">Reset Bone</button><button onclick="zeroBonePos()">Zero Position</button></div>';
+    '<div class="xg"><div class="xl">Position (local)</div>'+
+    '<div class="ar ax"><span class="at">X</span><input type="range" id="px" min="-'+r+'" max="'+r+'" step="0.001" value="'+px+'"><input type="number" id="px-n" step="0.001" value="'+px.toFixed(4)+'"></div>'+
+    '<div class="ar ay"><span class="at">Y</span><input type="range" id="py" min="-'+r+'" max="'+r+'" step="0.001" value="'+py+'"><input type="number" id="py-n" step="0.001" value="'+py.toFixed(4)+'"></div>'+
+    '<div class="ar az"><span class="at">Z</span><input type="range" id="pz" min="-'+r+'" max="'+r+'" step="0.001" value="'+pz+'"><input type="number" id="pz-n" step="0.001" value="'+pz.toFixed(4)+'"></div></div>'+
+    '<div class="xg"><div class="xl">Rotation (deg)</div>'+
+    '<div class="ar ax"><span class="at">X</span><input type="range" id="rx" min="-180" max="180" step="0.1" value="'+rx+'"><input type="number" id="rx-n" step="0.1" value="'+rx.toFixed(2)+'"></div>'+
+    '<div class="ar ay"><span class="at">Y</span><input type="range" id="ry" min="-180" max="180" step="0.1" value="'+ry+'"><input type="number" id="ry-n" step="0.1" value="'+ry.toFixed(2)+'"></div>'+
+    '<div class="ar az"><span class="at">Z</span><input type="range" id="rz" min="-180" max="180" step="0.1" value="'+rz+'"><input type="number" id="rz-n" step="0.1" value="'+rz.toFixed(2)+'"></div></div>'+
+    '<div class="xf-btns"><button onclick="resetBone()">Reset Bone</button><button onclick="zeroBonePos()">Zero Position</button></div>';
 
   ['px','py','pz','rx','ry','rz'].forEach(function(id){
     var sl=document.getElementById(id), nb=document.getElementById(id+'-n');
     if(!sl||!nb) return;
     var isR=(id[0]==='r');
-    // Snapshot BEFORE any drag starts on this slider
     sl.addEventListener('mousedown',function(){ xfSnapBefore=snapshotPose(); });
     sl.addEventListener('touchstart',function(){ xfSnapBefore=snapshotPose(); });
     sl.addEventListener('mouseup',function(){ if(xfSnapBefore){undoStack.push(xfSnapBefore);if(undoStack.length>MAX_HIST)undoStack.shift();redoStack=[];xfSnapBefore=null;} });
@@ -591,7 +725,6 @@ function resetBone(){
   bones[selIdx].quaternion.set(0,0,0,1);
   renderXForm();
 }
-
 function zeroBonePos(){
   if(selIdx<0) return;
   pushHistory();
@@ -616,18 +749,34 @@ function addKF(){
   else{ keyframes.push({frame:curFrame,bones:capturePose()}); keyframes.sort(function(a,b){return a.frame-b.frame;}); }
   drawTL();
 }
-
 function delKF(){
   for(var i=0;i<keyframes.length;i++){
     if(keyframes[i].frame===curFrame){keyframes.splice(i,1);break;}
   }
   drawTL();
 }
-
 function clearKF(){
-  if(!confirm('Clear all keyframes?')) return;
+  if(!confirm('Clear all keyframes and reset the model to its T-pose?')) return;
   keyframes=[];
   drawTL();
+
+  // Restore every bone to its saved rest pose (T-pose)
+  bones.forEach(function(b){
+    var r=boneRestPose[b.name];
+    if(!r) return;
+    b.position.set(r.pos[0],r.pos[1],r.pos[2]);
+    b.quaternion.set(r.rot[0],r.rot[1],r.rot[2],r.rot[3]);
+  });
+
+  // Reset skeleton scale slider back to 1×
+  skelAnimScale=1;
+  document.getElementById('skel-scale-slider').value=1;
+  document.getElementById('skel-scale-val').textContent='1.00×';
+
+  // Deselect bone, clear undo history
+  selIdx=-1;
+  if(transformControls) transformControls.detach();
+  undoStack=[]; redoStack=[];
 }
 
 // ── INTERPOLATION ────────────────────────────────────────────────────
@@ -657,13 +806,24 @@ function applyAtFrame(f){
     var pos=[0,1,2].map(function(c){return catmull(rel[i0].pos[c],rel[i1].pos[c],rel[i2].pos[c],rel[i3].pos[c],alpha);});
     setBT(bone,pos,slerpEuler(rel[i1].rot,rel[i2].rot,alpha));
   });
-  // Only sync the sidebar panel when NOT playing (scrub/stop) to avoid
-  // rebuilding the HTML 60 times per second during playback.
   if(!playing && selIdx>=0) renderXForm();
 }
 
 function setBT(bone,pos,rot){
-  bone.position.set(pos[0],pos[1],pos[2]);
+  // Apply skelAnimScale ONLY to the displacement from rest pose.
+  // This scales animation motion without touching the model's scene scale,
+  // which would corrupt SkinnedMesh bone matrices.
+  var s=skelAnimScale;
+  if(s!==1 && boneRestPose[bone.name]){
+    var r=boneRestPose[bone.name];
+    bone.position.set(
+      r.pos[0]+(pos[0]-r.pos[0])*s,
+      r.pos[1]+(pos[1]-r.pos[1])*s,
+      r.pos[2]+(pos[2]-r.pos[2])*s
+    );
+  } else {
+    bone.position.set(pos[0],pos[1],pos[2]);
+  }
   bone.quaternion.setFromEuler(new THREE.Euler(rot[0],rot[1],rot[2],'XYZ'));
 }
 
@@ -676,22 +836,64 @@ document.getElementById('btn-play').addEventListener('click',function(){
 document.getElementById('btn-prev').addEventListener('click',function(){ curFrame=Math.max(0,curFrame-1); tick(); });
 document.getElementById('btn-next').addEventListener('click',function(){ curFrame=Math.min(totalFrames-1,curFrame+1); tick(); });
 
+// ── SKELETON SCALE SLIDER ─────────────────────────────────────────────
+(function(){
+  var slider=document.getElementById('skel-scale-slider');
+  var valLbl=document.getElementById('skel-scale-val');
+  var resetBtn=document.getElementById('skel-scale-reset');
+  var bakeBtn=document.getElementById('skel-scale-bake');
+
+  function applyScale(s){
+    skelAnimScale=s;
+    valLbl.textContent=s.toFixed(2)+'×';
+    // Re-apply the current frame so the scale is visible immediately.
+    // We intentionally NEVER touch model.scale — changing it on a SkinnedMesh
+    // corrupts the bone bind matrices and causes the mesh to deform incorrectly.
+    if(keyframes.length) tick();
+  }
+
+  slider.addEventListener('input',function(){ applyScale(parseFloat(this.value)); });
+
+  resetBtn.addEventListener('click',function(){
+    slider.value=1;
+    applyScale(1);
+  });
+
+  // Bake: permanently write the current skelAnimScale into every keyframe position
+  // as a displacement-from-rest multiplier, then reset the slider to 1×.
+  bakeBtn.addEventListener('click',function(){
+    var s=skelAnimScale;
+    if(s===1) return; // nothing to do
+    if(!keyframes.length){ alert('No keyframes to bake.'); return; }
+    keyframes.forEach(function(k){
+      Object.keys(k.bones||{}).forEach(function(bn){
+        var bd=k.bones[bn];
+        var r=boneRestPose[bn];
+        if(r){
+          k.bones[bn].pos=[
+            r.pos[0]+(bd.pos[0]-r.pos[0])*s,
+            r.pos[1]+(bd.pos[1]-r.pos[1])*s,
+            r.pos[2]+(bd.pos[2]-r.pos[2])*s
+          ];
+        } else {
+          k.bones[bn].pos=bd.pos.map(function(v){return v*s;});
+        }
+      });
+    });
+    // Reset slider to 1× — scale is now baked in
+    slider.value=1;
+    applyScale(1);
+  });
+})();
+
 function startPlay(){
-  // Record where we are so time-based math starts from the right frame
-  playStartFrame=curFrame;
-  playStartTime=performance.now();
-  lastTLFrame=-1;
-  playing=true;
+  playStartFrame=curFrame; playStartTime=performance.now(); lastTLFrame=-1; playing=true;
 }
 function stopPlay(){
   playing=false;
-  // Snap curFrame to the exact integer we landed on
-  document.getElementById('fr-disp').textContent=
-    'Frame '+curFrame+' / '+(curFrame/Math.max(fps,1)).toFixed(2)+'s';
+  document.getElementById('fr-disp').textContent='Frame '+curFrame+' / '+(curFrame/Math.max(fps,1)).toFixed(2)+'s';
 }
-
 function tick(){
-  // Manual step (prev/next buttons, scrub, fps/dur change) – always integer frame
   playFloatF=curFrame;
   document.getElementById('fr-disp').textContent='Frame '+curFrame+' / '+(curFrame/Math.max(fps,1)).toFixed(2)+'s';
   applyAtFrame(curFrame);
@@ -714,12 +916,11 @@ document.getElementById('kf-add').addEventListener('click',addKF);
 document.getElementById('kf-del').addEventListener('click',delKF);
 
 // ── TIMELINE ──────────────────────────────────────────────────────────
-// Keyframe drag state – track by object reference so array re-sorts don't lose it
-var kfDragRef=null; // the keyframe object being dragged, null = none
+var kfDragRef=null;
 
 function hitTestKF(x,y){
   var rH=20;
-  if(y>rH+6) return null; // only the gold ruler row
+  if(y>rH+6) return null;
   for(var i=0;i<keyframes.length;i++){
     if(Math.abs(x-fToX(keyframes[i].frame))<=8) return keyframes[i];
   }
@@ -736,52 +937,34 @@ function initTL(){
     var r=tlCanvas.getBoundingClientRect();
     var mx=e.clientX-r.left, my=e.clientY-r.top;
     var hit=hitTestKF(mx,my);
-    if(hit){
-      kfDragRef=hit;
-      tlCanvas.style.cursor='ew-resize';
-    } else {
-      tlDragging=true;
-      seekTL(e);
-    }
+    if(hit){ kfDragRef=hit; tlCanvas.style.cursor='ew-resize'; }
+    else { tlDragging=true; seekTL(e); }
   });
 
   tlCanvas.addEventListener('mousemove',function(e){
     var r=tlCanvas.getBoundingClientRect();
     var mx=e.clientX-r.left, my=e.clientY-r.top;
-
     if(kfDragRef){
       var newF=xToF(mx);
-      // Only move if the slot isn't taken by a different keyframe
       var blocked=false;
       for(var i=0;i<keyframes.length;i++){
         if(keyframes[i]!==kfDragRef&&keyframes[i].frame===newF){blocked=true;break;}
       }
       if(!blocked){
         kfDragRef.frame=newF;
-        // Re-sort so the lane diamonds stay in order – kfDragRef stays valid (same object)
         keyframes.sort(function(a,b){return a.frame-b.frame;});
         drawTL();
       }
-    } else if(tlDragging){
-      seekTL(e);
-    } else {
-      tlCanvas.style.cursor=hitTestKF(mx,my)?'ew-resize':'crosshair';
-    }
+    } else if(tlDragging){ seekTL(e); }
+    else { tlCanvas.style.cursor=hitTestKF(mx,my)?'ew-resize':'crosshair'; }
   });
 
   function endDrag(){
-    if(kfDragRef){
-      keyframes.sort(function(a,b){return a.frame-b.frame;});
-      kfDragRef=null;
-      drawTL();
-    }
-    tlDragging=false;
-    tlCanvas.style.cursor='crosshair';
+    if(kfDragRef){ keyframes.sort(function(a,b){return a.frame-b.frame;}); kfDragRef=null; drawTL(); }
+    tlDragging=false; tlCanvas.style.cursor='crosshair';
   }
-
-  tlCanvas.addEventListener('mouseup', endDrag);
-  tlCanvas.addEventListener('mouseleave', endDrag);
-
+  tlCanvas.addEventListener('mouseup',endDrag);
+  tlCanvas.addEventListener('mouseleave',endDrag);
   tlCanvas.addEventListener('contextmenu',function(e){
     e.preventDefault();
     var r=tlCanvas.getBoundingClientRect();
@@ -804,9 +987,7 @@ function xToF(x){ return Math.round(Math.max(0,Math.min(totalFrames-1,((x-PAD)/(
 function seekTL(e){
   var r=tlCanvas.getBoundingClientRect();
   curFrame=xToF(e.clientX-r.left);
-  // If playing, reset the clock origin so playback continues from this new frame
-  if(playing){ playStartFrame=curFrame; playStartTime=performance.now(); }
-  else tick();
+  if(playing){ playStartFrame=curFrame; playStartTime=performance.now(); } else tick();
 }
 
 function drawTL(){
@@ -844,32 +1025,17 @@ function drawTL(){
     var kfObj=keyframes[ki];
     var kx=fToX(kfObj.frame);
     var isDragging=(kfObj===kfDragRef);
-
-    // Vertical guide line
     tlCtx.strokeStyle=isDragging?'#ffffff55':'#c8a04a55';
     tlCtx.lineWidth=isDragging?2:1;
     tlCtx.setLineDash(isDragging?[]:[3,3]);
     tlCtx.beginPath(); tlCtx.moveTo(kx,0); tlCtx.lineTo(kx,rH); tlCtx.stroke();
     tlCtx.setLineDash([]);
-
-    // Gold diamond in ruler – larger + outlined when dragging
     var ds=isDragging?8:5;
     tlCtx.save(); tlCtx.translate(kx,rH/2); tlCtx.rotate(Math.PI/4);
-    if(isDragging){
-      tlCtx.strokeStyle='#fff'; tlCtx.lineWidth=1.5;
-      tlCtx.strokeRect(-ds,-ds,ds*2,ds*2);
-    }
-    tlCtx.fillStyle=isDragging?'#ffe080':'#c8a04a';
-    tlCtx.fillRect(-ds,-ds,ds*2,ds*2);
+    if(isDragging){ tlCtx.strokeStyle='#fff'; tlCtx.lineWidth=1.5; tlCtx.strokeRect(-ds,-ds,ds*2,ds*2); }
+    tlCtx.fillStyle=isDragging?'#ffe080':'#c8a04a'; tlCtx.fillRect(-ds,-ds,ds*2,ds*2);
     tlCtx.restore();
-
-    // Frame number label while dragging so user knows exact position
-    if(isDragging){
-      tlCtx.fillStyle='#fff';
-      tlCtx.font='bold 9px monospace';
-      tlCtx.textAlign='center';
-      tlCtx.fillText(kfObj.frame, kx, rH-2);
-    }
+    if(isDragging){ tlCtx.fillStyle='#fff'; tlCtx.font='bold 9px monospace'; tlCtx.textAlign='center'; tlCtx.fillText(kfObj.frame,kx,rH-2); }
   }
 
   var ph=fToX(curFrame);
@@ -879,9 +1045,12 @@ function drawTL(){
   tlCtx.beginPath(); tlCtx.arc(ph,rH/2,6,0,Math.PI*2); tlCtx.fill();
 }
 
-// ── EXPORT ───────────────────────────────────────────────────────────
+// ── EXPORT (JS) ───────────────────────────────────────────────────────
 function exportAnim(){
   var name=(document.getElementById('anim-name').value.trim()||'MyAnimation').replace(/\W/g,'_');
+  // Read the current skeleton scale so we can bake it into position values
+  var expScale=parseFloat(document.getElementById('skel-scale-slider').value)||1;
+
   var baked=[];
   for(var f=0;f<totalFrames;f++){
     var fd={};
@@ -900,18 +1069,51 @@ function exportAnim(){
         pos=[0,1,2].map(function(c){return catmull(rel[i0].pos[c],rel[i1].pos[c],rel[i2].pos[c],rel[i3].pos[c],alpha);});
         rot=slerpEuler(rel[i1].rot,rel[i2].rot,alpha);
       }
-      fd[bone.name]={pos:pos.map(function(v){return +v.toFixed(6);}),rot:rot.map(function(v){return +v.toFixed(6);})};
+      // Bake skelAnimScale as a displacement multiplier so exported positions
+      // match exactly what was visible in the viewport (only motion is scaled,
+      // not the structural rest-pose offsets between parent/child bones).
+      var rest=boneRestPose[bone.name];
+      var scaledPos;
+      if(expScale!==1 && rest){
+        scaledPos=[
+          +(rest.pos[0]+(pos[0]-rest.pos[0])*expScale).toFixed(6),
+          +(rest.pos[1]+(pos[1]-rest.pos[1])*expScale).toFixed(6),
+          +(rest.pos[2]+(pos[2]-rest.pos[2])*expScale).toFixed(6)
+        ];
+      } else {
+        scaledPos=pos.map(function(v){return +v.toFixed(6);});
+      }
+      fd[bone.name]={pos:scaledPos,rot:rot.map(function(v){return +v.toFixed(6);})};
     }
     baked.push({frame:f,time:+(f/Math.max(fps,1)).toFixed(4),bones:fd});
   }
-  var raw=keyframes.map(function(k){return {frame:k.frame,time:+(k.frame/Math.max(fps,1)).toFixed(4),bones:k.bones};});
+  // Raw keyframes: same delta-from-rest approach
+  var raw=keyframes.map(function(k){
+    var kb={};
+    Object.keys(k.bones||{}).forEach(function(bn){
+      var bd=k.bones[bn];
+      var rest2=boneRestPose[bn];
+      var sp;
+      if(expScale!==1 && rest2){
+        sp=[
+          +(rest2.pos[0]+(bd.pos[0]-rest2.pos[0])*expScale).toFixed(6),
+          +(rest2.pos[1]+(bd.pos[1]-rest2.pos[1])*expScale).toFixed(6),
+          +(rest2.pos[2]+(bd.pos[2]-rest2.pos[2])*expScale).toFixed(6)
+        ];
+      } else {
+        sp=bd.pos.map(function(v){return +v.toFixed(6);});
+      }
+      kb[bn]={pos:sp,rot:bd.rot};
+    });
+    return {frame:k.frame,time:+(k.frame/Math.max(fps,1)).toFixed(4),bones:kb};
+  });
   var js='// Blackbanner: The Broken Order – Animation\n// '+name+' | FPS:'+fps+' | Dur:'+duration+'s | Frames:'+totalFrames+'\nvar '+name+'Animation={name:"'+name+'",fps:'+fps+',duration:'+duration+',totalFrames:'+totalFrames+',keyframes:'+JSON.stringify(raw)+',bakedFrames:'+JSON.stringify(baked)+'};\nif(typeof module!=="undefined")module.exports={'+name+'Animation:'+name+'Animation};';
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([js],{type:'text/javascript'}));
   a.download=name+'.js'; a.click(); URL.revokeObjectURL(a.href);
 }
 
-// ── IMPORT ───────────────────────────────────────────────────────────
+// ── IMPORT JS ────────────────────────────────────────────────────────
 document.getElementById('anim-in').addEventListener('change',function(e){
   var file=e.target.files[0]; if(!file) return;
   var reader=new FileReader();
@@ -938,6 +1140,586 @@ document.getElementById('mdl-in').addEventListener('change',function(e){
   loadModel(URL.createObjectURL(file)); e.target.value='';
 });
 
+// ── FBX IMPORT (MIXAMO) ───────────────────────────────────────────────
+// Parsed FBX clip storage
+var pendingFbxClip=null;
+var fbxBoneMap={};  // fbxBoneName -> knightBoneName
+// Unit scale: Mixamo FBX exports in centimeters; Three.js works in metres.
+// The FBXLoader scales the mesh by 0.01 automatically but leaves animation
+// position tracks in raw cm. We store the detected scale here and apply it
+// when baking position tracks so proportions match the knight model.
+var pendingFbxScale=1;
+var fbxScaleUserSet=false; // true when the user manually chose a scale via the slider
+
+document.getElementById('fbx-in').addEventListener('change',function(e){
+  var file=e.target.files[0]; if(!file) return;
+  e.target.value='';
+  showFbxOverlay('Reading FBX…',0);
+
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    updateFbxOverlay('Parsing FBX…',30);
+    setTimeout(function(){
+      try{
+        var ldr=new THREE.FBXLoader();
+        var buf=ev.target.result;
+        var fbxObj=ldr.parse(buf);
+        updateFbxOverlay('Extracting animation tracks…',70);
+        setTimeout(function(){
+          processFbxObject(fbxObj, file.name);
+        },30);
+      }catch(err){
+        hideFbxOverlay();
+        alert('FBX parse failed: '+err.message+'\nMake sure the file is a valid Mixamo FBX export.');
+        console.error(err);
+      }
+    },30);
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function showFbxOverlay(msg,pct){
+  var ov=document.getElementById('fbx-overlay');
+  ov.classList.add('show');
+  document.getElementById('fbx-status-msg').textContent=msg;
+  document.getElementById('fbx-bar').style.width=pct+'%';
+  document.getElementById('fbx-sub-msg').textContent='Please wait…';
+}
+function updateFbxOverlay(msg,pct){
+  document.getElementById('fbx-status-msg').textContent=msg;
+  document.getElementById('fbx-bar').style.width=pct+'%';
+}
+function hideFbxOverlay(){
+  document.getElementById('fbx-overlay').classList.remove('show');
+}
+
+function processFbxObject(fbxObj, fileName){
+  // ── Detect unit scale ──────────────────────────────────────────────
+  // Three.js FBXLoader applies unitScaleFactor to the root object's .scale
+  // (usually 0.01 for Mixamo cm exports) but does NOT apply it to animation
+  // position tracks. We need to scale positions ourselves when baking.
+  // Priority: explicit userData.unitScaleFactor → fbxObj.scale.x → auto-detect later.
+  var detectedScale=1;
+  if(fbxObj.userData && fbxObj.userData.unitScaleFactor!=null){
+    detectedScale=fbxObj.userData.unitScaleFactor;
+  } else if(fbxObj.scale && Math.abs(fbxObj.scale.x-1)>0.0001){
+    detectedScale=fbxObj.scale.x;
+  }
+  // Sanity-clamp: only accept plausible cm→m factors
+  if(detectedScale>0.9999) detectedScale=0.01; // default to cm→m if scale looks like "no change"
+  pendingFbxScale=detectedScale;
+  fbxScaleUserSet=false; // reset — user hasn't touched the slider yet for this file
+
+  // Collect animations from the parsed FBX object
+  var clips=[];
+  if(fbxObj.animations && fbxObj.animations.length){
+    clips=fbxObj.animations;
+  }
+
+  if(!clips.length){
+    hideFbxOverlay();
+    alert('No animation data found in this FBX file.\nMake sure you exported with "With Skin" or "Without Skin" from Mixamo and that the file contains animation tracks.');
+    return;
+  }
+
+  // Use the first clip (Mixamo usually has one)
+  pendingFbxClip=clips[0];
+
+  // Extract bone names from the clip tracks
+  var fbxTrackBones=[];
+  pendingFbxClip.tracks.forEach(function(track){
+    // Track names are like "mixamorig:Hips.quaternion" or "Armature|mixamorig:Hips.position"
+    var rawName=track.name;
+    // Strip node path separator if present
+    var dotIdx=rawName.lastIndexOf('.');
+    var bonePart=dotIdx>=0 ? rawName.substring(0,dotIdx) : rawName;
+    // Strip Armature prefix "Armature|…" or similar
+    var pipeIdx=bonePart.indexOf('|');
+    if(pipeIdx>=0) bonePart=bonePart.substring(pipeIdx+1);
+    if(fbxTrackBones.indexOf(bonePart)<0) fbxTrackBones.push(bonePart);
+  });
+  fbxBoneNames=fbxTrackBones;
+
+  updateFbxOverlay('Opening bone mapper…',100);
+  setTimeout(function(){
+    hideFbxOverlay();
+    // Set animation name from file
+    var suggestedName=fileName.replace(/\.fbx$/i,'').replace(/\W+/g,'_');
+    document.getElementById('anim-name').value=suggestedName;
+    openBoneMapModal(fbxTrackBones);
+  },200);
+}
+
+// ── BONE MAP MODAL ────────────────────────────────────────────────────
+
+// Convert linear log-scale slider value (-4…0) to actual scale multiplier
+function sliderToScale(s){ return Math.pow(10, parseFloat(s)); }
+function scaleToSlider(v){ return Math.log10(Math.max(0.0001, Math.min(1, v))); }
+
+function formatScaleHint(s){
+  if(s<0.0015) return '÷'+Math.round(1/s)+' (cm→m)';
+  if(s<0.015)  return '÷'+Math.round(1/s)+' (cm→m)';
+  if(s<0.15)   return '÷'+Math.round(1/s);
+  if(s===1)    return 'no scaling';
+  return '×'+s.toFixed(4);
+}
+
+function setScaleUI(scaleVal){
+  var slv=scaleToSlider(scaleVal);
+  document.getElementById('bm-scale-slider').value=slv.toFixed(3);
+  document.getElementById('bm-scale-num').value=scaleVal.toFixed(5).replace(/0+$/,'').replace(/\.$/,'');
+  document.getElementById('bm-scale-hint').textContent=formatScaleHint(scaleVal);
+}
+
+function updateBoneMapStats(){
+  var rows=document.querySelectorAll('#bonemap-body .bm-row');
+  var total=rows.length, matched=0;
+  var pipsHtml='';
+  rows.forEach(function(row){
+    var sel=row.querySelector('select');
+    var isMatched=sel && sel.value!=='';
+    row.classList.toggle('matched', isMatched);
+    row.classList.toggle('unmatched', !isMatched);
+    var badge=row.querySelector('.bm-badge');
+    if(badge) badge.textContent=isMatched ? '✓ MAPPED' : '⚠ UNSET';
+    if(isMatched) matched++;
+    pipsHtml+='<div class="bm-pip '+(isMatched?'matched':'unmatched')+'"></div>';
+  });
+  var countEl=document.getElementById('bm-stat-count');
+  countEl.textContent=matched+' / '+total;
+  countEl.className='bm-stat-count '+(matched===total?'all-good':(matched>0?'partial':'bad'));
+  document.getElementById('bm-pips').innerHTML=pipsHtml;
+}
+
+function openBoneMapModal(fbxBones){
+  var body=document.getElementById('bonemap-body');
+  body.innerHTML='';
+
+  var knightNames=bones.map(function(b){return b.name;});
+
+  fbxBones.forEach(function(fbxName){
+    var row=document.createElement('div');
+    row.className='bm-row';
+    row.setAttribute('data-fbx',fbxName);
+
+    var lbl=document.createElement('div');
+    lbl.className='bm-fbx';
+    lbl.textContent=fbxName;
+    lbl.title=fbxName;
+
+    // Status badge
+    var badge=document.createElement('span');
+    badge.className='bm-badge';
+
+    var sel=document.createElement('select');
+    sel.setAttribute('data-fbx',fbxName);
+    var opt0=document.createElement('option');
+    opt0.value=''; opt0.textContent='— skip —';
+    sel.appendChild(opt0);
+    knightNames.forEach(function(kn){
+      var opt=document.createElement('option');
+      opt.value=kn; opt.textContent=kn;
+      sel.appendChild(opt);
+    });
+
+    // Auto-match immediately on open (full 6-pass matching)
+    var matched=autoMatchBone(fbxName,knightNames);
+    if(matched) sel.value=matched;
+
+    // Re-run stats whenever user manually changes a dropdown
+    sel.addEventListener('change', updateBoneMapStats);
+
+    row.appendChild(lbl);
+    row.appendChild(badge);
+    row.appendChild(sel);
+    body.appendChild(row);
+  });
+
+  // Initialise scale slider from the auto-detected FBX scale
+  setScaleUI(pendingFbxScale);
+
+  document.getElementById('bonemap-modal').classList.add('show');
+
+  // Run stats after DOM is ready
+  setTimeout(updateBoneMapStats, 0);
+}
+
+// ── MIXAMO PRESET BONE MAP ────────────────────────────────────────────
+// Maps every standard Mixamo bone name (lowercased, without "mixamorig:" prefix)
+// to an ordered list of common humanoid bone name fragments to search for
+// in the knight's skeleton. First match wins.
+var MIXAMO_PRESET={
+  // ── SPINE / TORSO ──────────────────────────────────────────────────
+  'hips':             ['hips','hip','pelvis','root','spine0','spine_0'],
+  'spine':            ['spine','torso','back','chest_low','chest0'],
+  'spine1':           ['spine1','spine_1','spine01','chest','thorax'],
+  'spine2':           ['spine2','spine_2','spine02','chest_up','upper_chest'],
+  'neck':             ['neck','cervix'],
+  'head':             ['head','skull'],
+
+  // ── LEFT ARM ───────────────────────────────────────────────────────
+  'leftshoulder':     ['l_clavicle','left_clavicle','leftshoulder','l_shoulder_c','clavicle_l'],
+  'leftarm':          ['l_upperarm','left_upperarm','leftarm','l_arm','upperarm_l','l_shoulder'],
+  'leftforearm':      ['l_forearm','left_forearm','leftforearm','l_lowerarm','forearm_l','lowerarm_l'],
+  'lefthand':         ['l_hand','left_hand','lefthand','hand_l'],
+  'lefthandthumb1':   ['l_thumb1','left_thumb1','l_thumb_01','thumb1_l'],
+  'lefthandthumb2':   ['l_thumb2','left_thumb2','l_thumb_02','thumb2_l'],
+  'lefthandthumb3':   ['l_thumb3','left_thumb3','l_thumb_03','thumb3_l'],
+  'lefthandindex1':   ['l_index1','left_index1','l_index_01','index1_l'],
+  'lefthandindex2':   ['l_index2','left_index2','l_index_02','index2_l'],
+  'lefthandindex3':   ['l_index3','left_index3','l_index_03','index3_l'],
+  'lefthandmiddle1':  ['l_mid1','left_mid1','l_middle_01','mid1_l','middle1_l'],
+  'lefthandmiddle2':  ['l_mid2','left_mid2','l_middle_02','mid2_l','middle2_l'],
+  'lefthandmiddle3':  ['l_mid3','left_mid3','l_middle_03','mid3_l','middle3_l'],
+  'lefthandring1':    ['l_ring1','left_ring1','l_ring_01','ring1_l'],
+  'lefthandring2':    ['l_ring2','left_ring2','l_ring_02','ring2_l'],
+  'lefthandring3':    ['l_ring3','left_ring3','l_ring_03','ring3_l'],
+  'lefthandpinky1':   ['l_pinky1','left_pinky1','l_pinky_01','pinky1_l','little1_l'],
+  'lefthandpinky2':   ['l_pinky2','left_pinky2','l_pinky_02','pinky2_l','little2_l'],
+  'lefthandpinky3':   ['l_pinky3','left_pinky3','l_pinky_03','pinky3_l','little3_l'],
+
+  // ── RIGHT ARM ──────────────────────────────────────────────────────
+  'rightshoulder':    ['r_clavicle','right_clavicle','rightshoulder','r_shoulder_c','clavicle_r'],
+  'rightarm':         ['r_upperarm','right_upperarm','rightarm','r_arm','upperarm_r','r_shoulder'],
+  'rightforearm':     ['r_forearm','right_forearm','rightforearm','r_lowerarm','forearm_r','lowerarm_r'],
+  'righthand':        ['r_hand','right_hand','righthand','hand_r'],
+  'righthandthumb1':  ['r_thumb1','right_thumb1','r_thumb_01','thumb1_r'],
+  'righthandthumb2':  ['r_thumb2','right_thumb2','r_thumb_02','thumb2_r'],
+  'righthandthumb3':  ['r_thumb3','right_thumb3','r_thumb_03','thumb3_r'],
+  'righthandindex1':  ['r_index1','right_index1','r_index_01','index1_r'],
+  'righthandindex2':  ['r_index2','right_index2','r_index_02','index2_r'],
+  'righthandindex3':  ['r_index3','right_index3','r_index_03','index3_r'],
+  'righthandmiddle1': ['r_mid1','right_mid1','r_middle_01','mid1_r','middle1_r'],
+  'righthandmiddle2': ['r_mid2','right_mid2','r_middle_02','mid2_r','middle2_r'],
+  'righthandmiddle3': ['r_mid3','right_mid3','r_middle_03','mid3_r','middle3_r'],
+  'righthandring1':   ['r_ring1','right_ring1','r_ring_01','ring1_r'],
+  'righthandring2':   ['r_ring2','right_ring2','r_ring_02','ring2_r'],
+  'righthandring3':   ['r_ring3','right_ring3','r_ring_03','ring3_r'],
+  'righthandpinky1':  ['r_pinky1','right_pinky1','r_pinky_01','pinky1_r','little1_r'],
+  'righthandpinky2':  ['r_pinky2','right_pinky2','r_pinky_02','pinky2_r','little2_r'],
+  'righthandpinky3':  ['r_pinky3','right_pinky3','r_pinky_03','pinky3_r','little3_r'],
+
+  // ── LEFT LEG ───────────────────────────────────────────────────────
+  'leftupleg':        ['l_thigh','left_thigh','leftupleg','l_upleg','thigh_l','l_leg_upper'],
+  'leftleg':          ['l_calf','left_calf','leftleg','l_shin','calf_l','shin_l','l_leg_lower','lowerleg_l'],
+  'leftfoot':         ['l_foot','left_foot','leftfoot','foot_l'],
+  'lefttoebase':      ['l_toe','left_toe','lefttoe','toe_l','l_ball'],
+
+  // ── RIGHT LEG ──────────────────────────────────────────────────────
+  'rightupleg':       ['r_thigh','right_thigh','rightupleg','r_upleg','thigh_r','r_leg_upper'],
+  'rightleg':         ['r_calf','right_calf','rightleg','r_shin','calf_r','shin_r','r_leg_lower','lowerleg_r'],
+  'rightfoot':        ['r_foot','right_foot','rightfoot','foot_r'],
+  'righttoebase':     ['r_toe','right_toe','righttoe','toe_r','r_ball'],
+
+  // ── FACIAL (common in Mixamo face animations) ──────────────────────
+  'lefteyebrow':      ['l_brow','left_brow','brow_l'],
+  'righteyebrow':     ['r_brow','right_brow','brow_r'],
+  'lefteye':          ['l_eye','left_eye','eye_l'],
+  'righteye':         ['r_eye','right_eye','eye_r'],
+  'jaw':              ['jaw','mandible','lower_jaw','chin'],
+  'upperteeth':       ['upper_teeth','teeth_up'],
+  'lowerteeth':       ['lower_teeth','teeth_lo'],
+
+  // ── WEAPON / PROP attachment points (common in knight rigs) ────────
+  'leftinhand':       ['l_weapon','l_prop','weapon_l','prop_l','l_hold'],
+  'rightinhand':      ['r_weapon','r_prop','weapon_r','prop_r','r_hold','weapon'],
+  'leftinhandthumb':  ['l_weapon_thumb','shield_grip_l'],
+  'rightinhandthumb': ['r_weapon_thumb','shield_grip_r']
+};
+
+function autoMatchBone(fbxName, knightNames){
+  // Step 1 – strip Mixamo namespace prefix ("mixamorig:" or "mixamorig_")
+  var clean=fbxName.replace(/^mixamorig[_:]/i,'').toLowerCase();
+
+  var knightLow=knightNames.map(function(n){return n.toLowerCase();});
+
+  // Step 2 – exact match (case-insensitive) against knight bones
+  for(var i=0;i<knightLow.length;i++){
+    if(knightLow[i]===clean) return knightNames[i];
+  }
+
+  // Step 3 – preset table lookup
+  //   For the cleaned Mixamo name, find the alias list and fuzzy-match
+  //   each alias against every knight bone. First hit wins.
+  var aliases=MIXAMO_PRESET[clean];
+  if(aliases){
+    for(var a=0;a<aliases.length;a++){
+      var alias=aliases[a];
+      // 3a – exact alias match
+      for(var i=0;i<knightLow.length;i++){
+        if(knightLow[i]===alias) return knightNames[i];
+      }
+      // 3b – knight bone contains the alias
+      for(var i=0;i<knightLow.length;i++){
+        if(knightLow[i].indexOf(alias)>=0) return knightNames[i];
+      }
+      // 3c – alias contains the knight bone name
+      for(var i=0;i<knightLow.length;i++){
+        if(alias.indexOf(knightLow[i])>=0) return knightNames[i];
+      }
+    }
+  }
+
+  // Step 4 – generic contains-match (cleaned Mixamo name in/of knight name)
+  for(var i=0;i<knightLow.length;i++){
+    if(knightLow[i].indexOf(clean)>=0||clean.indexOf(knightLow[i])>=0) return knightNames[i];
+  }
+
+  // Step 5 – prefix match (first 5 chars), useful for abbreviated bone names
+  if(clean.length>=5){
+    var prefix=clean.substring(0,5);
+    for(var i=0;i<knightLow.length;i++){
+      if(knightLow[i].indexOf(prefix)>=0) return knightNames[i];
+    }
+  }
+
+  // Step 6 – score-based fuzzy match using character overlap ratio
+  var bestScore=0, bestMatch='';
+  for(var i=0;i<knightLow.length;i++){
+    var score=charOverlapScore(clean,knightLow[i]);
+    if(score>bestScore&&score>0.55){ bestScore=score; bestMatch=knightNames[i]; }
+  }
+  return bestMatch;
+}
+
+// Returns a 0-1 similarity score based on shared character n-grams (bigrams)
+function charOverlapScore(a,b){
+  function bigrams(s){
+    var bg={};
+    for(var i=0;i<s.length-1;i++) bg[s[i]+s[i+1]]=(bg[s[i]+s[i+1]]||0)+1;
+    return bg;
+  }
+  var ba=bigrams(a), bb=bigrams(b);
+  var shared=0, totalA=0, totalB=0;
+  for(var k in ba){ totalA+=ba[k]; if(bb[k]) shared+=Math.min(ba[k],bb[k]); }
+  for(var k in bb){ totalB+=bb[k]; }
+  var denom=totalA+totalB;
+  return denom>0 ? (2*shared)/denom : 0;
+}
+
+// ── SCALE SLIDER ↔ NUMBER SYNC ────────────────────────────────────────
+document.getElementById('bm-scale-slider').addEventListener('input',function(){
+  var s=sliderToScale(this.value);
+  document.getElementById('bm-scale-num').value=s.toFixed(5).replace(/0+$/,'').replace(/\.$/,'');
+  document.getElementById('bm-scale-hint').textContent=formatScaleHint(s);
+});
+document.getElementById('bm-scale-num').addEventListener('change',function(){
+  var s=Math.max(0.0001,Math.min(1,parseFloat(this.value)||0.01));
+  setScaleUI(s);
+});
+
+document.getElementById('bm-cancel').onclick=function(){
+  document.getElementById('bonemap-modal').classList.remove('show');
+  pendingFbxClip=null;
+};
+
+document.getElementById('bm-auto').onclick=function(){
+  var rows=document.querySelectorAll('#bonemap-body .bm-row');
+  var knightNames=bones.map(function(b){return b.name;});
+  rows.forEach(function(row){
+    var fbxName=row.getAttribute('data-fbx');
+    var sel=row.querySelector('select');
+    var matched=autoMatchBone(fbxName,knightNames);
+    sel.value=matched||'';
+  });
+  // Scroll to first unmatched so the animator can fix it quickly
+  var unmatched=document.querySelector('#bonemap-body .bm-row.unmatched');
+  if(unmatched) unmatched.scrollIntoView({block:'nearest'});
+  updateBoneMapStats();
+};
+
+document.getElementById('bm-apply').onclick=function(){
+  if(!pendingFbxClip){ document.getElementById('bonemap-modal').classList.remove('show'); return; }
+
+  // Capture the user-chosen scale from the slider (disables auto-detect in baker)
+  var chosenScale=sliderToScale(document.getElementById('bm-scale-slider').value);
+  pendingFbxScale=chosenScale;
+  fbxScaleUserSet=true;
+
+  // Read the bone mapping
+  var map={};
+  var rows=document.querySelectorAll('#bonemap-body .bm-row');
+  rows.forEach(function(row){
+    var fbxName=row.getAttribute('data-fbx');
+    var sel=row.querySelector('select');
+    if(sel.value) map[fbxName]=sel.value;
+  });
+
+  document.getElementById('bonemap-modal').classList.remove('show');
+  showFbxOverlay('Baking FBX animation…',0);
+
+  setTimeout(function(){
+    try{
+      bakeFbxToKeyframes(pendingFbxClip, map);
+      pendingFbxClip=null;
+      hideFbxOverlay();
+    }catch(err){
+      hideFbxOverlay();
+      alert('Failed to bake FBX animation: '+err.message);
+      console.error(err);
+    }
+  },40);
+};
+
+// ── FBX → KEYFRAMES BAKING ────────────────────────────────────────────
+function bakeFbxToKeyframes(clip, boneMap){
+  var clipDuration=clip.duration; // in seconds
+  var targetFps=fps;
+  var targetDuration=clipDuration;
+  var targetFrames=Math.max(1,Math.round(targetFps*targetDuration));
+
+  // Update timeline settings to match FBX duration
+  duration=+targetDuration.toFixed(3);
+  totalFrames=targetFrames;
+  document.getElementById('dur-in').value=duration.toFixed(2);
+
+  updateFbxOverlay('Building track index…',20);
+
+  // Build a lookup: { knightBoneName: { position: VectorKeyframeTrack, quaternion: QuatKFT } }
+  var trackMap={};
+  clip.tracks.forEach(function(track){
+    var rawName=track.name;
+    var dotIdx=rawName.lastIndexOf('.');
+    var propType=dotIdx>=0 ? rawName.substring(dotIdx+1) : '';
+    var bonePart=dotIdx>=0 ? rawName.substring(0,dotIdx) : rawName;
+    var pipeIdx=bonePart.indexOf('|');
+    if(pipeIdx>=0) bonePart=bonePart.substring(pipeIdx+1);
+
+    var knightName=boneMap[bonePart];
+    if(!knightName) return;
+
+    if(!trackMap[knightName]) trackMap[knightName]={};
+    trackMap[knightName][propType]=track;
+  });
+
+  // ── Determine position scale ──────────────────────────────────────────
+  var posScale=pendingFbxScale;
+
+  if(!fbxScaleUserSet){
+    // Auto-detect: sample the root bone position at t=0 and compare magnitude
+    // to the knight model's scale. If the raw value is >> modelScale it's still in cm.
+    var rootTrackKey=Object.keys(trackMap)[0];
+    if(rootTrackKey && trackMap[rootTrackKey]['position']){
+      var rootPosT0=sampleTrack(trackMap[rootTrackKey]['position'],0);
+      if(rootPosT0){
+        var rawMag=Math.sqrt(rootPosT0[0]*rootPosT0[0]+rootPosT0[1]*rootPosT0[1]+rootPosT0[2]*rootPosT0[2]);
+        // If magnitude is > 5× the knight's model scale it's almost certainly cm
+        if(rawMag>modelScale*5){
+          posScale=1/Math.round(rawMag/Math.max(modelScale,0.001));
+          if(posScale>0.05||posScale<0.0005) posScale=0.01; // clamp to sensible range
+        }
+        // If magnitude is tiny (already metres or very close), leave as-is
+        if(rawMag>0 && rawMag<modelScale*0.2) posScale=1;
+      }
+    }
+  }
+  // If user set scale explicitly, pendingFbxScale already holds their choice — use it directly.
+
+  updateFbxOverlay('Sampling animation frames…',40);
+
+  // Sample each frame
+  keyframes=[];
+  var q=new THREE.Quaternion();
+  var euler=new THREE.Euler();
+
+  for(var f=0;f<targetFrames;f++){
+    var t=f/targetFps;
+    var pct=(f/Math.max(targetFrames-1,1));
+    if(f%20===0) updateFbxOverlay('Sampling frame '+f+'/'+targetFrames+'…', 40+pct*50);
+
+    var boneData={};
+
+    Object.keys(trackMap).forEach(function(knightName){
+      var tracks=trackMap[knightName];
+
+      // Default to the bone's rest-pose position so bones without a position
+      // track (rotations only, the vast majority for Mixamo) stay in place.
+      // Only bones with an actual FBX position track (usually just Hips/root)
+      // will deviate from rest, which is the correct behaviour.
+      var restP=boneRestPose[knightName];
+      var pos=restP ? [restP.pos[0],restP.pos[1],restP.pos[2]] : [0,0,0];
+      // Default rotation also to rest pose (converted from stored quaternion)
+      var rot=[0,0,0];
+      if(restP){
+        var _rq=new THREE.Quaternion(restP.rot[0],restP.rot[1],restP.rot[2],restP.rot[3]);
+        var _re=new THREE.Euler().setFromQuaternion(_rq,'XYZ');
+        rot=[_re.x,_re.y,_re.z];
+      }
+
+      if(tracks['position']){
+        var posVals=sampleTrack(tracks['position'],t);
+        // Apply unit scale: Mixamo cm → metres
+        if(posVals) pos=[posVals[0]*posScale, posVals[1]*posScale, posVals[2]*posScale];
+      }
+
+      if(tracks['quaternion']){
+        var quatVals=sampleTrack(tracks['quaternion'],t);
+        if(quatVals){
+          q.set(quatVals[0],quatVals[1],quatVals[2],quatVals[3]);
+          euler.setFromQuaternion(q,'XYZ');
+          rot=[euler.x,euler.y,euler.z];
+        }
+      } else if(tracks['rotation']){
+        // Some FBX tracks export euler directly
+        var eulerVals=sampleTrack(tracks['rotation'],t);
+        if(eulerVals) rot=[eulerVals[0],eulerVals[1],eulerVals[2]];
+      }
+
+      boneData[knightName]={
+        pos:pos.map(function(v){return +v.toFixed(6);}),
+        rot:rot.map(function(v){return +v.toFixed(6);})
+      };
+    });
+
+    keyframes.push({frame:f, bones:boneData});
+  }
+
+  updateFbxOverlay('Finalising…',95);
+  curFrame=0;
+  tick();
+  drawTL();
+  updateFbxOverlay('Done!',100);
+  var scaleLabel=posScale===1 ? 'no scaling' : 'scale ×'+posScale.toFixed(4)+' (cm→m)';
+  setStatus('✓ FBX imported — '+keyframes.length+' frames · '+scaleLabel);
+}
+
+// Sample a Three.js KeyframeTrack at time t using linear interpolation
+function sampleTrack(track, t){
+  var times=track.times;
+  var values=track.values;
+  var stride=values.length/times.length;
+
+  if(!times.length) return null;
+
+  var clampedT=Math.max(times[0],Math.min(times[times.length-1],t));
+
+  // Find surrounding keyframe indices
+  var i1=0;
+  for(var i=0;i<times.length-1;i++){
+    if(times[i]<=clampedT&&times[i+1]>=clampedT){ i1=i; break; }
+    if(i===times.length-2) i1=times.length-2;
+  }
+  var i2=Math.min(i1+1,times.length-1);
+
+  var span=times[i2]-times[i1];
+  var alpha=span<0.00001 ? 0 : (clampedT-times[i1])/span;
+
+  var result=[];
+  for(var c=0;c<stride;c++){
+    var v1=values[i1*stride+c];
+    var v2=values[i2*stride+c];
+    result.push(v1+(v2-v1)*alpha);
+  }
+
+  // Normalize quaternion if this is a quat track (stride===4)
+  if(stride===4){
+    var len=Math.sqrt(result[0]*result[0]+result[1]*result[1]+result[2]*result[2]+result[3]*result[3]);
+    if(len>0.00001) for(var c=0;c<4;c++) result[c]/=len;
+  }
+
+  return result;
+}
+
 function setStatus(msg){ document.getElementById('load-status').textContent=msg; }
 
 // ── BOOT ─────────────────────────────────────────────────────────────
@@ -946,6 +1728,7 @@ window.addEventListener('load',function(){
   initTL();
   tick();
   setStatus('Loading Knight.glb…');
+  var KNIGHT_URL='https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Knight.glb';
   loadModel(KNIGHT_URL);
 });
 </script>
