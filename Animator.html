@@ -84,6 +84,14 @@ input[type=file] { display:none; }
 .bm-row select { flex:1; background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:11px; }
 .bm-row select option { background:var(--panel2); }
 
+/* Preview bar */
+#bm-preview { padding:8px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; flex-shrink:0; }
+#bm-prev-play { background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px 12px; border-radius:4px; cursor:pointer; font-size:12px; white-space:nowrap; min-width:70px; }
+#bm-prev-play.active { background:var(--accent); color:#000; border-color:var(--accent); }
+#bm-prev-scrub { flex:1; height:4px; accent-color:var(--accent); cursor:pointer; }
+#bm-prev-time { font-size:11px; color:var(--text2); min-width:34px; text-align:right; font-variant-numeric:tabular-nums; }
+#bm-prev-note { font-size:10px; color:var(--text2); }
+
 /* Footer with scale slider */
 #bonemap-footer { padding:10px 16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
 #bm-scale-row { display:flex; align-items:center; gap:8px; font-size:11px; }
@@ -99,6 +107,38 @@ input[type=file] { display:none; }
 #bm-apply:hover { background:#e0b45a; }
 #bm-auto { background:var(--panel2); color:var(--text); }
 #bm-auto:hover { background:#333; }
+
+/* MODEL OFFSET PANEL */
+#offset-panel { border-top:1px solid var(--border); flex-shrink:0; }
+.off-row { display:grid; grid-template-columns:32px 1fr 1fr 1fr; align-items:center; gap:4px; padding:4px 10px; }
+.off-ax { font-size:9px; font-weight:700; color:var(--text2); letter-spacing:.08em; }
+.off-in { background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:2px 4px; border-radius:3px; font-size:11px; width:100%; text-align:right; }
+.off-in:focus { border-color:var(--accent); outline:none; }
+#offset-reset { margin:4px 10px 8px; padding:3px 0; background:var(--panel2); border:1px solid var(--border); color:var(--text2); border-radius:3px; cursor:pointer; font-size:10px; width:calc(100% - 20px); }
+#offset-reset:hover { background:#333; color:var(--text); }
+
+/* LIBRARY MODAL */
+#lib-modal { display:none; position:fixed; inset:0; background:#000b; z-index:9997; align-items:flex-start; justify-content:center; padding-top:50px; }
+#lib-modal.show { display:flex; }
+#lib-box { background:var(--panel); border:1px solid var(--border); border-radius:8px; width:560px; max-height:78vh; display:flex; flex-direction:column; }
+#lib-box h2 { color:var(--accent); font-size:13px; font-weight:700; padding:14px 16px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
+#lib-list { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; min-height:60px; }
+#lib-list::-webkit-scrollbar { width:4px; }
+#lib-list::-webkit-scrollbar-thumb { background:var(--border); }
+.lib-entry { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--panel2); border:1px solid var(--border); border-radius:5px; transition:border-color .12s; }
+.lib-entry:hover { border-color:var(--accent); }
+.lib-name { flex:1; font-size:12px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lib-meta { font-size:10px; color:var(--text2); white-space:nowrap; }
+.lib-load { background:var(--accent); color:#000; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:700; }
+.lib-load:hover { background:#e0b45a; }
+.lib-del { background:transparent; border:1px solid #ef444440; color:#ef4444; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px; }
+.lib-del:hover { background:#ef444420; }
+#lib-empty { color:var(--text2); font-size:12px; text-align:center; padding:30px; }
+#lib-footer { padding:10px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; flex-shrink:0; }
+.lib-save-btn { background:var(--accent); color:#000; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:700; }
+.lib-save-btn:hover { background:#e0b45a; }
+#lib-close { background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:6px 14px; border-radius:4px; cursor:pointer; font-size:12px; }
+#lib-close:hover { background:#333; }
 
 /* MAIN */
 #main { display:flex; flex:1; overflow:hidden; }
@@ -187,6 +227,13 @@ input[type=file] { display:none; }
       <span style="color:var(--text2)">bones matched</span>
       <div class="bm-pips" id="bm-pips"></div>
     </div>
+    <div id="bm-preview">
+      <button id="bm-prev-play">▶ Preview</button>
+      <input type="range" id="bm-prev-scrub" min="0" max="100" step="0.1" value="0">
+      <span id="bm-prev-time">0.00s</span>
+      <span class="bm-prev-note">Live preview on knight ↑</span>
+    </div>
+
     <div id="bonemap-body"></div>
     <div id="bonemap-footer">
       <div id="bm-scale-row">
@@ -230,6 +277,8 @@ input[type=file] { display:none; }
   <input type="file" id="fbx-in" accept=".fbx">
 
   <button class="hbtn" onclick="exportAnim()">Export JS</button>
+  <button class="hbtn" onclick="saveToLibrary()" title="Save current animation to the local library">Save Anim</button>
+  <button class="hbtn" onclick="openLibrary()" title="Open animation library">📚 Library</button>
   <button class="hbtn danger" onclick="clearKF()">Clear All</button>
 
   <div id="skel-scale-wrap" title="Rescale FBX animation motion. Affects only bone displacement — never the model geometry. Drag, then click Bake to make it permanent.">
@@ -265,6 +314,35 @@ input[type=file] { display:none; }
     <div id="xform">
       <div class="ph" style="background:var(--panel)">Transform (Live Readout)</div>
       <div id="xf-content"><div id="no-sel">Select a bone to edit.<br><br>Drag the colored arrows in the viewport to move/rotate.</div></div>
+    </div>
+
+    <div id="offset-panel">
+      <div class="ph" style="background:var(--panel)">Model Offset (saved with export)</div>
+      <div class="off-row">
+        <span class="off-ax">Pos</span>
+        <input class="off-in" type="number" id="off-px" value="0" step="0.01" title="Position X">
+        <input class="off-in" type="number" id="off-py" value="0" step="0.01" title="Position Y">
+        <input class="off-in" type="number" id="off-pz" value="0" step="0.01" title="Position Z">
+      </div>
+      <div class="off-row">
+        <span class="off-ax">Rot°</span>
+        <input class="off-in" type="number" id="off-rx" value="0" step="1" title="Rotation X (degrees)">
+        <input class="off-in" type="number" id="off-ry" value="0" step="1" title="Rotation Y (degrees)">
+        <input class="off-in" type="number" id="off-rz" value="0" step="1" title="Rotation Z (degrees)">
+      </div>
+      <button id="offset-reset">↺ Reset Offset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ANIMATION LIBRARY MODAL -->
+<div id="lib-modal">
+  <div id="lib-box">
+    <h2>Animation Library</h2>
+    <div id="lib-list"></div>
+    <div id="lib-footer">
+      <button class="lib-save-btn" onclick="saveToLibrary()">+ Save Current Animation</button>
+      <button id="lib-close" onclick="closeLibrary()">Close</button>
     </div>
   </div>
 </div>
@@ -306,6 +384,10 @@ var model=null, bones=[], boneHelpers=[], boneColors=[], helperGroup=null;
 var boneRestPose={}; // snapshot of each bone's initial local pos+rot, captured on model load
 var skelAnimScale=1.0; // multiplier applied to bone position DISPLACEMENTS during playback (never scales model.scale)
 var selIdx=-1, tcMode='translate', tcSpace='local';
+
+// ── MODEL OFFSET ── (position + rotation applied to the model node itself)
+// Values are saved in the exported JS and persisted in the animation library.
+var animModelOffset={px:0,py:0,pz:0,rx:0,ry:0,rz:0};
 var keyframes=[];
 var curFrame=0, fps=24, duration=3, totalFrames=72;
 var playing=false;
@@ -1107,7 +1189,8 @@ function exportAnim(){
     });
     return {frame:k.frame,time:+(k.frame/Math.max(fps,1)).toFixed(4),bones:kb};
   });
-  var js='// Blackbanner: The Broken Order – Animation\n// '+name+' | FPS:'+fps+' | Dur:'+duration+'s | Frames:'+totalFrames+'\nvar '+name+'Animation={name:"'+name+'",fps:'+fps+',duration:'+duration+',totalFrames:'+totalFrames+',keyframes:'+JSON.stringify(raw)+',bakedFrames:'+JSON.stringify(baked)+'};\nif(typeof module!=="undefined")module.exports={'+name+'Animation:'+name+'Animation};';
+  var offOut={px:+animModelOffset.px.toFixed(4),py:+animModelOffset.py.toFixed(4),pz:+animModelOffset.pz.toFixed(4),rx:+animModelOffset.rx.toFixed(4),ry:+animModelOffset.ry.toFixed(4),rz:+animModelOffset.rz.toFixed(4)};
+  var js='// Blackbanner: The Broken Order – Animation\n// '+name+' | FPS:'+fps+' | Dur:'+duration+'s | Frames:'+totalFrames+'\nvar '+name+'Animation={name:"'+name+'",fps:'+fps+',duration:'+duration+',totalFrames:'+totalFrames+',modelOffset:'+JSON.stringify(offOut)+',keyframes:'+JSON.stringify(raw)+',bakedFrames:'+JSON.stringify(baked)+'};\nif(typeof module!=="undefined")module.exports={'+name+'Animation:'+name+'Animation};';
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([js],{type:'text/javascript'}));
   a.download=name+'.js'; a.click(); URL.revokeObjectURL(a.href);
@@ -1128,6 +1211,9 @@ document.getElementById('anim-in').addEventListener('change',function(e){
       if(fm){fps=parseInt(fm[1]);document.getElementById('fps-in').value=fps;}
       if(dm){duration=parseFloat(dm[1]);document.getElementById('dur-in').value=duration;}
       if(nm) document.getElementById('anim-name').value=nm[1];
+      // Restore modelOffset if present
+      var om=txt.match(/modelOffset:(\{[^}]+\})/);
+      if(om){try{var off=JSON.parse(om[1]);setAnimModelOffset(off);}catch(e){}}
       totalFrames=Math.round(fps*duration); curFrame=0; tick(); drawTL();
       alert('Imported '+keyframes.length+' keyframes!');
     }catch(err){alert('Parse failed: '+err.message);}
@@ -1561,6 +1647,145 @@ document.getElementById('bm-apply').onclick=function(){
   },40);
 };
 
+// ── BONE MAPPER PREVIEW ───────────────────────────────────────────────
+// Plays the pending FBX clip live on the knight using the current modal
+// dropdown selections, so the animator can check bone mapping and lean
+// before committing (Apply & Import).
+(function(){
+  var prevPlaying=false;
+  var prevRaf=null;
+  var prevT=0;
+  var prevStartWall=null;
+
+  var btnPlay=document.getElementById('bm-prev-play');
+  var scrub=document.getElementById('bm-prev-scrub');
+  var timeLbl=document.getElementById('bm-prev-time');
+
+  // Build a lightweight trackMap from the current modal dropdowns
+  function buildPreviewTrackMap(){
+    if(!pendingFbxClip) return null;
+    var map={};
+    document.querySelectorAll('#bonemap-body .bm-row').forEach(function(row){
+      var fbx=row.getAttribute('data-fbx');
+      var kn=row.querySelector('select').value;
+      if(kn) map[fbx]=kn;
+    });
+    var trackMap={};
+    pendingFbxClip.tracks.forEach(function(track){
+      var raw=track.name;
+      var dotIdx=raw.lastIndexOf('.');
+      var prop=dotIdx>=0 ? raw.substring(dotIdx+1) : '';
+      var bp=dotIdx>=0 ? raw.substring(0,dotIdx) : raw;
+      var pi=bp.indexOf('|'); if(pi>=0) bp=bp.substring(pi+1);
+      var kn=map[bp]; if(!kn) return;
+      if(!trackMap[kn]) trackMap[kn]={};
+      trackMap[kn][prop]=track;
+    });
+    return trackMap;
+  }
+
+  // Sample the FBX at time t and apply directly to bones (no keyframes stored)
+  function applyPreviewAt(t){
+    var clip=pendingFbxClip;
+    if(!clip||!bones.length) return;
+    var tm=buildPreviewTrackMap(); if(!tm) return;
+
+    // Compute root lean correction (same logic as baking)
+    var rootBN=null;
+    Object.keys(tm).forEach(function(kn){ if(tm[kn]['position']&&!rootBN) rootBN=kn; });
+    if(!rootBN) rootBN=Object.keys(tm)[0]||null;
+    var rootCorr=null;
+    if(rootBN&&tm[rootBN]&&tm[rootBN]['quaternion']){
+      var rp=boneRestPose[rootBN];
+      if(rp){
+        var rv=sampleTrack(tm[rootBN]['quaternion'],0);
+        if(rv){
+          var fq=new THREE.Quaternion(rv[0],rv[1],rv[2],rv[3]);
+          var kq=new THREE.Quaternion(rp.rot[0],rp.rot[1],rp.rot[2],rp.rot[3]);
+          rootCorr=kq.clone().multiply(fq.clone().invert());
+        }
+      }
+    }
+
+    var posScale=pendingFbxScale;
+    var q=new THREE.Quaternion();
+
+    bones.forEach(function(bone){
+      var rp=boneRestPose[bone.name];
+      var tks=tm[bone.name];
+      if(!tks){ // bone not in FBX — keep rest pose
+        if(rp){ bone.position.set(rp.pos[0],rp.pos[1],rp.pos[2]);
+                bone.quaternion.set(rp.rot[0],rp.rot[1],rp.rot[2],rp.rot[3]); }
+        return;
+      }
+      // Position
+      if(rp) bone.position.set(rp.pos[0],rp.pos[1],rp.pos[2]);
+      if(tks['position']){
+        var pv=sampleTrack(tks['position'],t);
+        if(pv) bone.position.set(pv[0]*posScale,pv[1]*posScale,pv[2]*posScale);
+      }
+      // Rotation
+      if(tks['quaternion']){
+        var qv=sampleTrack(tks['quaternion'],t);
+        if(qv){
+          q.set(qv[0],qv[1],qv[2],qv[3]);
+          if(rootCorr && bone.name===rootBN) q.premultiply(rootCorr);
+          bone.quaternion.copy(q);
+        }
+      } else if(rp){
+        bone.quaternion.set(rp.rot[0],rp.rot[1],rp.rot[2],rp.rot[3]);
+      }
+    });
+  }
+
+  function stopPreview(){
+    prevPlaying=false;
+    if(prevRaf){ cancelAnimationFrame(prevRaf); prevRaf=null; }
+    btnPlay.textContent='▶ Preview'; btnPlay.classList.remove('active');
+    // Restore rest pose
+    bones.forEach(function(bone){
+      var rp=boneRestPose[bone.name];
+      if(rp){ bone.position.set(rp.pos[0],rp.pos[1],rp.pos[2]);
+               bone.quaternion.set(rp.rot[0],rp.rot[1],rp.rot[2],rp.rot[3]); }
+    });
+  }
+
+  function loop(){
+    if(!prevPlaying){ prevRaf=null; return; }
+    var dur=pendingFbxClip ? pendingFbxClip.duration : 1;
+    var now=performance.now();
+    prevT=((now-prevStartWall)/1000) % dur;
+    applyPreviewAt(prevT);
+    scrub.value=(prevT/dur)*100;
+    timeLbl.textContent=prevT.toFixed(2)+'s';
+    prevRaf=requestAnimationFrame(loop);
+  }
+
+  btnPlay.addEventListener('click',function(){
+    if(!pendingFbxClip){ return; }
+    if(prevPlaying){ stopPreview(); return; }
+    prevPlaying=true;
+    prevStartWall=performance.now()-prevT*1000;
+    btnPlay.textContent='⏹ Stop'; btnPlay.classList.add('active');
+    loop();
+  });
+
+  scrub.addEventListener('input',function(){
+    var dur=pendingFbxClip ? pendingFbxClip.duration : 1;
+    prevT=(parseFloat(this.value)/100)*dur;
+    timeLbl.textContent=prevT.toFixed(2)+'s';
+    if(!prevPlaying) applyPreviewAt(prevT);
+    else{ prevStartWall=performance.now()-prevT*1000; }
+  });
+
+  // Reset preview state when modal closes
+  document.getElementById('bm-cancel').addEventListener('click', stopPreview);
+  // Also stop when Apply is clicked (baking will take over)
+  document.getElementById('bm-apply').addEventListener('click', function(){
+    if(prevPlaying) stopPreview();
+  });
+})();
+
 // ── FBX → KEYFRAMES BAKING ────────────────────────────────────────────
 function bakeFbxToKeyframes(clip, boneMap){
   var clipDuration=clip.duration; // in seconds
@@ -1615,6 +1840,38 @@ function bakeFbxToKeyframes(clip, boneMap){
   }
   // If user set scale explicitly, pendingFbxScale already holds their choice — use it directly.
 
+  updateFbxOverlay('Computing lean correction…',38);
+
+  // ── Root-only lean correction ─────────────────────────────────────────
+  // The lean is caused by the FBX's global axis orientation being baked into
+  // the ROOT (Hips) bone's rotation — not into child bones. Child bone local
+  // rotations are already correct relative to their parent, so we must NOT
+  // touch them. Fixing only the root bone's global orientation corrects the lean
+  // for the whole character while leaving all limb animations intact.
+  //
+  // Method: correction = knightHipsRest × inverse(fbxHipsAtT0)
+  // At frame 0 → correction × fbxHipsAtT0 = knightHipsRest  (stands upright)
+  // At any frame → correction × fbxHipsFrame = animation played from knight rest
+  var rootBoneName=null;
+  Object.keys(trackMap).forEach(function(kn){
+    if(trackMap[kn]['position'] && !rootBoneName) rootBoneName=kn;
+  });
+  // Fallback: if no position track, use first bone in map
+  if(!rootBoneName) rootBoneName=Object.keys(trackMap)[0]||null;
+
+  var rootLeanCorrection=null;
+  if(rootBoneName && trackMap[rootBoneName]['quaternion']){
+    var rootRestP=boneRestPose[rootBoneName];
+    if(rootRestP){
+      var fbxRootVals0=sampleTrack(trackMap[rootBoneName]['quaternion'],0);
+      if(fbxRootVals0){
+        var fbxRootQ0=new THREE.Quaternion(fbxRootVals0[0],fbxRootVals0[1],fbxRootVals0[2],fbxRootVals0[3]);
+        var knightRootQ=new THREE.Quaternion(rootRestP.rot[0],rootRestP.rot[1],rootRestP.rot[2],rootRestP.rot[3]);
+        rootLeanCorrection=knightRootQ.clone().multiply(fbxRootQ0.clone().invert());
+      }
+    }
+  }
+
   updateFbxOverlay('Sampling animation frames…',40);
 
   // Sample each frame
@@ -1638,7 +1895,8 @@ function bakeFbxToKeyframes(clip, boneMap){
       // will deviate from rest, which is the correct behaviour.
       var restP=boneRestPose[knightName];
       var pos=restP ? [restP.pos[0],restP.pos[1],restP.pos[2]] : [0,0,0];
-      // Default rotation also to rest pose (converted from stored quaternion)
+
+      // Default rotation to rest pose; will be replaced if a track exists.
       var rot=[0,0,0];
       if(restP){
         var _rq=new THREE.Quaternion(restP.rot[0],restP.rot[1],restP.rot[2],restP.rot[3]);
@@ -1656,11 +1914,17 @@ function bakeFbxToKeyframes(clip, boneMap){
         var quatVals=sampleTrack(tracks['quaternion'],t);
         if(quatVals){
           q.set(quatVals[0],quatVals[1],quatVals[2],quatVals[3]);
+          // Apply lean correction ONLY to the root (Hips) bone.
+          // Child bones are in local space relative to their parent — their
+          // rotations are already correct. Touching them would break the animation.
+          if(rootLeanCorrection && knightName===rootBoneName){
+            q.premultiply(rootLeanCorrection);
+          }
           euler.setFromQuaternion(q,'XYZ');
           rot=[euler.x,euler.y,euler.z];
         }
       } else if(tracks['rotation']){
-        // Some FBX tracks export euler directly
+        // Some FBX tracks export Euler directly (rare)
         var eulerVals=sampleTrack(tracks['rotation'],t);
         if(eulerVals) rot=[eulerVals[0],eulerVals[1],eulerVals[2]];
       }
@@ -1721,6 +1985,140 @@ function sampleTrack(track, t){
 }
 
 function setStatus(msg){ document.getElementById('load-status').textContent=msg; }
+
+// ── MODEL OFFSET FUNCTIONS ────────────────────────────────────────────
+function applyModelOffset(){
+  if(!model) return;
+  model.position.set(animModelOffset.px, animModelOffset.py, animModelOffset.pz);
+  model.rotation.set(
+    THREE.MathUtils.degToRad(animModelOffset.rx),
+    THREE.MathUtils.degToRad(animModelOffset.ry),
+    THREE.MathUtils.degToRad(animModelOffset.rz)
+  );
+}
+
+function setAnimModelOffset(off){
+  animModelOffset.px=off.px||0; animModelOffset.py=off.py||0; animModelOffset.pz=off.pz||0;
+  animModelOffset.rx=off.rx||0; animModelOffset.ry=off.ry||0; animModelOffset.rz=off.rz||0;
+  document.getElementById('off-px').value=animModelOffset.px;
+  document.getElementById('off-py').value=animModelOffset.py;
+  document.getElementById('off-pz').value=animModelOffset.pz;
+  document.getElementById('off-rx').value=animModelOffset.rx;
+  document.getElementById('off-ry').value=animModelOffset.ry;
+  document.getElementById('off-rz').value=animModelOffset.rz;
+  applyModelOffset();
+}
+
+function resetAnimOffset(){
+  setAnimModelOffset({px:0,py:0,pz:0,rx:0,ry:0,rz:0});
+}
+
+(function(){
+  ['px','py','pz'].forEach(function(k){
+    document.getElementById('off-'+k).addEventListener('input',function(){
+      animModelOffset[k]=parseFloat(this.value)||0;
+      applyModelOffset();
+    });
+  });
+  ['rx','ry','rz'].forEach(function(k){
+    document.getElementById('off-'+k).addEventListener('input',function(){
+      animModelOffset[k]=parseFloat(this.value)||0;
+      applyModelOffset();
+    });
+  });
+  document.getElementById('offset-reset').addEventListener('click', resetAnimOffset);
+})();
+
+// ── ANIMATION LIBRARY (localStorage) ──────────────────────────────────
+var LIB_KEY='blackbanner_anim_lib';
+
+function getLibrary(){
+  try{ return JSON.parse(localStorage.getItem(LIB_KEY)||'[]'); }catch(e){ return []; }
+}
+
+function saveLibData(lib){
+  try{ localStorage.setItem(LIB_KEY,JSON.stringify(lib)); }catch(e){ alert('Storage full – delete some animations first.'); }
+}
+
+function saveToLibrary(){
+  if(!keyframes.length){ alert('No keyframes to save.'); return; }
+  var name=(document.getElementById('anim-name').value.trim()||'Untitled').replace(/[^\w\s-]/g,'').trim()||'Untitled';
+  var lib=getLibrary();
+  var entry={
+    id:Date.now(),
+    name:name,
+    date:new Date().toLocaleDateString(),
+    fps:fps,
+    duration:duration,
+    totalFrames:totalFrames,
+    keyframes:JSON.parse(JSON.stringify(keyframes)),
+    modelOffset:JSON.parse(JSON.stringify(animModelOffset))
+  };
+  // Replace existing entry with same name, or prepend
+  var existing=lib.findIndex(function(e){ return e.name===name; });
+  if(existing>=0){ lib[existing]=entry; }
+  else{ lib.unshift(entry); if(lib.length>60) lib=lib.slice(0,60); }
+  saveLibData(lib);
+  renderLibList();
+  setStatus('Saved "'+name+'" to library');
+}
+
+function loadFromLibrary(id){
+  var lib=getLibrary();
+  var entry=lib.find(function(e){ return e.id===id; });
+  if(!entry) return;
+  fps=entry.fps; duration=entry.duration; totalFrames=entry.totalFrames;
+  document.getElementById('fps-in').value=fps;
+  document.getElementById('dur-in').value=duration;
+  document.getElementById('anim-name').value=entry.name;
+  keyframes=JSON.parse(JSON.stringify(entry.keyframes));
+  if(entry.modelOffset) setAnimModelOffset(entry.modelOffset);
+  curFrame=0; tick(); drawTL();
+  closeLibrary();
+  setStatus('Loaded "'+entry.name+'" from library');
+}
+
+function deleteFromLibrary(id){
+  if(!confirm('Remove this animation from the library?')) return;
+  saveLibData(getLibrary().filter(function(e){ return e.id!==id; }));
+  renderLibList();
+}
+
+function renderLibList(){
+  var lib=getLibrary();
+  var el=document.getElementById('lib-list');
+  if(!lib.length){
+    el.innerHTML='<div id="lib-empty">No animations saved yet.<br>Click "+ Save Current Animation" below, or use the header "Save Anim" button.</div>';
+    return;
+  }
+  el.innerHTML='';
+  lib.forEach(function(entry){
+    var row=document.createElement('div');
+    row.className='lib-entry';
+    var hasMO=(entry.modelOffset&&(entry.modelOffset.px||entry.modelOffset.py||entry.modelOffset.pz||entry.modelOffset.rx||entry.modelOffset.ry||entry.modelOffset.rz));
+    var moTag=hasMO?'<span class="lib-meta" title="Has model offset" style="color:var(--accent)">⊙</span>':'';
+    row.innerHTML='<div class="lib-name">'+entry.name+'</div>'
+      +moTag
+      +'<span class="lib-meta">'+entry.duration+'s @ '+entry.fps+'fps · '+entry.date+'</span>'
+      +'<button class="lib-load" onclick="loadFromLibrary('+entry.id+')">Load</button>'
+      +'<button class="lib-del" onclick="deleteFromLibrary('+entry.id+')">✕</button>';
+    el.appendChild(row);
+  });
+}
+
+function openLibrary(){
+  renderLibList();
+  document.getElementById('lib-modal').classList.add('show');
+}
+
+function closeLibrary(){
+  document.getElementById('lib-modal').classList.remove('show');
+}
+
+// Close library on backdrop click
+document.getElementById('lib-modal').addEventListener('click',function(e){
+  if(e.target===this) closeLibrary();
+});
 
 // ── BOOT ─────────────────────────────────────────────────────────────
 window.addEventListener('load',function(){
