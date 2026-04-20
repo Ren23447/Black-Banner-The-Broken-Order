@@ -932,6 +932,27 @@
         .qm-right:hover { transform: translateY(-50%) translateX(5px) scale(1.04); }
         .qm-center { display: none; }
         .qm-slot-icon { position: relative; z-index: 2; font-size: 23px; line-height: 1; filter: drop-shadow(0 0 12px rgba(255,231,172,0.62)); }
+        .qm-slot-name {
+            position: absolute;
+            left: 50%;
+            bottom: -18px;
+            transform: translateX(-50%);
+            width: 92px;
+            z-index: 3;
+            color: rgba(242,229,188,0.9);
+            font-size: 8px;
+            letter-spacing: 1px;
+            text-align: center;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 2px 8px #000;
+        }
+        .qm-slot.qm-equipped {
+            border-color: rgba(255,123,40,1);
+            box-shadow: inset 0 0 23px rgba(0,0,0,0.54), inset 0 1px 0 rgba(255,246,214,0.26), 0 0 30px rgba(255,92,24,0.58), 0 10px 30px rgba(0,0,0,0.64);
+        }
         .qm-key-hint {
             position: absolute;
             right: 8px; bottom: 5px;
@@ -1271,6 +1292,17 @@
             <div class="hud-top"><span>Endurance</span><span class="hud-value" id="stamina-value">100%</span></div>
             <div class="hud-track"><div class="hud-fill" id="stamina-fill"></div><div id="punch-stamina-preview" style="width:0%;opacity:0;"></div></div>
         </div>
+        <!-- Spread Flame cooldown bar — only visible when Ember Blade is equipped -->
+        <div id="spread-flame-cooldown-bar" style="display:none;margin-top:6px;">
+            <div class="hud-top" style="display:flex;justify-content:space-between;">
+                <span style="color:#ff8800;font-size:10px;letter-spacing:2px;text-transform:uppercase;">&#128293; Spread Flame</span>
+                <span style="color:#ff8800;font-size:10px;">Right Click</span>
+            </div>
+            <div class="hud-track" style="height:7px;position:relative;">
+                <div id="spread-flame-cooldown-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#ff6600,#ffcc00);transition:width 0.15s linear;"></div>
+                <div id="spread-flame-charge-fill" style="position:absolute;top:0;left:0;height:100%;width:0%;background:rgba(255,255,100,0.85);opacity:0;transition:width 0.05s linear;box-shadow:0 0 8px #ffff44;"></div>
+            </div>
+        </div>
     </div>
     <div id="interact-prompt">
         <div class="interact-box">
@@ -1596,6 +1628,8 @@
         <h3>&#9764; Knight's Orders &#9764;</h3>
         <div class="kb-row"><span class="kb-key">W A S D</span><span class="kb-desc">Move</span></div>
         <div class="kb-row"><span class="kb-key">Mouse</span><span class="kb-desc">Look</span></div>
+        <div class="kb-row"><span class="kb-key">LMB</span><span class="kb-desc">Attack</span></div>
+        <div class="kb-row"><span class="kb-key">RMB</span><span class="kb-desc">Spread Flame</span></div>
         <div class="kb-row"><span class="kb-key">Space</span><span class="kb-desc">Jump</span></div>
         <div class="kb-row"><span class="kb-key">Shift</span><span class="kb-desc">Sprint</span></div>
         <div class="kb-row"><span class="kb-key">Z</span><span class="kb-desc">Crouch</span></div>
@@ -1614,6 +1648,8 @@
             <h3>Keyboard &amp; Mouse</h3>
             <div class="kb-row"><span class="kb-key">W A S D</span><span class="kb-desc">Move</span></div>
             <div class="kb-row"><span class="kb-key">Mouse</span><span class="kb-desc">Look Around</span></div>
+            <div class="kb-row"><span class="kb-key">Left Click</span><span class="kb-desc">Attack</span></div>
+            <div class="kb-row"><span class="kb-key">Right Click</span><span class="kb-desc">Spread Flame</span></div>
             <div class="kb-row"><span class="kb-key">Space</span><span class="kb-desc">Jump</span></div>
             <div class="kb-row"><span class="kb-key">Left Shift</span><span class="kb-desc">Sprint</span></div>
             <div class="kb-row"><span class="kb-key">Z</span><span class="kb-desc">Crouch</span></div>
@@ -2055,6 +2091,38 @@ let runJumpTimeout = null;
 let crouchTransitionTimeout = null;
 let gpPunchPressed = false;
 let isAscendingStairs = false;
+
+// ── Sword system state ───────────────────────────────────────────────────────
+let swordMesh3D = null;           // The 3D sword mesh attached to player hand
+let swordInteractable = null;     // The world interactable for the sword pickup
+let swordWorldGroup = null;
+let swordWorldProxy = null;
+let swordWorldLight = null;
+let isSwordEquipped = false;      // True when sword is in active quick slot
+let isSwordAttacking = false;     // True during sword normal attack animation
+let swordAttackTimeout = null;
+let isSpreadFlameActive = false;  // True during Spread Flame ability animation
+let spreadFlameTimeout = null;
+let spreadFlameCooldown = 0;      // Seconds remaining on Skyrim-style cooldown (max 45)
+const SPREAD_FLAME_COOLDOWN_MAX = 45;
+const SPREAD_FLAME_CHARGE_TIME = 0.0; // instant — triggers on press
+
+// ── Sword size constants — use SIS.html to generate these values visually ──────
+const SWORD_ROCK_MAX_DIM  = 1.45;            // max world-unit extent of sword in the rock
+const SWORD_HAND_MAX_DIM  = 0.9;             // max world-unit extent of sword in hand
+const SWORD_HAND_POS      = [0.06, 0.04, 0.0];      // [x, y, z] offset inside hand bone
+const SWORD_HAND_ROT      = [-1.35, 0.05, 0.18];    // [x, y, z] Euler rotation in hand (radians)
+// ────────────────────────────────────────────────────────────────────────────────
+let attackChargeTimer = 0;        // how long mouse button held down
+let attackChargeActive = false;   // mouse is currently held down
+let activeQuickSlotIndex = -1;    // which quick slot is currently "selected" (equipped)
+let lastSwordAttackName = null;
+// Flame particle sources for spread flame ability
+window._flameParticleSources = window._flameParticleSources || [];
+let _swordHandBone = null;        // bone reference for hand attachment
+let potionWorldGroup = null;
+let potionWorldLight = null;
+let potionInteractable = null;
 let isOnStairs = false;
 let prevPosY = 0;
 let smoothedLookY = 0;   // smoothed camera look-target Y (removes stair-step jitter)
@@ -2087,7 +2155,10 @@ const ANIM_URLS = {
     sadIdle: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sad%20Idle.fbx',
     runStop: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Run%20To%20Stop.fbx',
     shieldTurn: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20180%20Turn.fbx',
-    death:    'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Death.fbx'
+    death:    'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Death.fbx',
+    swordSlash1:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Great%20Sword%20Slash.fbx',
+    swordSlash2:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Slash.fbx',
+    spreadFlame:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Attack.fbx'
 };
 const animDataStore = {};
 const _knightBoneMap = {}; // normalized bone name → actual name in model skeleton
@@ -2117,6 +2188,7 @@ let stamina = 100;
 let isStaminaExhausted = false;
 const STAMINA_DRAIN = 30;
 const STAMINA_RECOVER = 12;
+const SWORD_ATTACK_STAMINA_COST = 14;
 let healthRegenTimer = 0;
 let staminaRegenTimer = 0;
 let isPlayerDead = false;
@@ -2148,6 +2220,10 @@ let questBookGroup = null;
 const QUEST_BOOK_POSITION = new THREE.Vector3(4, 1.25, 12);
 const QUEST_ARENA_POSITION = new THREE.Vector3(15, 0.65, 5);
 const WAYPOINT_VISIBLE_RANGE = 34;
+// ── Sword Quest (Mission 2) — unlocks after first mission completed ─────────
+// States: 'locked' | 'available' | 'accepted' | 'readyTurnIn' | 'completed'
+let swordQuestState = 'locked';
+const SWORD_ROCK_POSITION = new THREE.Vector3(-24, 0, -24); // big rock at [-24,-24,1.8]
 
 const MAX_SLOTS = 15;
 let inventoryOpen = false;
@@ -2157,6 +2233,9 @@ let quickSlots = [null, null, null, null];
 let playerGold = 0;
 const MAX_CARRY_WEIGHT = 100;
 const TEST_QUEST_REWARD_GOLD = 100;
+const SWORD_QUEST_REWARD_GOLD = 250;
+const flammableTrees = [];
+const flammableGrass = [];
 
 function registerKnightBoneName(name) {
     if (!name) return;
@@ -2235,13 +2314,6 @@ function init() {
         renderInventoryQuickSlots();
         renderQuickMenu();
         updateQuestTracker();
-        // If quest was completed in a prior session, hide the quest book interactable
-        if (questState === 'completed' && questBookInteractable) {
-            interactables = interactables.filter(i => i !== questBookInteractable);
-            if (questBookGroup) questBookGroup.traverse(c => {
-                if (c.material && c.material.emissive) c.material.emissive.setHex(0x000000);
-            });
-        }
     }
 
     // FPS camera
@@ -2646,11 +2718,13 @@ function buildMap() {
 
     const addPine = (x, z, s = 1, lean = 0) => {
         const y = groundY(x, z);
+        const treeRecord = { x, z, y, s, burned: false, burning: false, parts: [] };
         const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, 2.15 * s, 8), barkMat);
         trunk.position.set(x, y + 1.05 * s, z);
         trunk.rotation.z = lean;
         trunk.castShadow = true;
         scene.add(trunk);
+        treeRecord.parts.push(trunk);
         for (let i = 0; i < 3; i++) {
             const crown = new THREE.Mesh(new THREE.ConeGeometry((1.08 - i * 0.18) * s, 1.75 * s, 9), pineMat);
             crown.position.set(x + Math.sin(lean) * i * 0.14, y + (2.0 + i * 0.72) * s, z);
@@ -2658,6 +2732,7 @@ function buildMap() {
             crown.castShadow = true;
             crown.receiveShadow = true;
             scene.add(crown);
+            treeRecord.parts.push(crown);
         }
         // Invisible box collider for the trunk so the player cannot walk through trees
         const trunkW = 0.5 * s;
@@ -2666,10 +2741,12 @@ function buildMap() {
         colliderMesh.position.set(x, y + 1.05 * s, z);
         scene.add(colliderMesh);
         collidableMeshes.push(colliderMesh);
+        flammableTrees.push(treeRecord);
     };
 
     const addGrassTuft = (x, z, s = 1) => {
         const y = groundY(x, z);
+        const grassRecord = { x, z, y, s, burned: false, burning: false, parts: [] };
         for (let i = 0; i < 3; i++) {
             const blade = new THREE.Mesh(new THREE.ConeGeometry(0.055 * s, 0.62 * s, 5), mossMat);
             blade.position.set(x + (i - 1) * 0.13 * s, y + 0.28 * s, z + Math.sin(i * 1.9) * 0.08 * s);
@@ -2677,7 +2754,9 @@ function buildMap() {
             blade.rotation.y = i * 1.4;
             blade.castShadow = true;
             scene.add(blade);
+            grassRecord.parts.push(blade);
         }
+        flammableGrass.push(grassRecord);
     };
 
     const addTerrainHill = (cx, cz, width, depth, height, mat) => {
@@ -2797,24 +2876,12 @@ function buildMap() {
         }
     }
 
-    // Central keep
-    addBox(12, 10, 12, 0, 5, -10, darkStone);
-    addBox(3, 5.5, 2.5, 0, 5.5, -4, darkStone);
+    // (Central keep removed per user request)
 
-    // Keep stairs — 16 steps, wider and deeper for a satisfying climb
-    const stepH = 0.28, stepD = 1.0, numSteps = 16;
-    for (let i = 0; i < numSteps; i++) {
-        const step = addBox(5, stepH, stepD, 0, (i * stepH) + stepH / 2, -3 + (i * stepD), stoneMat);
-        step.userData.isStair = true;
-    }
-
-    // (tX small archway removed)
-
-    // Wall with gap — hole is just above crouch height so the player must crouch to pass.
-    // PASS_H > STAND_HEIGHT(1.75) forces crouching; well above CROUCH_HEIGHT(1.12) so the player fits.
-    // No tunnel behind the wall — just a single wall slab with the gap.
-    const cX = 29, cZ = 14;
-    const PASS_H = 1.55; // comfortably above CROUCH_HEIGHT(1.12) — must crouch, but can pass through
+    // Wall with gap — repositioned per user request to x=20, z=22.
+    // Standing-height passage (no crouch needed).
+    const cX = 20, cZ = 22;
+    const PASS_H = 2.0; // standing-height gap — player walks straight through
     const WALL_H = 4.0, WALL_D = 1.2;
     // Side pillars (solid, full height)
     addBox(3.8, WALL_H, WALL_D, cX - 5.4, WALL_H / 2, cZ, stoneMat);
@@ -2954,6 +3021,26 @@ function buildMap() {
 
     addCylinder(1.8, 2.15, 0.7, 16, -8, groundY(-8, 8) + 0.35, 8, stoneMat, 0, false);
     addCylinder(0.9, 1.0, 0.38, 16, -8, groundY(-8, 8) + 0.9, 8, darkStone, 0, false);
+    // Invisible box collision proxies for well disc platform (cylinders have no collision)
+    (function() {
+        const wbx = -8, wbz = 8;
+        const wby = groundY(wbx, wbz);
+        const discProxy = new THREE.Mesh(
+            new THREE.BoxGeometry(4.0, 0.75, 4.0),
+            new THREE.MeshBasicMaterial({ visible: false })
+        );
+        discProxy.position.set(wbx, wby + 0.375, wbz);
+        scene.add(discProxy);
+        collidableMeshes.push(discProxy);
+        // Well arch crossbeam collision proxy
+        const crossProxy = new THREE.Mesh(
+            new THREE.BoxGeometry(2.4, 0.25, 0.4),
+            new THREE.MeshBasicMaterial({ visible: false })
+        );
+        crossProxy.position.set(wbx, wby + 3.5, wbz - 0.84);
+        scene.add(crossProxy);
+        collidableMeshes.push(crossProxy);
+    })();
 
     addCylinder(1.0, 1.15, 4.2, 12, -23.5, groundY(-23.5, -18) + 2.1, -18, darkStone, 0.2, false);
     addCylinder(0.85, 1.0, 3.1, 12, -18.8, groundY(-18.8, -15) + 1.55, -15, darkStone, -0.15, false);
@@ -3005,7 +3092,9 @@ function buildMap() {
     const potionLight = new THREE.PointLight(0x00ffaa, 1.5, 5);
     potionLight.position.set(-8, 1.5, 8);
     scene.add(potionLight);
-    interactables.push({
+    potionWorldGroup = potionGroup;
+    potionWorldLight = potionLight;
+    potionInteractable = {
         mesh: potionGroup, light: potionLight,
         type: 'item', label: 'Pick up Healing Draught',
         item: {
@@ -3028,7 +3117,8 @@ function buildMap() {
             interactables = interactables.filter(i => i.mesh !== potionGroup);
             showNotif('Acquired: Healing Draught');
         }
-    });
+    };
+    interactables.push(potionInteractable);
 
     // Ancient Marble Column (merchant shop — GLB model)
     (function() {
@@ -3149,25 +3239,145 @@ function buildMap() {
         window._blueMagicSrcCount = (window._blueMagicSrcCount || 0) + 1;
     })();
 
-    // Sword shard pickup
-    const swordGlow = addBox(0.3, 1.0, 0.1, 0, 1.0, -3,
-        new THREE.MeshStandardMaterial({ color: 0xc8a96e, emissive: 0xc86030, emissiveIntensity: 0.6, metalness: 0.8, roughness: 0.2 }), 0, false);
-    const swordLight = new THREE.PointLight(0xffaa44, 1.2, 4);
-    swordLight.position.copy(swordGlow.position);
-    swordLight.position.y += 0.5;
-    scene.add(swordLight);
-    interactables.push({
-        mesh: swordGlow, light: swordLight,
-        type: 'item', label: 'Pick up Longsword Shard',
-        item: { name: 'Longsword Shard', icon: '⚔', type: 'misc', weight: 3, desc: 'A fragment of a shattered longsword. Ancient runes line the broken blade — a relic of the Broken Order.' },
-        onInteract: () => {
-            const entry = interactables.find(i => i.mesh === swordGlow);
-            if (!addItemToInventory(entry.item)) return;
-            scene.remove(swordGlow); scene.remove(swordLight);
-            interactables = interactables.filter(i => i.mesh !== swordGlow);
-            showNotif('Acquired: Longsword Shard');
+    // ── Ember Blade — 3D sword embedded in the big rock at (-24, -24) ──────────
+    // The sword only becomes interactable after mission 1 is completed.
+    // We load the GLB model from GitHub and position it jutting out of the rock.
+    (function() {
+        const SWORD_GLB_PRIMARY  = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb';
+        const SWORD_GLB_FALLBACK = 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/10%5E9_%24w0rd.glb';
+
+        // Rock position: (-24, -24) with scale 1.8 → world Y ≈ groundY(-24,-24) + 0.34*1.8
+        const rockX = -24, rockZ = -24;
+        const rockGroundY = authoredTerrainHeight(rockX, rockZ);
+        const swordWorldX = rockX + 0.3;
+        const swordWorldY = rockGroundY + 0.34 * 1.8 + 0.5; // sticking out above rock centre
+        const swordWorldZ = rockZ - 0.2;
+
+        // Glow point light — ambient glow from spawn, brighter when quest active
+        const swordLight = new THREE.PointLight(0xff6020, 0.6, 6);
+        swordLight.position.set(swordWorldX, swordWorldY + 0.4, swordWorldZ);
+        scene.add(swordLight);
+        swordWorldLight = swordLight;
+
+        // Proxy mesh for interaction raycasting (invisible box near sword tip)
+        const swordProxy = new THREE.Mesh(
+            new THREE.BoxGeometry(0.5, 1.2, 0.5),
+            new THREE.MeshBasicMaterial({ visible: false })
+        );
+        swordProxy.position.set(swordWorldX, swordWorldY, swordWorldZ);
+        scene.add(swordProxy);
+        swordWorldProxy = swordProxy;
+
+        // Load the GLB sword model
+        const swordGltfLoader = new GLTFLoader();
+        const swordGroup = new THREE.Group();
+        swordGroup.position.set(swordWorldX, swordWorldY - 0.35, swordWorldZ);
+        swordGroup.rotation.set(0.4, 0.6, 0.3); // angled as if wedged into rock
+        scene.add(swordGroup);
+        swordWorldGroup = swordGroup;
+        function _applySwordRockModel(gltf) {
+            const mdl = gltf.scene;
+            mdl.scale.set(1, 1, 1);
+            mdl.traverse(c => {
+                if (c.isMesh) {
+                    c.castShadow = true;
+                    c.receiveShadow = true;
+                    // Add emissive glow to the blade
+                    if (c.material) {
+                        c.material = c.material.clone();
+                        c.material.emissive = new THREE.Color(0xff3300);
+                        c.material.emissiveIntensity = 0.35;
+                    }
+                }
+            });
+            swordGroup.add(mdl);
+            // Auto-scale to hand-ready size; the rock display and held clone share this reference.
+            mdl.updateMatrixWorld(true);
+            const bb = new THREE.Box3().setFromObject(mdl);
+            const sz = new THREE.Vector3();
+            bb.getSize(sz);
+            const maxD = Math.max(sz.x, sz.y, sz.z);
+            const sc = maxD > 0.001 ? (SWORD_ROCK_MAX_DIM / maxD) : 0.16;
+            mdl.scale.setScalar(sc);
+            mdl.updateMatrixWorld(true);
+            const scaledBox = new THREE.Box3().setFromObject(mdl);
+            const center = new THREE.Vector3();
+            scaledBox.getCenter(center);
+            mdl.position.set(-center.x, -scaledBox.min.y - 0.18, -center.z);
+            // Store reference for hand attachment clone
+            window._swordRockModelRef = mdl;
+            // If the sword was already equipped (via saved state) but used fallback geometry, re-attach
+            if (isSwordEquipped && swordMesh3D) {
+                const bone = _getSwordHandBone();
+                if (bone) { detachSwordFromHand(); attachSwordToHand(); }
+            }
         }
-    });
+
+        function _swordFallbackGeometry() {
+            // Fallback: visible blade shape — thicker so it shows up from a distance
+            const bladeMat = new THREE.MeshStandardMaterial({ color: 0xc8ddf0, metalness: 0.95, roughness: 0.08, emissive: 0xff2200, emissiveIntensity: 0.55 });
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0x5c3010, roughness: 0.75 });
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.1, 0.06), bladeMat);
+            blade.position.y = 0.62;
+            const guard = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 0.09), bladeMat);
+            guard.position.y = 0.06;
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.36, 0.10), handleMat);
+            handle.position.y = -0.18;
+            [blade, guard, handle].forEach(m => { m.castShadow = true; m.frustumCulled = false; });
+            swordGroup.add(blade, guard, handle);
+            // For hand attachment: a flat (un-rotated) clone so the hand grip is correct
+            const handRef = new THREE.Group();
+            const bH = blade.clone(), gH = guard.clone(), hH = handle.clone();
+            [bH, gH, hH].forEach(m => { m.castShadow = true; m.frustumCulled = false; });
+            handRef.add(bH, gH, hH);
+            window._swordRockModelRef = handRef;
+        }
+
+        swordGltfLoader.load(SWORD_GLB_PRIMARY, _applySwordRockModel, null, () => {
+            swordGltfLoader.load(SWORD_GLB_FALLBACK, _applySwordRockModel, null, () => {
+                _swordFallbackGeometry();
+            });
+        });
+
+        // The interactable — only active when sword quest is accepted
+        const emberBladeItem = {
+            name: 'Ember Blade', icon: '🔥', type: 'weapon', weight: 5,
+            desc: 'An ancient sword of the Broken Order, pried from a buried rock. Its blade pulses with bound flame. Equip to wield. Right-click to instantly unleash Spread Flame.',
+            onEquip: () => { isSwordEquipped = true; attachSwordToHand(); },
+            onUnequip: () => { isSwordEquipped = false; detachSwordFromHand(); }
+        };
+
+        swordInteractable = {
+            mesh: swordProxy,
+            light: swordLight,
+            type: 'item',
+            static: true,
+            label: 'Retrieve the Ember Blade',
+            onInteract: () => {
+                // Only interactable when sword quest accepted
+                if (swordQuestState !== 'accepted') {
+                    showNotif('Complete your first mission to reveal the blade\'s secret.');
+                    return;
+                }
+                if (!addItemToInventory(emberBladeItem)) return;
+                // Remove from world
+                scene.remove(swordGroup);
+                scene.remove(swordLight);
+                scene.remove(swordProxy);
+                interactables = interactables.filter(i => i !== swordInteractable);
+                swordQuestState = 'readyTurnIn';
+                updateQuestTracker();
+                showNotif('Acquired: Ember Blade — return to the mission book');
+                saveGame(true);
+            }
+        };
+
+        // Start with the interactable in the world (but label/interaction gated by quest state)
+        interactables.push(swordInteractable);
+
+        // Store light for animation tick
+        swordProxy.userData.swordLight = swordLight;
+    })();
 }
 
 // ——— Mission Book (GLB with floating animation) ———
@@ -3355,9 +3565,8 @@ function addItemToInventory(item) {
           const stackSlot = inventoryItems.findIndex(s => s && s.name === item.name && s.type === item.type);
           if (stackSlot !== -1) {
               inventoryItems[stackSlot].count = (inventoryItems[stackSlot].count || 1) + (item.count || 1);
-              renderInventoryStats();
-              renderInventoryGrid();
-              renderInventoryQuickSlots();
+              // Defer DOM updates to next frame so pickup doesn't spike main thread
+              requestAnimationFrame(() => { renderInventoryStats(); renderInventoryGrid(); renderInventoryQuickSlots(); });
               return true;
           }
       }
@@ -3365,9 +3574,8 @@ function addItemToInventory(item) {
       if (slot === -1) { showNotif('Inventory Full'); return false; }
       item.count = item.count || 1;
       inventoryItems[slot] = item;
-      renderInventoryStats();
-      renderInventoryGrid();
-      renderInventoryQuickSlots();
+      // Defer DOM updates to next frame so pickup doesn't spike main thread
+      requestAnimationFrame(() => { renderInventoryStats(); renderInventoryGrid(); renderInventoryQuickSlots(); });
       return true;
   }
 
@@ -3466,8 +3674,8 @@ function renderInventoryGrid() {
                     useBtn = `<button class="inv-use-btn" id="inv-use-btn">&#9670; Consume</button>`;
                 }
                 let qAssign = '';
-                if (item.type === 'consumable') {
-                    qAssign = `<div style="margin-top:8px;display:flex;gap:4px;">
+                if (item.type === 'consumable' || item.type === 'weapon') {
+                    qAssign = `<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
                         <button class="inv-use-btn qm-assign-btn" data-qslot="0" style="padding:3px 10px;font-size:10px;">Q1 &#9650;</button>
                         <button class="inv-use-btn qm-assign-btn" data-qslot="3" style="padding:3px 10px;font-size:10px;">Q2 &#9660;</button>
                         <button class="inv-use-btn qm-assign-btn" data-qslot="1" style="padding:3px 10px;font-size:10px;">Q3 &#9664;</button>
@@ -3484,10 +3692,13 @@ function renderInventoryGrid() {
                     document.getElementById('inv-use-btn').addEventListener('click', () => {
                         useInventoryItem(selectedSlot);
                     });
+                }
+                if (item.type === 'consumable' || item.type === 'weapon') {
                     document.querySelectorAll('.qm-assign-btn').forEach(btn => {
                         btn.addEventListener('click', () => {
                             const qIdx = parseInt(btn.dataset.qslot);
                             assignToQuickSlot(qIdx, item, selectedSlot);
+                            activeQuickSlotIndex = qIdx; // auto-equip weapon
                             showNotif('Moved to Quick Slot');
                         });
                     });
@@ -3633,28 +3844,76 @@ function setupHomeMusicUnlock() {
 // ——— Menus ———
 function setupMenuButtons() {
     playHomeMusicIfAllowed();
-    document.getElementById('btn-play').addEventListener('click', () => {
-        if (gameState !== 'HOME') return;
-        pauseHomeMusic();
-
-        // ── True "New Game" — wipe ALL saved progress ──────────────────────────
-        try { localStorage.removeItem('bb_save'); } catch(e) {}
+    function resetPlayerProgressForNewGame() {
         playerHealth    = 100;
         playerMaxHealth = 100;
         stamina         = 100;
         isStaminaExhausted = false;
+        playerGold = 0;
+        questState = 'available';
+        swordQuestState = 'locked';
         inventoryItems  = new Array(MAX_SLOTS).fill(null);
         quickSlots      = [null, null, null, null];
+        selectedSlot = -1;
+        activeQuickSlotIndex = -1;
+        isSwordEquipped = false;
+        detachSwordFromHand();
+        spreadFlameCooldown = 0;
+        lastSwordAttackName = null;
+        isSwordAttacking = false;
+        isSpreadFlameActive = false;
+        attackChargeActive = false;
+        attackChargeTimer = 0;
         _deathCount     = 0;
+        isPlayerDead = false;
+        isDying = false;
+        isLanding = false;
+        isTurning = false;
+        isRunStopping = false;
+        isRunJumping = false;
+        isCrouchTransitioning = false;
+        inventoryOpen = false;
+        questBookOpen = false;
+        shopOpen = false;
+        clearTimeout(deathTimeout);
+        clearTimeout(landingTimeout);
+        clearTimeout(turnTimeout);
+        clearTimeout(runStopTimeout);
+        clearTimeout(runJumpTimeout);
+        clearTimeout(crouchTransitionTimeout);
+        clearTimeout(swordAttackTimeout);
+        clearTimeout(spreadFlameTimeout);
         velocity.set(0, 0, 0);
         controls.getObject().position.set(10, baseHeightOffset, 20);
+        smoothedLookY = baseHeightOffset - 1.75 + 1.2;
+        healthRegenTimer = 0;
+        staminaRegenTimer = 0;
+        currentAnimState = '__reset__';
+        if (questBookInteractable && !interactables.includes(questBookInteractable)) interactables.push(questBookInteractable);
+        if (questBookGroup) questBookGroup.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0x2a1005); });
+        if (swordWorldGroup && !swordWorldGroup.parent) scene.add(swordWorldGroup);
+        if (swordWorldProxy && !swordWorldProxy.parent) scene.add(swordWorldProxy);
+        if (swordWorldLight && !swordWorldLight.parent) scene.add(swordWorldLight);
+        if (swordInteractable && !interactables.includes(swordInteractable)) interactables.push(swordInteractable);
+        if (swordWorldLight) swordWorldLight.intensity = 0.6; // restore baseline ambient glow
+        if (potionWorldGroup && !potionWorldGroup.parent) scene.add(potionWorldGroup);
+        if (potionWorldLight && !potionWorldLight.parent) scene.add(potionWorldLight);
+        if (potionInteractable && !interactables.includes(potionInteractable)) interactables.push(potionInteractable);
+        document.getElementById('death-screen').classList.add('hidden');
+        document.getElementById('quest-book-screen').classList.remove('open');
+        document.getElementById('shop-screen').classList.remove('open');
+        document.getElementById('inventory-screen').classList.remove('open');
+        document.getElementById('quest-waypoint').style.display = 'none';
+        document.getElementById('quest-tracker').style.display = 'none';
         renderInventoryGrid();
         renderInventoryQuickSlots();
+        renderInventoryStats();
+        renderQuickMenu();
         updateHUD();
         updateContinueButton();
+    }
 
-        // Start the game immediately — do NOT depend solely on pointer-lock succeeding.
-        // (Pointer lock can be blocked in iframes; game should always start.)
+    function enterGameplayFromMenu() {
         gameState = 'PLAYING';
         const p = controls.getObject().position;
         smoothedLookY = p.y - baseHeightOffset + 1.2;
@@ -3674,6 +3933,14 @@ function setupMenuButtons() {
         }
         // Also request pointer lock for mouse-look (best-effort — game runs without it)
         controls.lock();
+    }
+
+    document.getElementById('btn-play').addEventListener('click', () => {
+        if (gameState !== 'HOME') return;
+        pauseHomeMusic();
+        clearSave();
+        resetPlayerProgressForNewGame();
+        enterGameplayFromMenu();
     });
     document.getElementById('btn-resume').addEventListener('click', () => {
         pauseHomeMusic();
@@ -4080,6 +4347,11 @@ function setupSettingsSliders() {
 
 // ——— Input ———
 function setupInputListeners() {
+    // Suppress right-click context menu during gameplay
+    document.addEventListener('contextmenu', e => {
+        if (gameState === 'PLAYING' && controls && controls.isLocked) e.preventDefault();
+    });
+
     document.addEventListener('keydown', e => {
         if (isPlayerDead && e.code === 'Space') { respawn(); return; }
         if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
@@ -4107,10 +4379,25 @@ function setupInputListeners() {
         if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
     });
 
-    // Left click = punch (only when pointer is locked / playing)
+    // Left click = sword attack or Spread Flame (instant, no hold required)
+    // Right-click = Spread Flame special ability (instant, if off cooldown)
     document.addEventListener('mousedown', e => {
-        if (e.button === 0 && gameState === 'PLAYING' && controls.isLocked) {
+        if (gameState !== 'PLAYING' || !controls.isLocked) return;
+        if (e.button === 0) {
+            // Left click: normal sword attack (or punch if no sword)
             triggerPunch();
+        } else if (e.button === 2) {
+            // Right click: instant Spread Flame if sword equipped and ready
+            if (isSwordEquipped && spreadFlameCooldown <= 0) {
+                triggerSpreadFlame();
+            }
+        }
+    });
+    document.addEventListener('mouseup', e => {
+        // Clean up any legacy charge state
+        if (e.button === 0 && attackChargeActive) {
+            attackChargeActive = false;
+            attackChargeTimer = 0;
         }
     });
 }
@@ -4229,11 +4516,34 @@ function setupQuestBookUI() {
 }
 
 function openQuestBook() {
-    if (questState === 'completed') return;
+    if (questState === 'completed' && swordQuestState === 'completed') {
+        questBookOpen = true;
+        const body = document.getElementById('quest-book-body');
+        const actions = document.getElementById('quest-book-actions');
+        body.innerHTML = 'The latest notices are complete. The book waits silently for another request.';
+        actions.innerHTML = '<button class="quest-btn" id="quest-close">Close</button>';
+        document.getElementById('quest-close').addEventListener('click', closeQuestBook);
+        document.getElementById('quest-book-screen').classList.add('open');
+        if (gameState === 'PLAYING') controls.unlock();
+        return;
+    }
     questBookOpen = true;
     const body = document.getElementById('quest-book-body');
     const actions = document.getElementById('quest-book-actions');
-    if (questState === 'readyTurnIn') {
+    if (questState === 'completed' && swordQuestState === 'readyTurnIn') {
+        body.innerHTML = 'The Ember Blade has been retrieved from the ancient rock.<br><br>Return this notice to seal the second assignment and claim your reward:<br><br><strong>' + SWORD_QUEST_REWARD_GOLD + ' gold crowns.</strong>';
+        actions.innerHTML = '<button class="quest-btn" id="sword-quest-turn-in">Turn In</button>';
+        document.getElementById('sword-quest-turn-in').addEventListener('click', completeSwordQuest);
+    } else if (questState === 'completed' && swordQuestState === 'accepted') {
+        body.innerHTML = 'Mission active:<br><br><strong>Retrieve the Ember Blade from the northern rock.</strong><br><br>Reward on turn-in: <strong>' + SWORD_QUEST_REWARD_GOLD + ' gold crowns.</strong>';
+        actions.innerHTML = '<button class="quest-btn" id="quest-close">Close</button>';
+        document.getElementById('quest-close').addEventListener('click', closeQuestBook);
+    } else if (questState === 'completed' && swordQuestState === 'available') {
+        body.innerHTML = 'A new request has appeared:<br><br><strong>Recover the Ember Blade from the ancient rock.</strong><br><br>Reward: <strong>' + SWORD_QUEST_REWARD_GOLD + ' gold crowns.</strong><br><br>Accept this request and the waypoint will lead you to the northern rocks.';
+        actions.innerHTML = '<button class="quest-btn" id="sword-quest-accept">Accept</button><button class="quest-btn" id="quest-close">Close</button>';
+        document.getElementById('sword-quest-accept').addEventListener('click', acceptSwordQuest);
+        document.getElementById('quest-close').addEventListener('click', closeQuestBook);
+    } else if (questState === 'readyTurnIn') {
         body.innerHTML = 'The arena marshal has marked the request complete.<br><br>Return this notice to close the assignment and claim your reward:<br><br><strong>100 gold crowns.</strong>';
         actions.innerHTML = '<button class="quest-btn" id="quest-turn-in">Turn In</button>';
         document.getElementById('quest-turn-in').addEventListener('click', completeQuest);
@@ -4364,12 +4674,48 @@ function completeQuest() {
     document.getElementById('quest-book-screen').classList.remove('open');
     document.getElementById('quest-tracker').style.display = 'none';
     document.getElementById('quest-waypoint').style.display = 'none';
-    if (questBookInteractable) interactables = interactables.filter(i => i !== questBookInteractable);
-    if (questBookGroup) questBookGroup.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0x000000); });
+    if (questBookGroup) questBookGroup.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0x2a1005); });
     playerGold += TEST_QUEST_REWARD_GOLD;
     renderInventoryStats();
     showRewardToast(TEST_QUEST_REWARD_GOLD, 'Quest Reward Received');
     showNotif('Mission Complete');
+    // Unlock the sword quest (Mission 2)
+    if (swordQuestState === 'locked') {
+        swordQuestState = 'available';
+        // Pulse the sword glow to alert the player
+        if (swordInteractable && swordInteractable.light) {
+            swordInteractable.light.intensity = 1.5;
+        }
+        setTimeout(() => {
+            showNotif('New Mission: A strange sword hums from the northern rocks...');
+        }, 2500);
+    }
+    saveGame(true);
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') controls.lock();
+}
+
+function acceptSwordQuest() {
+    if (questState !== 'completed' || swordQuestState !== 'available') return;
+    swordQuestState = 'accepted';
+    closeQuestBook();
+    updateQuestTracker();
+    showNotif('Mission 2 Accepted: Retrieve the Ember Blade');
+    if (swordInteractable && swordInteractable.light) {
+        swordInteractable.light.intensity = 2.2;
+    }
+    saveGame(true);
+}
+
+function completeSwordQuest() {
+    swordQuestState = 'completed';
+    questBookOpen = false;
+    document.getElementById('quest-book-screen').classList.remove('open');
+    document.getElementById('quest-tracker').style.display = 'none';
+    document.getElementById('quest-waypoint').style.display = 'none';
+    playerGold += SWORD_QUEST_REWARD_GOLD;
+    renderInventoryStats();
+    showRewardToast(SWORD_QUEST_REWARD_GOLD, 'Ember Blade Reward Received');
+    showNotif('Mission 2 Complete');
     saveGame(true);
     if (gameState === 'PLAYING' || gameState === 'PAUSED') controls.lock();
 }
@@ -4384,6 +4730,16 @@ function checkQuestProgress() {
     }
 }
 
+// ── Sword Quest (Mission 2) interaction ─────────────────────────────────────
+// When player approaches the sword rock and presses F, if quest available, auto-accept it.
+// The actual "accept" happens automatically when player walks close to the rock after unlock.
+function checkSwordQuestTrigger() {
+    if (swordQuestState !== 'available') return;
+    const pPos = controls.getObject().position;
+    const dist = pPos.distanceTo(QUEST_BOOK_POSITION);
+    if (dist < 6) updateQuestTracker();
+}
+
 function updateQuestTracker() {
     const tracker = document.getElementById('quest-tracker');
     const text = document.getElementById('quest-tracker-text');
@@ -4395,6 +4751,15 @@ function updateQuestTracker() {
     } else if (questState === 'readyTurnIn') {
         tracker.style.display = 'block';
         text.textContent = 'Return to the mission book.';
+    } else if (swordQuestState === 'available') {
+        tracker.style.display = 'block';
+        text.textContent = 'Mission 2 available: Return to the mission book.';
+    } else if (swordQuestState === 'accepted') {
+        tracker.style.display = 'block';
+        text.textContent = 'Mission 2: Retrieve the Ember Blade.';
+    } else if (swordQuestState === 'readyTurnIn') {
+        tracker.style.display = 'block';
+        text.textContent = 'Mission 2: Return the notice to the mission book.';
     } else {
         tracker.style.display = 'none';
     }
@@ -4403,6 +4768,9 @@ function updateQuestTracker() {
 function getQuestTargetPosition() {
     if (questState === 'accepted') return QUEST_ARENA_POSITION;
     if (questState === 'readyTurnIn') return QUEST_BOOK_POSITION;
+    if (swordQuestState === 'available') return QUEST_BOOK_POSITION;
+    if (swordQuestState === 'accepted') return SWORD_ROCK_POSITION;
+    if (swordQuestState === 'readyTurnIn') return QUEST_BOOK_POSITION;
     return null;
 }
 
@@ -4550,7 +4918,7 @@ function playTurnAnimation(isRunTurn, targetFacing) {
     // Cooldown prevents the 180° turn from firing again immediately after finishing.
     // Without this, holding S continuously re-triggers the animation every frame.
     if (turnCooldownTimer > 0) return;
-    if (isTurning || isLanding || isDying || isPunching || isRunStopping || isCrouchTransitioning) return;
+    if (isTurning || isLanding || isDying || isPunching || isSwordAttacking || isSpreadFlameActive || isRunStopping || isCrouchTransitioning) return;
     const dur = playOneShotKnightAnim(isRunTurn ? 'runTurn' : 'walkTurn', 0.07);
     if (!dur) return;
     isTurning = true;
@@ -4658,6 +5026,12 @@ function buildItemCatalog() {
         'Longsword Shard': {
             name: 'Longsword Shard', icon: '⚔', type: 'misc', weight: 3,
             desc: 'A fragment of a shattered longsword. Ancient runes line the broken blade — a relic of the Broken Order.'
+        },
+        'Ember Blade': {
+            name: 'Ember Blade', icon: '🔥', type: 'weapon', weight: 5,
+            desc: 'An ancient sword of the Broken Order, pried from a buried rock. Its blade pulses with bound flame. Equip to wield. Right-click to instantly unleash Spread Flame.',
+            onEquip: () => { isSwordEquipped = true; attachSwordToHand(); },
+            onUnequip: () => { isSwordEquipped = false; detachSwordFromHand(); }
         }
     };
 }
@@ -4668,6 +5042,7 @@ function saveGame(showIcon = false) {
         localStorage.setItem('bb_save', JSON.stringify({
             gold: playerGold,
             questState: questState,
+            swordQuestState: swordQuestState,
             maxHealth: playerMaxHealth,
             deathCount: _deathCount,
             items: inventoryItems.map(i => i ? { name: i.name, count: i.count || 1 } : null),
@@ -4708,6 +5083,7 @@ function loadGame() {
           const catalog = buildItemCatalog();
           playerGold      = typeof save.gold      === 'number' ? save.gold      : 0;
           questState      = save.questState || 'available';
+          swordQuestState = save.swordQuestState || 'locked';
           playerMaxHealth = typeof save.maxHealth  === 'number' ? save.maxHealth  : 80;
           playerHealth    = playerMaxHealth;
           _deathCount     = typeof save.deathCount === 'number' ? save.deathCount : 0;
@@ -4744,6 +5120,22 @@ function loadGame() {
               obj.position.set(save.pos.x, save.pos.y, save.pos.z);
               smoothedLookY = save.pos.y - baseHeightOffset + 1.2;
           }
+          // Sync sword quest state — if sword was already retrieved, remove from world
+          if (swordQuestState === 'readyTurnIn' || swordQuestState === 'completed') {
+              if (swordInteractable) {
+                  interactables = interactables.filter(i => i !== swordInteractable);
+              }
+              if (swordWorldGroup && swordWorldGroup.parent) swordWorldGroup.parent.remove(swordWorldGroup);
+              if (swordWorldProxy && swordWorldProxy.parent) swordWorldProxy.parent.remove(swordWorldProxy);
+              if (swordWorldLight && swordWorldLight.parent) swordWorldLight.parent.remove(swordWorldLight);
+              // Also activate glow for sword in quick slot if it was loaded from save
+              for (let i = 0; i < quickSlots.length; i++) {
+                  if (quickSlots[i] && quickSlots[i].name === 'Ember Blade') {
+                      activeQuickSlotIndex = i;
+                      break;
+                  }
+              }
+          }
           return true;
       } catch(e) { return false; }
   }
@@ -4761,9 +5153,17 @@ function respawn() {
     // Reset progress completely
     playerGold  = 0;
     questState  = 'available';
+    swordQuestState = 'locked';
     inventoryItems = new Array(MAX_SLOTS).fill(null);
     quickSlots     = [null, null, null, null];
-    // Re-add quest book interactable if quest was completed (it gets removed on completion)
+    isSwordEquipped = false;
+    detachSwordFromHand();
+    activeQuickSlotIndex = -1;
+    spreadFlameCooldown = 0;
+    lastSwordAttackName = null;
+    isSwordAttacking = false;
+    isSpreadFlameActive = false;
+    // Keep the mission book interactable for future mission chains
     if (questBookInteractable && !interactables.includes(questBookInteractable)) {
         interactables.push(questBookInteractable);
     }
@@ -5025,6 +5425,20 @@ function animate() {
             if (ia.light) ia.light.position.y = ia.mesh.position.y;
         }
     }
+
+    // Pulse the sword-in-rock light — gentle baseline glow always, brighter when quest accepted
+    if (swordInteractable && swordInteractable.light) {
+        if (swordQuestState === 'accepted') {
+            swordInteractable.light.intensity = 1.5 + Math.sin(clock.elapsedTime * 3.2) * 0.7;
+        } else if (swordQuestState !== 'completed' && swordQuestState !== 'readyTurnIn') {
+            swordInteractable.light.intensity = 0.6 + Math.sin(clock.elapsedTime * 1.4) * 0.18;
+        }
+    }
+
+    // Tick spread flame cooldown bar
+    if (spreadFlameCooldown > 0 && gameState !== 'PAUSED') {
+        spreadFlameCooldown = Math.max(0, spreadFlameCooldown - dt);
+    }
     // Float the magic mission book above the table — gentle levitation
     if (missionBookGroup) {
         const t = clock.elapsedTime;
@@ -5039,9 +5453,12 @@ function animate() {
     if (gameState === 'PLAYING') {
         updatePhysics(dt);
         checkQuestProgress();
+        checkSwordQuestTrigger();
         updateQuestTracker();
         updateInteractionPrompt();
         updateWalkSound();
+        updateSwordHandAttachment();
+        updateSwordCooldownHUD(dt);
     }
     // Music system tick — handles cross-fading and state changes
     if (window._musicTick) window._musicTick();
@@ -5323,11 +5740,12 @@ function updatePhysics(dt) {
     direction.x = Number(moveRight) - Number(moveLeft);
     direction.normalize();
 
-    const horizontalDrag = isPunching ? 28.0 : (groundedAtFrameStart ? 7.0 : 0.35);
+    const horizontalDrag = (isPunching || isSwordAttacking || isSpreadFlameActive) ? 28.0 : (groundedAtFrameStart ? 7.0 : 0.35);
     velocity.x -= velocity.x * horizontalDrag * dt;
     velocity.z -= velocity.z * horizontalDrag * dt;
-    if (!isPunching && groundedAtFrameStart && (moveForward || moveBack)) velocity.z -= direction.z * speed * dt;
-    if (!isPunching && groundedAtFrameStart && (moveLeft || moveRight))   velocity.x -= direction.x * speed * dt;
+    const _blockMove = isPunching || isSwordAttacking || isSpreadFlameActive;
+    if (!_blockMove && groundedAtFrameStart && (moveForward || moveBack)) velocity.z -= direction.z * speed * dt;
+    if (!_blockMove && groundedAtFrameStart && (moveLeft || moveRight))   velocity.x -= direction.x * speed * dt;
 
     const posBeforeMove = pPos.clone(); // saved before any lateral movement this frame
     const tryStepUp = (fallbackPos) => {
@@ -5689,7 +6107,15 @@ function assignToQuickSlot(slotIdx, item, sourceInventorySlot = -1) {
 
 function useQuickSlot(idx) {
       const item = quickSlots[idx];
-      if (!item || !item.use) return;
+      if (!item) return;
+      if (item.type === 'weapon') {
+          activeQuickSlotIndex = idx;
+          updateSwordHandAttachment();
+          renderQuickMenu();
+          showNotif('Equipped: ' + item.name);
+          return;
+      }
+      if (!item.use) return;
       item.use();
       if ((item.count || 1) > 1) {
           item.count--;
@@ -5716,14 +6142,22 @@ function renderQuickMenu() {
         const item = quickSlots[idx];
         const existingIcon = slot.querySelector('.qm-slot-icon');
         if (existingIcon) existingIcon.remove();
+        const existingName = slot.querySelector('.qm-slot-name');
+        if (existingName) existingName.remove();
+        slot.classList.toggle('qm-equipped', idx === activeQuickSlotIndex && !!item);
         if (item) {
             slot.classList.add('qm-active');
             const icon = document.createElement('span');
             icon.className = 'qm-slot-icon';
             icon.textContent = item.icon || '?';
             slot.insertBefore(icon, slot.firstChild);
+            const name = document.createElement('span');
+            name.className = 'qm-slot-name';
+            name.textContent = item.name || 'Equipped';
+            slot.appendChild(name);
         } else {
             slot.classList.remove('qm-active');
+            slot.classList.remove('qm-equipped');
         }
         slot.title = item ? (item.name || 'Quick slot') : 'Empty quick slot';
     });
@@ -5948,10 +6382,10 @@ function retargetFBXClipToKnight(sourceClip, animName) {
             if (values.length < 3) continue;
             const baseX = values[0], baseY = values[1], baseZ = values[2];
             const relative = new Float32Array(values.length);
-            if (animName === 'crawl' && isHips) {
+            if ((animName === 'crawl' || animName === 'crouchIdle' || animName === 'crouchWalk' || animName === 'crouchToSprint' || animName === 'crouchToStand') && isHips) {
                 for (let i = 0; i < values.length; i += 3) {
                     relative[i] = 0;
-                    relative[i + 1] = -1.02;
+                    relative[i + 1] = animName === 'crawl' ? -1.02 : (values[i + 1] - baseY) * 0.18;
                     relative[i + 2] = 0;
                 }
                 cloned = new THREE.VectorKeyframeTrack(bone + '.position', track.times, relative);
@@ -5960,7 +6394,7 @@ function retargetFBXClipToKnight(sourceClip, animName) {
             }
             for (let i = 0; i < values.length; i += 3) {
                 relative[i] = isHips ? 0 : values[i] - baseX;
-                relative[i + 1] = isHips ? (values[i + 1] - baseY) * 0.18 : values[i + 1] - baseY;
+                relative[i + 1] = isHips ? 0 : values[i + 1] - baseY;
                 relative[i + 2] = isHips ? 0 : values[i + 2] - baseZ;
             }
             cloned = new THREE.VectorKeyframeTrack(bone + '.position', track.times, relative);
@@ -6100,7 +6534,7 @@ function playKnightAnim(name, loop = true, xfade = 0.15) {
 }
 
 function updateKnightAnimation(dt) {
-    if (isPunching || isLanding || isDying || isPlayerDead || isTurning || isRunStopping || isCrouchTransitioning) return;
+    if (isPunching || isSwordAttacking || isSpreadFlameActive || isLanding || isDying || isPlayerDead || isTurning || isRunStopping || isCrouchTransitioning) return;
 
     // In the air / jumping
     if (!canJump) {
@@ -6150,10 +6584,454 @@ function updateKnightAnimation(dt) {
     }
 }
 
+// ─── Sword System ────────────────────────────────────────────────────────────
+
+function _getSwordHandBone() {
+    if (_swordHandBone) return _swordHandBone;
+    if (!knightModel) return null;
+    const handNames = ['mixamorig:RightHand', 'RightHand', 'mixamorigRightHand', 'Hand_R', 'hand.R', 'Right_Hand', 'R_Hand'];
+    let found = null;
+    const candidates = [];
+    knightModel.traverse(c => {
+        if (found) return;
+        if (c.isBone || c.type === 'Bone') {
+            const lower = c.name.toLowerCase();
+            for (const hn of handNames) {
+                if (c.name === hn || lower.includes('righthand')) {
+                    found = c;
+                    break;
+                }
+            }
+            if (!found && lower.includes('right') && lower.includes('hand')) candidates.push(c);
+            if (!found && (lower.includes('hand_r') || lower.includes('r_hand') || lower.includes('hand.r'))) candidates.push(c);
+        }
+    });
+    if (!found && candidates.length) found = candidates[0];
+    _swordHandBone = found;
+    return found;
+}
+
+function attachSwordToHand() {
+    if (swordMesh3D) return; // already attached
+    const bone = _getSwordHandBone();
+    if (!bone) {
+        console.warn('[Sword] RightHand bone not found — sword will not be visible in hand');
+        return;
+    }
+
+    swordMesh3D = new THREE.Group();
+
+    // Try to use the loaded GLB model first
+    const glbRef = window._swordRockModelRef;
+    if (glbRef) {
+        const clone = glbRef.clone(true);
+        // Deep-clone materials so emissive etc. are independent
+        clone.traverse(c => {
+            if (c.isMesh) {
+                c.castShadow = true;
+                c.frustumCulled = false;
+                if (c.material) {
+                    c.material = c.material.clone();
+                    if (c.material.emissive) {
+                        c.material.emissive = new THREE.Color(0xff3b08);
+                        c.material.emissiveIntensity = 0.75;
+                    }
+                }
+            }
+        });
+        // Re-fit the clone to hand size: target ~0.9 world units tall
+        const bb = new THREE.Box3().setFromObject(clone);
+        const sz = new THREE.Vector3();
+        bb.getSize(sz);
+        const maxD = Math.max(sz.x, sz.y, sz.z);
+        const sc = maxD > 0.001 ? (SWORD_HAND_MAX_DIM / maxD) : 0.12;
+        clone.scale.setScalar(sc);
+        // Centre the clone so pivot is at handle base
+        clone.updateMatrixWorld(true);
+        const scaledBB = new THREE.Box3().setFromObject(clone);
+        const center = new THREE.Vector3();
+        scaledBB.getCenter(center);
+        clone.position.set(-center.x, -scaledBB.min.y, -center.z);
+        swordMesh3D.add(clone);
+    } else {
+        // Fallback box-geometry sword if GLB not yet loaded
+        const bladeMat = new THREE.MeshStandardMaterial({ color: 0xd9eef8, metalness: 0.96, roughness: 0.08, emissive: 0xff3b08, emissiveIntensity: 0.75 });
+        const edgeMat = new THREE.MeshStandardMaterial({ color: 0xffb15c, metalness: 0.75, roughness: 0.14, emissive: 0xff4a10, emissiveIntensity: 1.0 });
+        const handleMat = new THREE.MeshStandardMaterial({ color: 0x4a2411, roughness: 0.72, metalness: 0.05 });
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.86, 0.018), bladeMat);
+        blade.position.y = 0.58;
+        const glow = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.78, 0.024), edgeMat);
+        glow.position.y = 0.6;
+        const guard = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.045, 0.055), edgeMat);
+        guard.position.y = 0.14;
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.26, 0.055), handleMat);
+        handle.position.y = 0;
+        const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), edgeMat);
+        pommel.position.y = -0.17;
+        swordMesh3D.add(blade, glow, guard, handle, pommel);
+        swordMesh3D.traverse(c => { if (c.isMesh) { c.castShadow = true; c.frustumCulled = false; } });
+    }
+
+    // Position/rotation so the sword sits naturally in the right hand
+    swordMesh3D.position.set(...SWORD_HAND_POS);
+    swordMesh3D.rotation.set(...SWORD_HAND_ROT);
+    swordMesh3D.scale.setScalar(1.0);
+    bone.add(swordMesh3D);
+}
+
+function detachSwordFromHand() {
+    if (!swordMesh3D) return;
+    if (swordMesh3D.parent) swordMesh3D.parent.remove(swordMesh3D);
+    swordMesh3D = null;
+}
+
+function updateSwordHandAttachment() {
+    // Keep isSwordEquipped in sync with the active quick slot
+    // Quick slot 0 (index 0) is considered the "equip" slot for weapons
+    let equipped = false;
+    let equippedItem = null;
+    for (let i = 0; i < quickSlots.length; i++) {
+        if (quickSlots[i] && quickSlots[i].name === 'Ember Blade') {
+            // Blade is in a quick slot — equip it if this is the "active" slot
+            // We use slot 0 (Q1) as the weapon equip slot
+            if (i === activeQuickSlotIndex) {
+                equipped = true;
+                equippedItem = quickSlots[i];
+            }
+        }
+    }
+    // Also check if player just placed it in any quick slot with no specific selection — equip slot 0
+    if (!equipped) {
+        for (let i = 0; i < quickSlots.length; i++) {
+            if (quickSlots[i] && quickSlots[i].name === 'Ember Blade') {
+                if (activeQuickSlotIndex === -1) {
+                    equipped = true;
+                    equippedItem = quickSlots[i];
+                    activeQuickSlotIndex = i;
+                }
+                break;
+            }
+        }
+    }
+    // If the blade is no longer in any quick slot, unequip
+    const bladeInQuick = quickSlots.some(s => s && s.name === 'Ember Blade');
+    if (!bladeInQuick) {
+        activeQuickSlotIndex = -1;
+        equipped = false;
+    }
+
+    if (equipped !== isSwordEquipped) {
+        isSwordEquipped = equipped;
+        if (isSwordEquipped) {
+            attachSwordToHand();
+        } else {
+            detachSwordFromHand();
+        }
+    }
+}
+
+function updateSwordCooldownHUD(dt) {
+    const bar = document.getElementById('spread-flame-cooldown-bar');
+    if (!bar) return;
+    if (!isSwordEquipped) { bar.style.display = 'none'; return; }
+    bar.style.display = 'block';
+    const fill = document.getElementById('spread-flame-cooldown-fill');
+    if (!fill) return;
+    if (spreadFlameCooldown <= 0) {
+        fill.style.width = '100%';
+        fill.style.background = 'linear-gradient(90deg, #ff6600, #ffcc00)';
+        bar.title = 'Spread Flame: READY (Right Click)';
+    } else {
+        const pct = (1 - spreadFlameCooldown / SPREAD_FLAME_COOLDOWN_MAX) * 100;
+        fill.style.width = pct + '%';
+        fill.style.background = 'linear-gradient(90deg, #550000, #aa3300)';
+        bar.title = 'Spread Flame: ' + Math.ceil(spreadFlameCooldown) + 's';
+    }
+    // Charge indicator
+    const chargeFill = document.getElementById('spread-flame-charge-fill');
+    if (chargeFill) {
+        if (attackChargeActive && spreadFlameCooldown <= 0 && isSwordEquipped) {
+            const chargePct = Math.min(100, (attackChargeTimer / SPREAD_FLAME_CHARGE_TIME) * 100);
+            chargeFill.style.width = chargePct + '%';
+            chargeFill.style.opacity = '1';
+        } else {
+            chargeFill.style.width = '0%';
+            chargeFill.style.opacity = '0';
+        }
+    }
+}
+
+function triggerSwordAttack() {
+    if (isSwordAttacking || isSpreadFlameActive || gameState !== 'PLAYING') return;
+    if (isStaminaExhausted) return;
+    if (isCrawling || isCrouching || isLanding || isDying || isTurning || isRunStopping || isCrouchTransitioning || isRunJumping) return;
+    const options = ['swordSlash1', 'swordSlash2'].filter(n => knightActions[n]);
+    let attackName = null;
+    if (options.length > 1) attackName = options.find(n => n !== lastSwordAttackName) || options[0];
+    else if (options.length === 1) attackName = options[0];
+    if (!attackName) return;
+    lastSwordAttackName = attackName;
+    if (stamina < SWORD_ATTACK_STAMINA_COST) {
+        showNotif('Not enough endurance');
+        return;
+    }
+    stamina = Math.max(0, stamina - SWORD_ATTACK_STAMINA_COST);
+    if (stamina <= 0) isStaminaExhausted = true;
+    staminaRegenTimer = 0;
+    updateHUD();
+
+    isSwordAttacking = true;
+    punchCooldown = 0.7;
+
+    const prev = knightActions[currentAnimState];
+    const action = knightActions[attackName];
+    if (prev && prev !== action) prev.fadeOut(0.08);
+    action.reset();
+    action.setLoop(THREE.LoopOnce, 1);
+    action.clampWhenFinished = true;
+    action.fadeIn(0.08);
+    action.play();
+    currentAnimState = attackName;
+
+    const dur = (action.getClip()?.duration > 0) ? action.getClip().duration : 0.9;
+    clearTimeout(swordAttackTimeout);
+    swordAttackTimeout = setTimeout(() => {
+        isSwordAttacking = false;
+        if (knightActions[attackName]) knightActions[attackName].fadeOut(0.15);
+        currentAnimState = '__reset__';
+        updateHUD();
+    }, dur * 1000 + 100);
+}
+
+function addTemporaryFlameSource(x, y, z, lifeMs = 5200, intensity = 0.7, range = 2.4) {
+    const src = { x, y, z, blue: false, _spreadFlameEnv: true };
+    window._torchSources = window._torchSources || [];
+    window._torchSources.push(src);
+    const light = new THREE.PointLight(0xff5a18, intensity, range);
+    light.position.set(x, y + 0.25, z);
+    scene.add(light);
+    const start = performance.now();
+    const timer = setInterval(() => {
+        const t = (performance.now() - start) / lifeMs;
+        light.intensity = Math.max(0, intensity * (1 - t));
+        if (t >= 1) {
+            clearInterval(timer);
+            window._torchSources = (window._torchSources || []).filter(s => s !== src);
+            if (light.parent) light.parent.remove(light);
+        }
+    }, 100);
+}
+
+function scorchMaterial(mesh, colorHex, emissiveHex = 0x000000, emissiveIntensity = 0) {
+    if (!mesh || !mesh.material) return;
+    mesh.material = mesh.material.clone();
+    if (mesh.material.color) mesh.material.color.setHex(colorHex);
+    if (mesh.material.emissive) {
+        mesh.material.emissive.setHex(emissiveHex);
+        mesh.material.emissiveIntensity = emissiveIntensity;
+    }
+}
+
+function igniteTree(tree) {
+    if (!tree || tree.burned || tree.burning) return;
+    tree.burning = true;
+    addTemporaryFlameSource(tree.x, tree.y + 0.45, tree.z, 7000, 1.35, 4.2);
+    tree.parts.forEach((part, idx) => {
+        scorchMaterial(part, idx === 0 ? 0x1a100a : 0x3b2210, 0xff2b00, 0.28);
+    });
+    setTimeout(() => {
+        tree.parts.forEach((part, idx) => scorchMaterial(part, idx === 0 ? 0x120d09 : 0x191814, 0x000000, 0));
+        tree.burning = false;
+        tree.burned = true;
+    }, 4200);
+}
+
+function igniteGrass(grass, sourceStrength = 1) {
+    if (!grass || grass.burned || grass.burning) return;
+    grass.burning = true;
+    addTemporaryFlameSource(grass.x, grass.y + 0.08, grass.z, 4300, 0.55 * sourceStrength, 2.1);
+    grass.parts.forEach(part => scorchMaterial(part, 0x6b2c0d, 0xff3b06, 0.34));
+    setTimeout(() => {
+        grass.parts.forEach(part => scorchMaterial(part, 0x17170f, 0x000000, 0));
+        grass.burning = false;
+        grass.burned = true;
+    }, 2600);
+    setTimeout(() => {
+        for (const other of flammableGrass) {
+            if (other === grass || other.burned || other.burning) continue;
+            const d = Math.hypot(other.x - grass.x, other.z - grass.z);
+            if (d < 4.8 && Math.random() < Math.max(0.12, 0.48 - d * 0.07)) igniteGrass(other, 0.72);
+        }
+        for (const tree of flammableTrees) {
+            if (tree.burned || tree.burning) continue;
+            const d = Math.hypot(tree.x - grass.x, tree.z - grass.z);
+            if (d < 1.9 && Math.random() < 0.45) igniteTree(tree);
+        }
+    }, 900 + Math.random() * 700);
+}
+
+function processSpreadFlameEnvironmentalContact(x, z) {
+    for (const tree of flammableTrees) {
+        if (tree.burned || tree.burning) continue;
+        const d = Math.hypot(tree.x - x, tree.z - z);
+        if (d < 1.7 + tree.s * 0.75) igniteTree(tree);
+    }
+    for (const grass of flammableGrass) {
+        if (grass.burned || grass.burning) continue;
+        const d = Math.hypot(grass.x - x, grass.z - z);
+        if (d < 1.25 + grass.s * 0.5 && Math.random() < 0.72) igniteGrass(grass, 1);
+    }
+}
+
+// Pre-pooled shared geometry for spread flame patches — avoids per-activation allocation
+const _spreadFlameGeoPool = [
+    new THREE.CircleGeometry(0.32, 10),
+    new THREE.CircleGeometry(0.38, 10),
+    new THREE.CircleGeometry(0.44, 10),
+    new THREE.CircleGeometry(0.50, 10)
+];
+// Single shared materials (only 3) — reused across patches
+const _spreadFlameMats = [
+    new THREE.MeshBasicMaterial({ color: 0xff8c00, transparent: true, opacity: 0.42, depthWrite: false, blending: THREE.AdditiveBlending }),
+    new THREE.MeshBasicMaterial({ color: 0xff6200, transparent: true, opacity: 0.42, depthWrite: false, blending: THREE.AdditiveBlending }),
+    new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.42, depthWrite: false, blending: THREE.AdditiveBlending })
+];
+
+function spawnSpreadFlameGroundFire() {
+    const pPos = controls.getObject().position;
+    const facing = modelFacing;
+    const flameSources = window._torchSources || [];
+    const spawnedSources = [];
+    const spawnedPatches = [];
+    const spawnedLights = [];
+    // Reduce count: 3 rings × 6 = 18 patches (was 4×7=28) to cut spawn cost
+    const rings = 3;
+    const perRing = 6;
+
+    // Compute all positions first (no Three.js allocations yet)
+    const positions = [];
+    for (let r = 0; r < rings; r++) {
+        for (let i = 0; i < perRing; i++) {
+            const spread = (i / (perRing - 1) - 0.5) * Math.PI * 0.62;
+            const angle = facing + spread + (Math.random() - 0.5) * 0.18;
+            const dist = 1.2 + r * 0.85 + Math.random() * 0.45;
+            const sx = pPos.x + Math.sin(angle) * dist;
+            const sz = pPos.z + Math.cos(angle) * dist;
+            const sy = authoredTerrainHeight(sx, sz) + 0.035;
+            positions.push({ sx, sy, sz });
+        }
+    }
+
+    // Environmental contact deferred to avoid blocking main thread during spawn
+    setTimeout(() => {
+        for (const { sx, sz } of positions) processSpreadFlameEnvironmentalContact(sx, sz);
+    }, 80);
+
+    // Spawn all patches using pooled geometry & shared materials
+    for (const { sx, sy, sz } of positions) {
+        const src = { x: sx, y: sy + 0.02, z: sz, blue: false, _spreadFlame: true };
+        flameSources.push(src);
+        spawnedSources.push(src);
+
+        const geo = _spreadFlameGeoPool[Math.floor(Math.random() * _spreadFlameGeoPool.length)];
+        const mat = _spreadFlameMats[Math.floor(Math.random() * _spreadFlameMats.length)];
+        const patch = new THREE.Mesh(geo, mat);
+        patch.rotation.x = -Math.PI / 2;
+        patch.position.set(sx, sy, sz);
+        patch.frustumCulled = false;
+        scene.add(patch);
+        spawnedPatches.push(patch);
+    }
+
+    // Add only 4 point lights (shared across the whole arc) — was 28
+    const lightPositions = [positions[0], positions[Math.floor(positions.length * 0.33)],
+                            positions[Math.floor(positions.length * 0.66)], positions[positions.length - 1]];
+    for (const { sx, sy, sz } of lightPositions) {
+        if (!sx && sx !== 0) continue;
+        const light = new THREE.PointLight(0xff5a18, 0.9, 3.5);
+        light.position.set(sx, sy + 0.3, sz);
+        scene.add(light);
+        spawnedLights.push(light);
+    }
+
+    window._torchSources = flameSources;
+    const start = performance.now();
+    const lifeMs = 7200;
+    const fadeTimer = setInterval(() => {
+        const t = (performance.now() - start) / lifeMs;
+        const opacity = Math.max(0, 0.42 * (1 - t));
+        const li = Math.max(0, 0.9 * (1 - t));
+        // Update shared materials once each (not per-patch) — much cheaper
+        for (const mat of _spreadFlameMats) mat.opacity = opacity;
+        for (const light of spawnedLights) light.intensity = li;
+        if (t >= 1) {
+            clearInterval(fadeTimer);
+            window._torchSources = (window._torchSources || []).filter(s => !spawnedSources.includes(s));
+            for (const patch of spawnedPatches) {
+                if (patch.parent) patch.parent.remove(patch);
+                // Don't dispose shared materials
+            }
+            for (const light of spawnedLights) {
+                if (light.parent) light.parent.remove(light);
+            }
+            // Restore shared material opacity for next use
+            for (const mat of _spreadFlameMats) mat.opacity = 0.42;
+        }
+    }, 100);
+}
+
+function triggerSpreadFlame() {
+    if (isSpreadFlameActive || spreadFlameCooldown > 0 || gameState !== 'PLAYING') return;
+    if (!isSwordEquipped) return;
+    if (isCrawling || isCrouching || isLanding || isDying || isTurning) return;
+
+    // Cancel any ongoing sword attack
+    if (isSwordAttacking) {
+        clearTimeout(swordAttackTimeout);
+        isSwordAttacking = false;
+        if (knightActions[currentAnimState]) knightActions[currentAnimState].fadeOut(0.08);
+    }
+
+    isSpreadFlameActive = true;
+    spreadFlameCooldown = SPREAD_FLAME_COOLDOWN_MAX;
+
+    const action = knightActions['spreadFlame'];
+    if (action) {
+        const prev = knightActions[currentAnimState];
+        if (prev && prev !== action) prev.fadeOut(0.08);
+        action.reset();
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+        action.fadeIn(0.08);
+        action.play();
+        currentAnimState = 'spreadFlame';
+    }
+
+    const flameSpawnDelay = 600; // spawn at peak of animation
+    setTimeout(() => {
+        spawnSpreadFlameGroundFire();
+    }, flameSpawnDelay);
+
+    const dur = (action && action.getClip()?.duration > 0) ? action.getClip().duration : 2.0;
+    clearTimeout(spreadFlameTimeout);
+    spreadFlameTimeout = setTimeout(() => {
+        isSpreadFlameActive = false;
+        if (action) action.fadeOut(0.15);
+        currentAnimState = '__reset__';
+        updateHUD();
+        showNotif('Spread Flame unleashed! Cooldown: ' + SPREAD_FLAME_COOLDOWN_MAX + 's');
+    }, dur * 1000 + 150);
+}
+
 // ─── Punch ────────────────────────────────────────────────────────────
 
 function triggerPunch() {
     if (isPunching || punchCooldown > 0 || gameState !== 'PLAYING') return;
+    // If sword is equipped, use sword attack instead of punching
+    if (isSwordEquipped) {
+        triggerSwordAttack();
+        return;
+    }
     if (isStaminaExhausted) return; // FIX: can't punch without stamina
     const moving = keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD;
     // Block punching while any movement key is held — looks jarring in motion.
