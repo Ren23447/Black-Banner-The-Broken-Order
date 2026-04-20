@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Concrete — Blackbanner Weapon Editor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#191920;color:#ddd8cc;font-family:'Segoe UI',Arial,sans-serif;overflow:hidden}
+#app{display:flex;width:100vw;height:100vh}
+
+/* ── Panels ── */
+#pl{width:260px;min-width:200px;background:#111116;border-right:1px solid #252535;display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;z-index:5}
+#pr{width:280px;min-width:220px;background:#111116;border-left:1px solid #252535;display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;z-index:5}
+#pl::-webkit-scrollbar,#pr::-webkit-scrollbar{width:4px}
+#pl::-webkit-scrollbar-thumb,#pr::-webkit-scrollbar-thumb{background:#252535}
+
+.ptitle{padding:10px 13px 3px;font-size:16px;font-weight:800;color:#e8c86a;letter-spacing:.3px}
+.psub{font-size:9px;color:#4a4560;padding:0 13px 8px}
+
+/* Collapsible sections */
+.sec{border-bottom:1px solid #1a1a26}
+.sh{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#5a5878;text-transform:uppercase;cursor:pointer;user-select:none}
+.sh:hover{color:#9090b8}
+.sh .ar{font-size:8px;transition:transform .15s}
+.sh.cl .ar{transform:rotate(-90deg)}
+.sb{padding:7px 11px 9px}
+.sb.hd{display:none}
+
+/* Tabs */
+#tabs{display:flex;gap:3px;padding:8px 10px 0}
+.tab{flex:1;padding:6px 2px;background:#1a1a28;border:1px solid #28283c;border-radius:4px;font-size:10px;font-weight:700;color:#5a5878;cursor:pointer;text-align:center;transition:all .1s}
+.tab:hover{background:#202030;color:#8080b0}
+.tab.on{background:#1e1638;border-color:#5848a0;color:#9880e8}
+.tab.rock{background:#281408;border-color:#a05828;color:#e09050}
+.tab.pivot{background:#0c2016;border-color:#289858;color:#58e888}
+
+/* Viewport */
+#vp{flex:1;position:relative;overflow:hidden;background:#0c0c14}
+#cv{display:block;width:100%;height:100%;cursor:default}
+
+/* Top gizmo buttons */
+#gmodes{position:absolute;top:9px;left:50%;transform:translateX(-50%);display:flex;gap:3px;z-index:20}
+.gb{padding:5px 12px;background:#141428;border:1px solid #28284a;border-radius:4px;font-size:10px;font-weight:700;color:#5a5878;cursor:pointer;letter-spacing:.7px;transition:all .1s}
+.gb:hover{background:#1e1e3a;color:#9090c0}
+.gb.on{background:#1e1438;border-color:#6858b8;color:#b898ff}
+
+#badge{position:absolute;top:9px;right:9px;background:#1a1028;border:1px solid #5848a0;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:700;color:#9880e8;pointer-events:none}
+#badge.rock{background:#281408;border-color:#a05828;color:#e09050}
+#badge.pivot{background:#0c2016;border-color:#289858;color:#58e888}
+
+/* Status */
+#sbar{position:absolute;bottom:0;left:0;right:0;height:24px;background:#0c0c16;border-top:1px solid #1a1a28;display:flex;align-items:center;padding:0 10px;gap:14px;font-size:10px;color:#3e3e58;z-index:20}
+.dot{width:6px;height:6px;border-radius:50%;background:#303048;display:inline-block;margin-right:3px}
+.dot.g{background:#38c038}.dot.y{background:#b8980c}.dot.r{background:#b83030}
+#fpsout{margin-left:auto}
+#coords{position:absolute;bottom:28px;left:9px;font-size:9px;color:#3e3e58;pointer-events:none;line-height:1.8}
+
+/* Legend */
+#leg{position:absolute;bottom:28px;right:9px;display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.li{display:flex;align-items:center;gap:4px;font-size:9px;color:#4a4868}
+.lc{width:12px;height:2px;border-radius:1px}
+
+/* Inputs */
+.vrow{display:flex;align-items:center;gap:4px;margin-bottom:5px}
+.ax{width:18px;text-align:center;font-size:9px;font-weight:800;border-radius:3px;padding:3px 0;flex-shrink:0;line-height:1}
+.ax.x{background:#5a1010;color:#ff9090}.ax.y{background:#105a10;color:#70e870}.ax.z{background:#10207a;color:#8898ff}.ax.s{background:#3a2800;color:#c8a840}.ax.w{background:#2a1040;color:#c888f8}
+.ni{flex:1;background:#161626;border:1px solid #252538;border-radius:3px;padding:4px 6px;color:#ccc8c0;font-size:11px;font-family:Consolas,monospace;outline:none;transition:border-color .1s;min-width:0}
+.ni:focus{border-color:#5848a0;background:#1a1a30}
+.ni.xi:focus{border-color:#b83030}.ni.yi:focus{border-color:#30b030}.ni.zi:focus{border-color:#3038b8}
+
+.fr{display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.fl{font-size:10px;color:#5a5878;min-width:56px;flex-shrink:0}
+.fi{flex:1;background:#161626;border:1px solid #252538;border-radius:3px;padding:4px 6px;color:#ccc8c0;font-size:11px;outline:none}
+.fi:focus{border-color:#5848a0}
+
+/* Buttons */
+.btn{display:block;width:100%;padding:6px 10px;margin:2px 0;background:#1a1a2c;border:1px solid #2e2e48;border-radius:4px;color:#a8a0c0;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .1s}
+.btn:hover{background:#222238;border-color:#484880;color:#d0c8e8}
+.btn.pri{background:#1e1238;border-color:#5040a0;color:#a888f8}
+.btn.pri:hover{background:#281848;border-color:#6858c0;color:#c8a8ff}
+.btn.ok{background:#101e10;border-color:#186018;color:#68d068}
+.btn.ok:hover{background:#162616;border-color:#289028}
+.btn.sm{padding:3px 8px;font-size:10px;margin:1px 0}
+
+/* Code */
+#cout{background:#090910;border:1px solid #1e1e30;border-radius:4px;padding:8px;font-size:10px;font-family:Consolas,monospace;color:#78d078;white-space:pre;overflow:auto;max-height:260px;line-height:1.6;margin:3px 0}
+#cout::-webkit-scrollbar{width:3px;height:3px}
+#cout::-webkit-scrollbar-thumb{background:#1e381e}
+
+/* Weapon list */
+.wi{display:flex;align-items:center;justify-content:space-between;padding:5px 7px;margin-bottom:2px;background:#161628;border:1px solid #20203a;border-radius:4px;cursor:pointer;transition:all .1s}
+.wi:hover{background:#1c1c34}.wi.on{background:#1a1030;border-color:#5848a0}
+.wn{font-size:11px;font-weight:600;color:#b0a8d0}.wt{font-size:9px;color:#484868}
+.wd{background:none;border:none;color:#502828;cursor:pointer;font-size:13px;padding:0 3px}.wd:hover{color:#d05050}
+
+/* Notification */
+#notif{position:absolute;top:44px;left:50%;transform:translateX(-50%);background:#12102a;border:1px solid #4848a8;border-radius:5px;padding:7px 14px;font-size:11px;color:#8888e0;pointer-events:none;opacity:0;transition:opacity .2s;z-index:100;white-space:nowrap}
+#notif.on{opacity:1}
+
+input[type=file]{display:none}
+.div{height:1px;background:#1a1a28;margin:4px 0}
+.ht{font-size:9px;color:#3e3e58;line-height:1.5;margin-top:2px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ LEFT PANEL ═══ -->
+<div id="pl">
+  <div class="ptitle">CONCRETE</div>
+  <div class="psub">Blackbanner Weapon Editor v2</div>
+
+  <div class="sec">
+    <div class="sh" onclick="tog(this)"><span>Weapon Library</span><span class="ar">▼</span></div>
+    <div class="sb">
+      <div id="wlist"><div class="ht" style="text-align:center;padding:5px">No weapons — click + New</div></div>
+      <button class="btn pri" onclick="addWep()">+ New Weapon</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sh" onclick="tog(this)"><span>Load GLB</span><span class="ar">▼</span></div>
+    <div class="sb">
+      <div class="ht" style="margin-bottom:4px">GitHub / jsDelivr URL:</div>
+      <textarea class="fi" id="gurl" rows="2" placeholder="https://raw.githubusercontent.com/.../sword.glb" style="font-size:10px;resize:vertical;width:100%"></textarea>
+      <button class="btn" onclick="loadURL()" style="margin-top:3px">⬇ Load from URL</button>
+      <div style="text-align:center;font-size:9px;color:#302848;margin:3px 0">— or —</div>
+      <button class="btn" onclick="document.getElementById('gfile').click()">📂 Upload local .glb</button>
+      <input type="file" id="gfile" accept=".glb,.gltf" onchange="loadFile(this)">
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sh" onclick="tog(this)"><span>Weapon Info</span><span class="ar">▼</span></div>
+    <div class="sb">
+      <div class="fr"><span class="fl">Name</span><input class="fi" id="wname" type="text" placeholder="Ember Blade" oninput="onInfo()"></div>
+      <div class="fr"><span class="fl">Type</span>
+        <select class="fi" id="wtype" onchange="onInfo()">
+          <option value="sword">Sword</option><option value="axe">Axe</option>
+          <option value="mace">Mace</option><option value="dagger">Dagger</option>
+          <option value="spear">Spear</option><option value="staff">Staff</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sh" onclick="tog(this)"><span>Scene</span><span class="ar">▼</span></div>
+    <div class="sb">
+      <div class="fr"><span class="fl">Ref model</span>
+        <select class="fi" id="refsel" onchange="setRef(this.value)" style="font-size:10px">
+          <option value="knight">Knight player</option><option value="none">Hide</option>
+        </select>
+      </div>
+      <div class="fr"><span class="fl">Grid</span>
+        <input type="range" min="0" max="1" step="1" value="1" oninput="grid.visible=!!+this.value" style="flex:1;accent-color:#5848a0">
+      </div>
+      <div class="fr"><span class="fl">Ambient</span>
+        <input type="range" min="0.1" max="2" step="0.05" value="0.55" oninput="hemi.intensity=+this.value" style="flex:1;accent-color:#5848a0">
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sh" onclick="tog(this)"><span>Help</span><span class="ar">▼</span></div>
+    <div class="sb ht" style="line-height:1.9">
+      <b style="color:#7070a0">Orbit:</b> Left-drag (empty space)<br>
+      <b style="color:#7070a0">Pan:</b> Right-drag / Middle-drag<br>
+      <b style="color:#7070a0">Zoom:</b> Scroll wheel<br>
+      <b style="color:#7070a0">Gizmo:</b> Left-drag colored axis<br>
+      <b style="color:#7070a0">Keys:</b> F=frame · R=reset camera<br>
+      <b style="color:#7070a0">Mode keys:</b> 1=hand · 2=stone · 3=pivot
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEWPORT ═══ -->
+<div id="vp">
+  <canvas id="cv"></canvas>
+
+  <div id="gmodes">
+    <button class="gb on" id="gbt" onclick="setGM('t')">G MOVE</button>
+    <button class="gb"    id="gbr" onclick="setGM('r')">E ROTATE</button>
+  </div>
+
+  <div id="badge">HAND MODE</div>
+  <div id="notif"></div>
+
+  <div id="coords">
+    <span id="cpos"></span><br>
+    <span id="crot"></span><br>
+    <span id="csz"></span>
+  </div>
+
+  <div id="leg">
+    <div class="li"><div class="lc" style="background:#d84040"></div>X axis</div>
+    <div class="li"><div class="lc" style="background:#40d040"></div>Y axis</div>
+    <div class="li"><div class="lc" style="background:#4060f8"></div>Z axis</div>
+  </div>
+
+  <div id="sbar">
+    <span><span class="dot" id="dk"></span>Knight</span>
+    <span><span class="dot" id="dw"></span>Weapon</span>
+    <span id="dmsg">Loading...</span>
+    <span id="fpsout">-- fps</span>
+  </div>
+</div>
+
+<!-- ═══ RIGHT PANEL ═══ -->
+<div id="pr">
+
+  <!-- Mode tabs -->
+  <div class="sec" style="border-bottom:none;padding-bottom:0">
+    <div style="padding:8px 12px 5px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#5a5878;text-transform:uppercase;border-bottom:1px solid #1a1a26">Edit Mode</div>
+    <div id="tabs">
+      <div class="tab on" id="th" onclick="setM('hand')">In Hand</div>
+      <div class="tab"    id="ts" onclick="setM('stone')">In Stone</div>
+      <div class="tab"    id="tp" onclick="setM('pivot')">Pivot</div>
+    </div>
+  </div>
+
+  <!-- HAND controls -->
+  <div id="ch">
+    <div class="sec">
+      <div class="sh" onclick="tog(this)"><span>Position (hand-local)</span><span class="ar">▼</span></div>
+      <div class="sb">
+        <div class="ht" style="margin-bottom:4px">Offset inside the RightHand bone</div>
+        <div class="vrow"><span class="ax x">X</span><input class="ni xi" id="hpx" type="number" step="0.005" value="0.06" oninput="applyHand()"></div>
+        <div class="vrow"><span class="ax y">Y</span><input class="ni yi" id="hpy" type="number" step="0.005" value="0.04" oninput="applyHand()"></div>
+        <div class="vrow"><span class="ax z">Z</span><input class="ni zi" id="hpz" type="number" step="0.005" value="0.00" oninput="applyHand()"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sh" onclick="tog(this)"><span>Rotation (radians)</span><span class="ar">▼</span></div>
+      <div class="sb">
+        <div class="vrow"><span class="ax x">X</span><input class="ni xi" id="hrx" type="number" step="0.01" value="-1.35" oninput="applyHand()"></div>
+        <div class="vrow"><span class="ax y">Y</span><input class="ni yi" id="hry" type="number" step="0.01" value="0.05" oninput="applyHand()"></div>
+        <div class="vrow"><span class="ax z">Z</span><input class="ni zi" id="hrz" type="number" step="0.01" value="0.18" oninput="applyHand()"></div>
+        <button class="btn sm" onclick="showDeg()" style="margin-top:2px">⇄ show in degrees</button>
+        <div id="degh" class="ht" style="color:#5850a0;margin-top:2px"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sh" onclick="tog(this)"><span>Size (max dimension)</span><span class="ar">▼</span></div>
+      <div class="sb">
+        <div class="vrow"><span class="ax s">S</span><input class="ni" id="hsz" type="number" step="0.01" value="0.9" min="0.01" oninput="applyHand()"></div>
+        <div class="ht">Longest bounding box edge in world units.<br>Default: 0.9 (hand), 1.45 (stone)</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sh" onclick="tog(this)"><span>Quick Presets</span><span class="ar">▼</span></div>
+      <div class="sb">
+        <button class="btn" onclick="resetDef()">Reset to Ember Blade defaults</button>
+        <button class="btn" onclick="mirX()">Mirror X rotation</button>
+        <button class="btn" onclick="snap90()">Snap rotation to 90°</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STONE controls -->
+  <div id="cs" style="display:none">
+    <div class="sec">
+      <div class="sh" onclick="tog(this)"><span>World Position</span><span class="ar">▼</span></div>
+      <div class="sb">
+        <div class="ht" style="margin-bottom:4px">Position of weapon group in world space (the scene)</div>
+        <div class="vrow"><span class="ax x">X</span><input class="ni xi" id="swx" type="number" step="0.1" value="-23.7" oninput="applyStone()"></div>
+        <div class="vrow"><span class="ax y">Y</span><input class="ni yi" id="swy" type="number" step="0.1" value="1.27" oninput="applyStone()"></div>
+        <div class="vrow"><span class="ax z">Z</span><input class="ni zi" id="swz" type="number" step="0.1" value="-24.2" oninput="applyStone()"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sh" onclick="tog(this)"><span>World Rotation</span><span class="ar">▼</span></div>
+      <div class="sb">
+        <div class="vrow"><span class="ax x">X</span><input class="ni xi" id="srx" type="number" step="0.01" value="0.4" oninput="applyStone()"></div>
+        <div class="vrow"><span class="ax y">Y</span><input class="ni yi" id="sry" type="number" step="0.01" value="0.6" oninput="applyStone()"></div>
+        <div class="vrow"><span class="ax z">Z</span><input class="ni zi" id="srz" type="number" step="0.01" value="0.3" oninput="applyStone()"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sh" onclick="tog(this)"><span>Size in Stone</span><span class="ar">▼</span></div>
+      <div class="sb">
+        <div class="vrow"><span class="ax s">S</span><input class="ni" id="ssz" type="number" step="0.01" value="1.45" min="0.01" oninput="applyStone()"></div>
+        <div class="ht">Default: 1.45 (longer than hand to look big in rock)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIVOT controls -->
+  <div id="cpiv" style="display:none">
+    <div class="sec">
+      <div class="sh" onclick="tog(this)"><span>Pivot Offset</span><span class="ar">▼</span></div>
+      <div class="sb">
+        <div class="ht" style="margin-bottom:5px">Shifts where the model sits relative to the gizmo/grip origin. Drag the colored arrows in the viewport or type below.</div>
+        <div class="vrow"><span class="ax x">X</span><input class="ni xi" id="pvx" type="number" step="0.005" value="0" oninput="applyPiv()"></div>
+        <div class="vrow"><span class="ax y">Y</span><input class="ni yi" id="pvy" type="number" step="0.005" value="0" oninput="applyPiv()"></div>
+        <div class="vrow"><span class="ax z">Z</span><input class="ni zi" id="pvz" type="number" step="0.005" value="0" oninput="applyPiv()"></div>
+        <div class="div"></div>
+        <button class="btn" onclick="pivBase()">Auto-center: handle (base)</button>
+        <button class="btn" onclick="pivMid()">Auto-center: middle</button>
+        <button class="btn" onclick="pivTip()">Auto-center: tip (top)</button>
+        <button class="btn sm" onclick="pivReset()">Reset to 0, 0, 0</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code Generator -->
+  <div class="sec">
+    <div class="sh" onclick="tog(this)"><span>Code Generator</span><span class="ar">▼</span></div>
+    <div class="sb">
+      <button class="btn ok" onclick="genCode()">▶ Generate Game Code</button>
+      <div id="cout">// Select a weapon and click Generate</div>
+      <button class="btn sm" onclick="cpCode()" style="margin-top:3px">Copy to clipboard</button>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════
+//  CONCRETE  —  Blackbanner Weapon Editor
+//  Three.js r128
+// ══════════════════════════════════════════════════════
+
+const KNIGHT_URL  = 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Knight.glb';
+const DEF_SWORD_A = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb';
+const DEF_SWORD_B = 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/10%5E9_%24w0rd.glb';
+
+const DEF_H_POS  = [0.06, 0.04, 0.0];
+const DEF_H_ROT  = [-1.35, 0.05, 0.18];
+const DEF_H_SIZE = 0.9;
+const DEF_S_SIZE = 1.45;
+
+// ── Renderer ──────────────────────────────────────────
+const cv = document.getElementById('cv');
+const vp = document.getElementById('vp');
+
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x11111a);
+
+const cam = new THREE.PerspectiveCamera(60, 1, 0.005, 300);
+cam.position.set(0, 1.5, 2.5);
+
+// ── OrbitControls — left drag = rotate, right/middle = pan ──
+const orbit = new THREE.OrbitControls(cam, cv);
+orbit.enableDamping  = true;
+orbit.dampingFactor  = 0.1;
+orbit.minDistance    = 0.05;
+orbit.maxDistance    = 25;
+orbit.target.set(0, 0.9, 0);
+orbit.mouseButtons   = {
+  LEFT:   THREE.MOUSE.ROTATE,
+  MIDDLE: THREE.MOUSE.PAN,
+  RIGHT:  THREE.MOUSE.PAN,
+};
+
+// ── Lighting ──────────────────────────────────────────
+const hemi = new THREE.HemisphereLight(0xfff0d0, 0x1e2e10, 0.55);
+scene.add(hemi);
+const sun  = new THREE.DirectionalLight(0xffd8a0, 2.0);
+sun.position.set(6, 10, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.camera.left = -4; sun.shadow.camera.right = 4;
+sun.shadow.camera.top  =  4; sun.shadow.camera.bottom = -4;
+sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 40;
+sun.shadow.bias = -0.0003;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x88a4e8, 0.4);
+fill.position.set(-3, 5, -3);
+scene.add(fill);
+
+// ── Floor + Grid ──────────────────────────────────────
+const grid = new THREE.GridHelper(12, 24, 0x22223a, 0x1c1c30);
+scene.add(grid);
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(20, 20),
+  new THREE.MeshStandardMaterial({ color: 0x0d0d18, roughness: 0.96 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// ── World axes (tiny, always visible) ─────────────────
+{
+  const g = new THREE.BufferGeometry();
+  const v = new Float32Array([0,0,0,.3,0,0, 0,0,0,0,.3,0, 0,0,0,0,0,.3]);
+  const c = new Float32Array([.8,.1,.1,.8,.1,.1, .1,.8,.1,.1,.8,.1, .15,.35,1,.15,.35,1]);
+  g.setAttribute('position', new THREE.BufferAttribute(v, 3));
+  g.setAttribute('color',    new THREE.BufferAttribute(c, 3));
+  scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false })));
+}
+
+// ── Boulder (stone mode context) ──────────────────────
+const boulder = new THREE.Mesh(
+  new THREE.DodecahedronGeometry(0.52, 0),
+  new THREE.MeshStandardMaterial({ color: 0x383048, roughness: 0.93, metalness: 0.04 })
+);
+boulder.scale.set(1.4, 0.78, 1.1);
+boulder.receiveShadow = true;
+boulder.visible = false;
+scene.add(boulder);
+
+// ── Pivot visual sphere ────────────────────────────────
+const pivSphere = new THREE.Mesh(
+  new THREE.SphereGeometry(0.011, 8, 6),
+  new THREE.MeshBasicMaterial({ color: 0xffee00, depthTest: false })
+);
+pivSphere.visible = false;
+scene.add(pivSphere);
+
+// ─────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────
+let knightModel  = null;
+let knightMixer  = null;
+let handBone     = null;      // RightHand bone
+
+let wepGroup     = null;      // Group attached to handBone (or scene in stone mode)
+let wepInner     = null;      // Group: pivot offset lives here
+let wepModel     = null;      // raw GLB scene
+let stoneGroup   = null;      // root for stone-mode weapon
+
+let curMode      = 'hand';
+let gizmoMode    = 't';       // 't' translate, 'r' rotate
+let pivOffset    = new THREE.Vector3();
+
+let weapons      = [];
+let activeIdx    = -1;
+
+// ─────────────────────────────────────────────────────
+//  GIZMO  (Unreal-style, screen-space-projected drag)
+// ─────────────────────────────────────────────────────
+const gizmoGrp = new THREE.Group();
+gizmoGrp.renderOrder = 900;
+scene.add(gizmoGrp);
+
+// Colors
+const GC = {
+  x: 0xd83030, xH: 0xff8080,
+  y: 0x30d030, yH: 0x80ff80,
+  z: 0x3060f8, zH: 0x88aaff,
+};
+
+let gArrows   = {};  // {x,y,z} → [shaft, cone] meshes
+let gRings    = {};  // {x,y,z} → ring mesh
+let allGizmos = [];  // flat list for raycast
+
+function buildGizmos() {
+  while (gizmoGrp.children.length) gizmoGrp.remove(gizmoGrp.children[0]);
+  gArrows = {}; gRings = {}; allGizmos = [];
+
+  if (gizmoMode === 't') {
+    buildArrows();
+  } else {
+    buildRings();
+  }
+}
+
+function buildArrows() {
+  const len = 0.16, r = 0.008, cr = 0.020, ch = 0.040;
+  const axes = [
+    { k: 'x', color: GC.x, rotZ: -Math.PI/2 },
+    { k: 'y', color: GC.y, rotZ: 0 },
+    { k: 'z', color: GC.z, rotX:  Math.PI/2 },
+  ];
+  axes.forEach(ax => {
+    const mat   = new THREE.MeshBasicMaterial({ color: ax.color, depthTest: false });
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 7), mat.clone());
+    const cone  = new THREE.Mesh(new THREE.ConeGeometry(cr, ch, 8),         mat.clone());
+    // Hit cylinder — fat and invisible, easy to click
+    const hit   = new THREE.Mesh(
+      new THREE.CylinderGeometry(cr*2.5, cr*2.5, len+ch, 6),
+      new THREE.MeshBasicMaterial({ visible: false, depthTest: false })
+    );
+
+    [shaft, cone, hit].forEach(m => {
+      m.renderOrder = 900;
+      m.userData.gAxis = ax.k;
+    });
+
+    if (ax.k === 'x') {
+      shaft.position.x = len/2;  shaft.rotation.z = -Math.PI/2;
+      cone.position.x  = len + ch/2; cone.rotation.z  = -Math.PI/2;
+      hit.position.x   = (len+ch)/2; hit.rotation.z   = -Math.PI/2;
+    } else if (ax.k === 'y') {
+      shaft.position.y = len/2;
+      cone.position.y  = len + ch/2;
+      hit.position.y   = (len+ch)/2;
+    } else {
+      shaft.position.z = len/2;  shaft.rotation.x =  Math.PI/2;
+      cone.position.z  = len + ch/2; cone.rotation.x  =  Math.PI/2;
+      hit.position.z   = (len+ch)/2; hit.rotation.x   =  Math.PI/2;
+    }
+
+    gizmoGrp.add(shaft, cone, hit);
+    gArrows[ax.k] = [shaft, cone, hit];
+    allGizmos.push(shaft, cone, hit);
+  });
+
+  // Center white dot
+  const ctr = new THREE.Mesh(
+    new THREE.SphereGeometry(0.016, 8, 6),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false })
+  );
+  ctr.renderOrder = 900;
+  gizmoGrp.add(ctr);
+  allGizmos.push(ctr);
+}
+
+function buildRings() {
+  const axes = [
+    { k: 'x', color: GC.x, rotY: Math.PI/2 },
+    { k: 'y', color: GC.y, rotX: 0 },
+    { k: 'z', color: GC.z, rotX: Math.PI/2 },
+  ];
+  axes.forEach(ax => {
+    const mat  = new THREE.MeshBasicMaterial({ color: ax.color, depthTest: false, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.007, 6, 40), mat.clone());
+    // Fat hit ring
+    const hit  = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.030, 6, 40),
+                                new THREE.MeshBasicMaterial({ visible: false, depthTest: false }));
+    [ring, hit].forEach(m => {
+      m.renderOrder = 900;
+      m.userData.gAxis = ax.k;
+      if (ax.k === 'x') m.rotation.y = Math.PI/2;
+      else if (ax.k === 'z') m.rotation.x = Math.PI/2;
+    });
+    gizmoGrp.add(ring, hit);
+    gRings[ax.k] = ring;
+    allGizmos.push(ring, hit);
+  });
+}
+
+buildGizmos();
+
+// Keep gizmo at constant screen size
+function updateGizmoScale() {
+  if (!gizmoGrp.visible) return;
+  const d = cam.position.distanceTo(gizmoGrp.position);
+  gizmoGrp.scale.setScalar(d * 0.28);
+}
+
+// Place gizmo at correct world position
+function placeGizmo() {
+  if (!wepGroup && !stoneGroup) { gizmoGrp.visible = false; return; }
+  gizmoGrp.visible = true;
+
+  const wp = new THREE.Vector3();
+  if (curMode === 'pivot' && wepInner) {
+    wepInner.getWorldPosition(wp);
+    pivSphere.position.copy(wp);
+    pivSphere.visible = true;
+  } else if (curMode === 'stone' && stoneGroup) {
+    stoneGroup.getWorldPosition(wp);
+    pivSphere.visible = false;
+  } else if (wepGroup) {
+    wepGroup.getWorldPosition(wp);
+    pivSphere.visible = false;
+  }
+
+  gizmoGrp.position.copy(wp);
+  updateGizmoScale();
+}
+
+// ─────────────────────────────────────────────────────
+//  GIZMO DRAG — screen-space axis projection method
+//  (most reliable, used by Blender/Unity)
+// ─────────────────────────────────────────────────────
+const RC = new THREE.Raycaster();
+let dragActive = false;
+let dragAxis   = null;
+let dragStart  = { mouse: new THREE.Vector2(), val: 0 };
+
+// Gets screen-space direction of a 3D axis from current camera perspective
+function getScreenAxis(axis) {
+  const gWorld = new THREE.Vector3();
+  gizmoGrp.getWorldPosition(gWorld);
+
+  const axDir3 = axis === 'x' ? new THREE.Vector3(1,0,0)
+               : axis === 'y' ? new THREE.Vector3(0,1,0)
+                              : new THREE.Vector3(0,0,1);
+
+  const p0 = gWorld.clone().project(cam);
+  const p1 = gWorld.clone().addScaledVector(axDir3, 0.5).project(cam);
+
+  const s = new THREE.Vector2(p1.x - p0.x, p1.y - p0.y);
+  if (s.length() < 0.0001) s.set(1, 0);
+  return s.normalize();
+}
+
+function getNDC(e) {
+  const r = cv.getBoundingClientRect();
+  return new THREE.Vector2(
+    ((e.clientX - r.left) / r.width)  *  2 - 1,
+    ((e.clientY - r.top)  / r.height) * -2 + 1
+  );
+}
+
+// Capture-phase pointer handler intercepts gizmo clicks before OrbitControls
+cv.addEventListener('pointerdown', onPD, { capture: true });
+cv.addEventListener('pointermove', onPM, { capture: true });
+cv.addEventListener('pointerup',   onPU, { capture: true });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+function onPD(e) {
+  if (e.button !== 0) return; // only left click for gizmo
+
+  const ndc = getNDC(e);
+  RC.setFromCamera(ndc, cam);
+
+  // Check gizmo hit first
+  const hits = RC.intersectObjects(allGizmos, false);
+  if (hits.length && hits[0].object.userData.gAxis) {
+    e.stopPropagation(); // prevent OrbitControls from starting
+    const ax = hits[0].object.userData.gAxis;
+    startDrag(ax, ndc);
+    cv.setPointerCapture(e.pointerId);
+    return;
+  }
+}
+
+function onPM(e) {
+  if (!dragActive) {
+    hoverGizmo(getNDC(e));
+    return;
+  }
+  e.stopPropagation();
+  const ndc = getNDC(e);
+
+  // Mouse delta in NDC
+  const dx = ndc.x - dragStart.mouse.x;
+  const dy = ndc.y - dragStart.mouse.y;
+
+  // Project mouse delta onto screen-space axis direction
+  const screenAxis = getScreenAxis(dragAxis);
+  const mouseDelta = new THREE.Vector2(dx, dy);
+  const proj = mouseDelta.dot(screenAxis);
+
+  // Scale: camera distance → world units sensitivity
+  const camDist = cam.position.distanceTo(gizmoGrp.position);
+  const sensitivity = (gizmoMode === 'r') ? 3.0 : camDist * 0.9;
+  const delta = proj * sensitivity;
+
+  const newVal = parseFloat((dragStart.val + delta).toFixed(4));
+  applyDragValue(dragAxis, newVal);
+}
+
+function onPU(e) {
+  if (dragActive) {
+    dragActive = false;
+    dragAxis   = null;
+    cv.style.cursor = 'default';
+    cv.releasePointerCapture(e.pointerId);
+  }
+}
+
+function startDrag(axis, ndc) {
+  dragActive = true;
+  dragAxis   = axis;
+  dragStart.mouse.copy(ndc);
+  dragStart.val = getCurrentAxisValue(axis);
+  cv.style.cursor = 'grabbing';
+}
+
+function getCurrentAxisValue(axis) {
+  if (curMode === 'stone') {
+    const ids = { x:'swx', y:'swy', z:'swz', rx:'srx', ry:'sry', rz:'srz' };
+    if (gizmoMode === 'r') return gv(ids['r'+axis]);
+    return gv(ids[axis]);
+  } else if (curMode === 'pivot') {
+    const ids = { x:'pvx', y:'pvy', z:'pvz' };
+    return gv(ids[axis]);
+  } else {
+    // hand mode
+    if (gizmoMode === 'r') { const ids={x:'hrx',y:'hry',z:'hrz'}; return gv(ids[axis]); }
+    const ids = { x:'hpx', y:'hpy', z:'hpz' };
+    return gv(ids[axis]);
+  }
+}
+
+function applyDragValue(axis, val) {
+  if (curMode === 'stone') {
+    if (gizmoMode === 'r') {
+      const ids = { x:'srx', y:'sry', z:'srz' };
+      sv(ids[axis], val); applyStone();
+    } else {
+      const ids = { x:'swx', y:'swy', z:'swz' };
+      sv(ids[axis], val); applyStone();
+    }
+  } else if (curMode === 'pivot') {
+    const ids = { x:'pvx', y:'pvy', z:'pvz' };
+    sv(ids[axis], val); applyPiv();
+  } else {
+    // hand or pivot-in-hand
+    if (gizmoMode === 'r') {
+      const ids = { x:'hrx', y:'hry', z:'hrz' };
+      sv(ids[axis], val); applyHand();
+    } else {
+      const ids = { x:'hpx', y:'hpy', z:'hpz' };
+      sv(ids[axis], val); applyHand();
+    }
+  }
+}
+
+// Hover highlight
+function hoverGizmo(ndc) {
+  RC.setFromCamera(ndc, cam);
+  const hits = RC.intersectObjects(allGizmos, false);
+  const hovAx = hits.length && hits[0].object.userData.gAxis ? hits[0].object.userData.gAxis : null;
+
+  // Reset colors
+  Object.entries(gArrows).forEach(([k, arr]) => arr.forEach(m => { if (m.material && m.material.visible !== false) m.material.color.setHex(GC[k]); }));
+  Object.entries(gRings).forEach(([k, m]) => m.material.color.setHex(GC[k]));
+
+  if (hovAx) {
+    const hKey = hovAx + 'H';
+    if (gArrows[hovAx]) gArrows[hovAx].forEach(m => { if (m.material && m.material.visible !== false) m.material.color.setHex(GC[hKey]); });
+    if (gRings[hovAx])  gRings[hovAx].material.color.setHex(GC[hKey]);
+    cv.style.cursor = 'grab';
+  } else {
+    cv.style.cursor = 'default';
+  }
+}
+
+function setGM(m) {
+  gizmoMode = m;
+  document.getElementById('gbt').classList.toggle('on', m==='t');
+  document.getElementById('gbr').classList.toggle('on', m==='r');
+  buildGizmos();
+}
+
+// ─────────────────────────────────────────────────────
+//  KNIGHT  (player reference model)
+// ─────────────────────────────────────────────────────
+function loadKnight() {
+  setDot('dk', 'y');
+  new THREE.GLTFLoader().load(KNIGHT_URL, gltf => {
+    if (knightModel && knightModel.parent) scene.remove(knightModel);
+    knightModel = gltf.scene;
+    knightModel.position.set(0, 0, 0);
+    knightModel.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+    scene.add(knightModel);
+
+    if (gltf.animations.length) {
+      knightMixer = new THREE.AnimationMixer(knightModel);
+      const idle = gltf.animations.find(a => /neutral.*idle|idle/i.test(a.name)) || gltf.animations[0];
+      knightMixer.clipAction(idle).setLoop(THREE.LoopRepeat, Infinity).play();
+    }
+
+    findHandBone();
+    setDot('dk', 'g');
+    setMsg('Knight loaded');
+
+    // Reattach weapon to hand if already loaded
+    if (wepModel) rebuildWeapon();
+  }, null, () => {
+    setDot('dk', 'r');
+    setMsg('Knight load failed — check network');
+  });
+}
+
+function findHandBone() {
+  handBone = null;
+  if (!knightModel) return;
+  const names = ['mixamorig:RightHand','RightHand','mixamorigRightHand','Hand_R','hand.R','Right_Hand'];
+  knightModel.traverse(c => {
+    if (handBone) return;
+    if (c.isBone || c.type === 'Bone') {
+      const lo = c.name.toLowerCase();
+      if (names.some(n => c.name === n) || lo.includes('righthand')) handBone = c;
+    }
+  });
+  if (!handBone) {
+    knightModel.traverse(c => {
+      if (handBone) return;
+      if (c.isBone || c.type === 'Bone') {
+        const lo = c.name.toLowerCase();
+        if (lo.includes('right') && lo.includes('hand')) handBone = c;
+      }
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────
+//  WEAPON MANAGEMENT
+// ─────────────────────────────────────────────────────
+function loadWeaponGLB(url, isBlob=false) {
+  setDot('dw', 'y');
+  setMsg('Loading weapon...');
+  new THREE.GLTFLoader().load(url, gltf => {
+    clearWeapon();
+    wepModel = gltf.scene;
+    wepModel.traverse(c => { if (c.isMesh) { c.castShadow = true; c.frustumCulled = false; } });
+    if (!isBlob && activeIdx >= 0) weapons[activeIdx].glbUrl = url;
+    setDot('dw', 'g');
+    setMsg('Weapon loaded');
+    rebuildWeapon();
+    frameWep();
+    notif('Weapon loaded!');
+  }, null, () => {
+    setDot('dw', 'r');
+    notif('Load failed — bad URL or CORS');
+  });
+}
+
+function clearWeapon() {
+  if (wepGroup && wepGroup.parent) wepGroup.parent.remove(wepGroup);
+  if (stoneGroup && stoneGroup.parent) scene.remove(stoneGroup);
+  wepGroup = null; wepInner = null; wepModel = null; stoneGroup = null;
+  gizmoGrp.visible = false;
+  pivSphere.visible = false;
+}
+
+// Rebuild scene hierarchy for current mode
+function rebuildWeapon() {
+  if (!wepModel) return;
+
+  // Detach from everywhere
+  if (wepGroup && wepGroup.parent) wepGroup.parent.remove(wepGroup);
+  if (stoneGroup && stoneGroup.parent) scene.remove(stoneGroup);
+  wepGroup = null; wepInner = null; stoneGroup = null;
+
+  if (curMode === 'stone') {
+    buildStone();
+    if (knightModel) knightModel.visible = false;
+    boulder.visible = true;
+  } else {
+    buildHand();
+    if (knightModel) knightModel.visible = true;
+    boulder.visible = false;
+  }
+}
+
+// ─── Hand mode ────────────────────────────────────────
+function buildHand() {
+  wepGroup  = new THREE.Group();
+  wepInner  = new THREE.Group();
+  wepGroup.add(wepInner);
+  wepInner.add(wepModel);
+
+  const sz = Math.max(0.01, gv('hsz') || DEF_H_SIZE);
+  autoScale(wepModel, sz);
+  applyPivotOffset();
+
+  // Attach to hand bone for accurate visual reference
+  if (handBone) {
+    handBone.add(wepGroup);
+  } else {
+    wepGroup.position.set(0, 0.9, 0.1);
+    scene.add(wepGroup);
+  }
+
+  // Apply stored transforms
+  wepGroup.position.set(gv('hpx'), gv('hpy'), gv('hpz'));
+  wepGroup.rotation.set(gv('hrx'), gv('hry'), gv('hrz'));
+}
+
+// ─── Stone mode ───────────────────────────────────────
+function buildStone() {
+  stoneGroup = new THREE.Group();
+  wepGroup   = stoneGroup; // alias so gizmo placement works
+  wepInner   = new THREE.Group();
+  stoneGroup.add(wepInner);
+  wepInner.add(wepModel);
+
+  const sz = Math.max(0.01, gv('ssz') || DEF_S_SIZE);
+  autoScale(wepModel, sz);
+  applyPivotOffset();
+
+  scene.add(stoneGroup);
+  stoneGroup.position.set(gv('swx'), gv('swy'), gv('swz'));
+  stoneGroup.rotation.set(gv('srx'), gv('sry'), gv('srz'));
+
+  // Place boulder below weapon
+  boulder.position.set(gv('swx'), gv('swy') - 0.45, gv('swz'));
+}
+
+// ─── Scale ────────────────────────────────────────────
+function autoScale(model, targetMax) {
+  model.scale.set(1, 1, 1);
+  model.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(model);
+  const sz = new THREE.Vector3(); bb.getSize(sz);
+  const maxD = Math.max(sz.x, sz.y, sz.z);
+  model.scale.setScalar(maxD > 0.001 ? targetMax / maxD : 0.12);
+}
+
+// ─── Pivot offset ─────────────────────────────────────
+function applyPivotOffset() {
+  if (!wepModel) return;
+  wepModel.scale.set(1, 1, 1);
+  wepModel.updateMatrixWorld(true);
+
+  // Re-apply auto-scale first (model may need rescaling)
+  const sz = curMode === 'stone' ? Math.max(0.01, gv('ssz')||DEF_S_SIZE)
+                                 : Math.max(0.01, gv('hsz')||DEF_H_SIZE);
+  autoScale(wepModel, sz);
+
+  wepModel.updateMatrixWorld(true);
+  const bb  = new THREE.Box3().setFromObject(wepModel);
+  const cen = new THREE.Vector3(); bb.getCenter(cen);
+
+  // Bottom-center as default grip, shifted by pivotOffset
+  wepModel.position.set(
+    -cen.x + pivOffset.x,
+    -bb.min.y + pivOffset.y,
+    -cen.z + pivOffset.z
+  );
+}
+
+// ─────────────────────────────────────────────────────
+//  APPLY TRANSFORM FROM UI
+// ─────────────────────────────────────────────────────
+function applyHand() {
+  if (!wepGroup || curMode === 'stone') return;
+  wepGroup.position.set(gv('hpx'), gv('hpy'), gv('hpz'));
+  wepGroup.rotation.set(gv('hrx'), gv('hry'), gv('hrz'));
+
+  // Re-scale
+  applyPivotOffset();
+  updateCoords(); saveState();
+}
+
+function applyStone() {
+  if (!stoneGroup) return;
+  stoneGroup.position.set(gv('swx'), gv('swy'), gv('swz'));
+  stoneGroup.rotation.set(gv('srx'), gv('sry'), gv('srz'));
+  boulder.position.set(gv('swx'), gv('swy') - 0.45, gv('swz'));
+
+  applyPivotOffset();
+  updateCoords(); saveState();
+}
+
+function applyPiv() {
+  pivOffset.set(gv('pvx'), gv('pvy'), gv('pvz'));
+  applyPivotOffset();
+  saveState();
+}
+
+// ─────────────────────────────────────────────────────
+//  MODE SWITCHING
+// ─────────────────────────────────────────────────────
+function setM(m) {
+  saveState(); // save before switching
+  curMode = m;
+
+  // Tabs
+  document.getElementById('th').className = 'tab' + (m==='hand'?'  on':'');
+  document.getElementById('ts').className = 'tab' + (m==='stone'?' rock on':'');
+  document.getElementById('tp').className = 'tab' + (m==='pivot'?' pivot on':'');
+
+  // Badge
+  const badge = document.getElementById('badge');
+  badge.textContent = m==='hand' ? 'HAND MODE' : m==='stone' ? 'STONE MODE' : 'PIVOT MODE';
+  badge.className = m==='stone' ? 'rock' : m==='pivot' ? 'pivot' : '';
+
+  // Control panels
+  document.getElementById('ch').style.display    = m!=='stone' ? '' : 'none';
+  document.getElementById('cs').style.display    = m==='stone' ? '' : 'none';
+  document.getElementById('cpiv').style.display  = m==='pivot' ? '' : 'none';
+
+  // Load stored values into UI
+  if (activeIdx >= 0 && weapons[activeIdx]) loadToUI(weapons[activeIdx]);
+
+  rebuildWeapon();
+  buildGizmos();
+}
+
+// ─────────────────────────────────────────────────────
+//  WEAPON LIBRARY
+// ─────────────────────────────────────────────────────
+function mkWep(name='New Weapon', type='sword') {
+  return {
+    name, type, glbUrl: '',
+    hand: { pos: [...DEF_H_POS], rot: [...DEF_H_ROT], sz: DEF_H_SIZE, piv: [0,0,0] },
+    stone: { wx:-23.7, wy:1.27, wz:-24.2, rx:0.4, ry:0.6, rz:0.3, sz: DEF_S_SIZE }
+  };
+}
+
+function addWep() {
+  const w = mkWep();
+  weapons.push(w);
+  activeIdx = weapons.length - 1;
+  loadToUI(w);
+  renderList();
+}
+
+function selWep(idx) {
+  saveState();
+  activeIdx = idx;
+  const w = weapons[idx];
+  if (!w) return;
+  loadToUI(w);
+  renderList();
+  if (w.glbUrl && w.glbUrl.startsWith('http')) loadWeaponGLB(w.glbUrl);
+}
+
+function delWep(idx, e) {
+  e.stopPropagation();
+  weapons.splice(idx, 1);
+  if (activeIdx >= weapons.length) activeIdx = weapons.length - 1;
+  if (activeIdx < 0) clearWeapon();
+  else { loadToUI(weapons[activeIdx]); rebuildWeapon(); }
+  renderList();
+}
+
+function loadToUI(w) {
+  document.getElementById('wname').value = w.name;
+  document.getElementById('wtype').value = w.type;
+  const h = w.hand, s = w.stone;
+  sv('hpx',h.pos[0]); sv('hpy',h.pos[1]); sv('hpz',h.pos[2]);
+  sv('hrx',h.rot[0]); sv('hry',h.rot[1]); sv('hrz',h.rot[2]);
+  sv('hsz',h.sz);
+  sv('pvx',h.piv[0]); sv('pvy',h.piv[1]); sv('pvz',h.piv[2]);
+  pivOffset.set(h.piv[0], h.piv[1], h.piv[2]);
+  sv('swx',s.wx); sv('swy',s.wy); sv('swz',s.wz);
+  sv('srx',s.rx); sv('sry',s.ry); sv('srz',s.rz);
+  sv('ssz',s.sz);
+}
+
+function saveState() {
+  if (activeIdx < 0 || !weapons[activeIdx]) return;
+  const w = weapons[activeIdx];
+  w.name = document.getElementById('wname').value || w.name;
+  w.type = document.getElementById('wtype').value;
+  w.hand.pos = [gv('hpx'),gv('hpy'),gv('hpz')];
+  w.hand.rot = [gv('hrx'),gv('hry'),gv('hrz')];
+  w.hand.sz  = gv('hsz') || DEF_H_SIZE;
+  w.hand.piv = [gv('pvx'),gv('pvy'),gv('pvz')];
+  w.stone.wx=gv('swx'); w.stone.wy=gv('swy'); w.stone.wz=gv('swz');
+  w.stone.rx=gv('srx'); w.stone.ry=gv('sry'); w.stone.rz=gv('srz');
+  w.stone.sz = gv('ssz') || DEF_S_SIZE;
+}
+
+function renderList() {
+  const el = document.getElementById('wlist');
+  if (!weapons.length) {
+    el.innerHTML = '<div class="ht" style="text-align:center;padding:5px">No weapons — click + New</div>';
+    return;
+  }
+  el.innerHTML = weapons.map((w,i) => `
+    <div class="wi${i===activeIdx?' on':''}" onclick="selWep(${i})">
+      <div><div class="wn">${w.name||'Unnamed'}</div><div class="wt">${w.type}</div></div>
+      <button class="wd" onclick="delWep(${i},event)" title="Delete">✕</button>
+    </div>`).join('');
+}
+
+function onInfo() {
+  if (activeIdx < 0) return;
+  weapons[activeIdx].name = document.getElementById('wname').value;
+  weapons[activeIdx].type = document.getElementById('wtype').value;
+  renderList();
+}
+
+// ─────────────────────────────────────────────────────
+//  PIVOT PRESETS
+// ─────────────────────────────────────────────────────
+function pivBase() {
+  if (!wepModel) return;
+  wepModel.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(wepModel);
+  const c  = new THREE.Vector3(); bb.getCenter(c);
+  sv('pvx', +(-c.x).toFixed(4));
+  sv('pvy', +(-bb.min.y).toFixed(4));
+  sv('pvz', +(-c.z).toFixed(4));
+  applyPiv(); notif('Pivot → base (handle)');
+}
+function pivMid() { sv('pvx',0); sv('pvy',0); sv('pvz',0); applyPiv(); notif('Pivot → center'); }
+function pivTip() {
+  if (!wepModel) return;
+  wepModel.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(wepModel);
+  const c  = new THREE.Vector3(); bb.getCenter(c);
+  sv('pvx', +(-c.x).toFixed(4));
+  sv('pvy', +(-bb.max.y).toFixed(4));
+  sv('pvz', +(-c.z).toFixed(4));
+  applyPiv(); notif('Pivot → tip (blade end)');
+}
+function pivReset() {
+  sv('pvx',0); sv('pvy',0); sv('pvz',0);
+  pivOffset.set(0,0,0);
+  applyPivotOffset(); saveState();
+}
+
+// ─────────────────────────────────────────────────────
+//  PRESETS
+// ─────────────────────────────────────────────────────
+function resetDef() {
+  sv('hpx',DEF_H_POS[0]); sv('hpy',DEF_H_POS[1]); sv('hpz',DEF_H_POS[2]);
+  sv('hrx',DEF_H_ROT[0]); sv('hry',DEF_H_ROT[1]); sv('hrz',DEF_H_ROT[2]);
+  sv('hsz',DEF_H_SIZE);
+  applyHand(); notif('Reset to Ember Blade defaults');
+}
+function mirX() { sv('hrx', -gv('hrx')); applyHand(); }
+function snap90() {
+  const sn = r => +(Math.round(r/(Math.PI/2))*(Math.PI/2)).toFixed(4);
+  sv('hrx',sn(gv('hrx'))); sv('hry',sn(gv('hry'))); sv('hrz',sn(gv('hrz')));
+  applyHand();
+}
+function showDeg() {
+  const d = r => (r*180/Math.PI).toFixed(1)+'°';
+  document.getElementById('degh').textContent = `(${d(gv('hrx'))}, ${d(gv('hry'))}, ${d(gv('hrz'))})`;
+}
+
+// ─────────────────────────────────────────────────────
+//  LOAD  handlers
+// ─────────────────────────────────────────────────────
+function loadURL() {
+  const url = (document.getElementById('gurl').value||'').trim();
+  if (!url) { notif('Enter a URL first'); return; }
+  if (activeIdx < 0) addWep();
+  loadWeaponGLB(url);
+}
+function loadFile(input) {
+  const f = input.files[0]; if (!f) return;
+  if (activeIdx < 0) addWep();
+  loadWeaponGLB(URL.createObjectURL(f), true);
+  input.value = '';
+}
+
+// ─────────────────────────────────────────────────────
+//  CODE GENERATOR
+// ─────────────────────────────────────────────────────
+function genCode() {
+  if (activeIdx < 0) { notif('No weapon selected'); return; }
+  saveState();
+  const w = weapons[activeIdx];
+  const NAME = (w.name||'Weapon').replace(/[^a-zA-Z0-9_]/g,'_').toUpperCase();
+  const f = n => parseFloat(n.toFixed(4));
+  const arr = a => `[${a.map(f).join(', ')}]`;
+  const h = w.hand, s = w.stone;
+
+  const code =
+`// ══ ${w.name} — Concrete Editor Output ══
+// Paste into swords.html at the "CONCRETE WEAPON EDITOR BLOCK" comment
+
+const SWORD_ROCK_MAX_DIM  = ${f(s.sz)};
+const SWORD_HAND_MAX_DIM  = ${f(h.sz)};
+const SWORD_HAND_POS      = ${arr(h.pos)};
+const SWORD_HAND_ROT      = ${arr(h.rot)};
+
+// In buildMap() — find "CONCRETE EDITOR: Replace the two lines":
+swordGroup.position.set(${f(s.wx)}, ${f(s.wy)} - 0.35, ${f(s.wz)});
+swordGroup.rotation.set(${f(s.rx)}, ${f(s.ry)}, ${f(s.rz)});
+
+// GLB URLs (if using a different weapon):
+const SWORD_GLB_PRIMARY  = '${w.glbUrl||'YOUR_CDN_URL'}';
+const SWORD_GLB_FALLBACK = '${w.glbUrl||'YOUR_RAW_URL'}';
+
+// Full weapon definition:
+const WEAPON_${NAME} = {
+  name: '${w.name}',
+  type: '${w.type}',
+  hand: { maxDim:${f(h.sz)}, pos:${arr(h.pos)}, rot:${arr(h.rot)}, pivot:${arr(h.piv)} },
+  stone:{ maxDim:${f(s.sz)}, pos:[${f(s.wx)},${f(s.wy)},${f(s.wz)}], rot:[${f(s.rx)},${f(s.ry)},${f(s.rz)}] }
+};`;
+
+  document.getElementById('cout').textContent = code;
+  notif('Code generated!');
+}
+
+function cpCode() {
+  navigator.clipboard.writeText(document.getElementById('cout').textContent)
+    .then(() => notif('Copied!')).catch(() => notif('Copy failed'));
+}
+
+// ─────────────────────────────────────────────────────
+//  SCENE / CAMERA
+// ─────────────────────────────────────────────────────
+function frameWep() {
+  if (!wepModel) return;
+  wepModel.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(wepModel);
+  if (bb.isEmpty()) return;
+  const c = new THREE.Vector3(); bb.getCenter(c);
+  const s = new THREE.Vector3(); bb.getSize(s);
+  const r = Math.max(s.x,s.y,s.z)*2;
+  orbit.target.copy(c);
+  cam.position.copy(c.clone().add(new THREE.Vector3(r*.3, r*.4, r)));
+  orbit.update();
+}
+
+function setRef(v) { if (knightModel) knightModel.visible = (v==='knight' && curMode!=='stone'); }
+
+function updateCoords() {
+  if (!wepGroup) return;
+  const p=wepGroup.position, r=wepGroup.rotation;
+  const sz=curMode==='stone'?gv('ssz'):gv('hsz');
+  document.getElementById('cpos').textContent=`Pos: ${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}`;
+  document.getElementById('crot').textContent=`Rot: ${r.x.toFixed(3)}, ${r.y.toFixed(3)}, ${r.z.toFixed(3)}`;
+  document.getElementById('csz').textContent=`Size: ${sz.toFixed(3)} wu`;
+}
+
+// ─────────────────────────────────────────────────────
+//  UTILITIES
+// ─────────────────────────────────────────────────────
+function tog(hdr) { hdr.classList.toggle('cl'); hdr.nextElementSibling.classList.toggle('hd'); }
+function gv(id) { return parseFloat(document.getElementById(id).value)||0; }
+function sv(id,v) { document.getElementById(id).value = typeof v==='number' ? parseFloat(v.toFixed(4)) : v; }
+function notif(msg,dur=2500) {
+  const el=document.getElementById('notif');
+  el.textContent=msg; el.classList.add('on');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'),dur);
+}
+function setMsg(m) { document.getElementById('dmsg').textContent=m; }
+function setDot(id,s) {
+  const d=document.getElementById(id); if(!d) return;
+  d.className='dot'+(s==='g'?' g':s==='y'?' y':s==='r'?' r':'');
+}
+
+// ─────────────────────────────────────────────────────
+//  KEYBOARD
+// ─────────────────────────────────────────────────────
+window.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+  if (e.key==='f'||e.key==='F') frameWep();
+  if (e.key==='r'||e.key==='R') { cam.position.set(0,1.5,2.5); orbit.target.set(0,.9,0); orbit.update(); }
+  if (e.key==='g'||e.key==='G') setGM('t');
+  if (e.key==='e'||e.key==='E') setGM('r');
+  if (e.key==='1') setM('hand');
+  if (e.key==='2') setM('stone');
+  if (e.key==='3') setM('pivot');
+});
+
+// ─────────────────────────────────────────────────────
+//  RESIZE
+// ─────────────────────────────────────────────────────
+function resize() {
+  const w=vp.clientWidth, h=vp.clientHeight;
+  renderer.setSize(w,h);
+  cam.aspect=w/h; cam.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize); resize();
+
+// ─────────────────────────────────────────────────────
+//  ANIMATION LOOP
+// ─────────────────────────────────────────────────────
+let lastT=0, fc=0, fpsT=0;
+function loop(t=0) {
+  requestAnimationFrame(loop);
+  const dt = Math.min((t-lastT)/1000, 0.1); lastT=t;
+
+  orbit.update();
+  if (knightMixer) knightMixer.update(dt);
+
+  placeGizmo();
+
+  // FPS
+  fc++; fpsT+=dt;
+  if (fpsT>=0.5) {
+    document.getElementById('fpsout').textContent=Math.round(fc/fpsT)+' fps';
+    fc=0; fpsT=0;
+  }
+
+  renderer.render(scene, cam);
+}
+loop();
+
+// ─────────────────────────────────────────────────────
+//  BOOTSTRAP
+// ─────────────────────────────────────────────────────
+loadKnight();
+
+// Start with Ember Blade
+const defW = mkWep('Ember Blade','sword');
+defW.glbUrl = DEF_SWORD_A;
+weapons.push(defW);
+activeIdx = 0;
+loadToUI(defW);
+renderList();
+setM('hand');
+loadWeaponGLB(DEF_SWORD_A);
+</script>
+</body>
+</html>
