@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blackbanner: The Broken Order</title>
+    <title>Blackbanner: The Broken Order — Swords</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M50 4 L96 20 L96 62 Q96 96 50 116 Q4 96 4 62 L4 20 Z' fill='%232a1e10' stroke='%23c8a96e' stroke-width='5'/%3E%3Cpath d='M50 18 L82 30 L82 62 Q82 84 50 100 Q18 84 18 62 L18 30 Z' fill='none' stroke='%23c8a96e' stroke-width='2.5'/%3E%3Cline x1='50' y1='30' x2='50' y2='90' stroke='%23c8a96e' stroke-width='2'/%3E%3Cline x1='28' y1='58' x2='72' y2='58' stroke='%23c8a96e' stroke-width='2'/%3E%3C/svg%3E">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2107,12 +2107,48 @@ let spreadFlameCooldown = 0;      // Seconds remaining on Skyrim-style cooldown 
 const SPREAD_FLAME_COOLDOWN_MAX = 45;
 const SPREAD_FLAME_CHARGE_TIME = 0.0; // instant — triggers on press
 
-// ── Sword size constants — use SIS.html to generate these values visually ──────
-const SWORD_ROCK_MAX_DIM  = 1.45;            // max world-unit extent of sword in the rock
-const SWORD_HAND_MAX_DIM  = 0.9;             // max world-unit extent of sword in hand
-const SWORD_HAND_POS      = [0.06, 0.04, 0.0];      // [x, y, z] offset inside hand bone
-const SWORD_HAND_ROT      = [-1.35, 0.05, 0.18];    // [x, y, z] Euler rotation in hand (radians)
-// ────────────────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// ── WEAPONS CONFIGURATION ─────────────────────────────────────────────────────
+// All weapon transform data lives here — one place to tweak rotation, position,
+// size, and pivot for every weapon in the game.
+//
+// Values match the weapon editor (wPeditor.html) coordinate system:
+//   hand.pos  — bone-local offset of the weapon group from the hand bone origin
+//   hand.rot  — Euler XYZ rotation of the weapon group (radians)
+//   hand.sz   — target size: the model's longest axis is scaled to this length (metres)
+//   hand.piv  — pivot offset applied inside the inner group (bottom-centre grip)
+//   stone.pos — world-space position when the sword is embedded in the rock
+//   stone.rot — world-space rotation when the sword is embedded in the rock
+//   stone.sz  — rock-display target size (longest axis, metres)
+// ══════════════════════════════════════════════════════════════════════════════
+const WEAPONS = {
+    emberBlade: {
+        name: 'Ember Blade',
+        glbUrl: 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb',
+        hand: {
+            pos:  [0.06, 0.04, 0.0],   // bone-local position (metres)
+            rot:  [-1.35, 0.05, 0.18], // Euler XYZ (radians)
+            sz:   0.9,                  // auto-scale target: longest axis = 0.9 m
+            piv:  [0, 0, 0]            // pivot offset (grip centre)
+        },
+        stone: {
+            pos:  [-23.7, 1.27, -24.2], // world position when embedded in rock
+            rot:  [0.4, 0.6, 0.3],      // world rotation when embedded in rock
+            sz:   1.45                   // rock-display size (longest axis, metres)
+        }
+    }
+};
+
+// Convenience aliases — the rest of the game reads these directly.
+// To add a second weapon, duplicate the block above and update these aliases.
+const _WEP           = WEAPONS.emberBlade;
+const SWORD_ROCK_MAX_DIM  = _WEP.stone.sz;
+const SWORD_HAND_MAX_DIM  = _WEP.hand.sz;
+const SWORD_HAND_POS      = _WEP.hand.pos;
+const SWORD_HAND_ROT      = _WEP.hand.rot;
+const SWORD_HAND_PIVOT    = _WEP.hand.piv;
+// ══ END WEAPONS CONFIGURATION ═════════════════════════════════════════════════
+
 let attackChargeTimer = 0;        // how long mouse button held down
 let attackChargeActive = false;   // mouse is currently held down
 let activeQuickSlotIndex = -1;    // which quick slot is currently "selected" (equipped)
@@ -2469,6 +2505,7 @@ function init() {
             knightModel.rotation.y = Math.PI;
             knightModel.visible = true;
             scene.add(knightModel);
+            _swordHandBone = null; // clear cache so bone re-resolved from fresh model
 
             // Traverse and register every bone so FBX retargeting can find matches
             knightModel.traverse(c => {
@@ -3243,8 +3280,9 @@ function buildMap() {
     // The sword only becomes interactable after mission 1 is completed.
     // We load the GLB model from GitHub and position it jutting out of the rock.
     (function() {
+        // ══ CONCRETE EDITOR: Replace these two URLs with your weapon GLB ══
         const SWORD_GLB_PRIMARY  = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb';
-        const SWORD_GLB_FALLBACK = 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/10%5E9_%24w0rd.glb';
+        const SWORD_GLB_FALLBACK = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb';
 
         // Rock position: (-24, -24) with scale 1.8 → world Y ≈ groundY(-24,-24) + 0.34*1.8
         const rockX = -24, rockZ = -24;
@@ -3271,8 +3309,10 @@ function buildMap() {
         // Load the GLB sword model
         const swordGltfLoader = new GLTFLoader();
         const swordGroup = new THREE.Group();
-        swordGroup.position.set(swordWorldX, swordWorldY - 0.35, swordWorldZ);
-        swordGroup.rotation.set(0.4, 0.6, 0.3); // angled as if wedged into rock
+        // Stone position/rotation come from WEAPONS.emberBlade.stone (set at top of script)
+        swordGroup.position.set(...WEAPONS.emberBlade.stone.pos);
+        swordGroup.rotation.set(...WEAPONS.emberBlade.stone.rot);
+        // angled as if wedged into rock
         scene.add(swordGroup);
         swordWorldGroup = swordGroup;
         function _applySwordRockModel(gltf) {
@@ -3341,7 +3381,7 @@ function buildMap() {
 
         // The interactable — only active when sword quest is accepted
         const emberBladeItem = {
-            name: 'Ember Blade', icon: '🔥', type: 'weapon', weight: 5,
+            name: 'Ember Blade', icon: '🗡', type: 'weapon', weight: 5,
             desc: 'An ancient sword of the Broken Order, pried from a buried rock. Its blade pulses with bound flame. Equip to wield. Right-click to instantly unleash Spread Flame.',
             onEquip: () => { isSwordEquipped = true; attachSwordToHand(); },
             onUnequip: () => { isSwordEquipped = false; detachSwordFromHand(); }
@@ -5028,7 +5068,7 @@ function buildItemCatalog() {
             desc: 'A fragment of a shattered longsword. Ancient runes line the broken blade — a relic of the Broken Order.'
         },
         'Ember Blade': {
-            name: 'Ember Blade', icon: '🔥', type: 'weapon', weight: 5,
+            name: 'Ember Blade', icon: '🗡', type: 'weapon', weight: 5,
             desc: 'An ancient sword of the Broken Order, pried from a buried rock. Its blade pulses with bound flame. Equip to wield. Right-click to instantly unleash Spread Flame.',
             onEquip: () => { isSwordEquipped = true; attachSwordToHand(); },
             onUnequip: () => { isSwordEquipped = false; detachSwordFromHand(); }
@@ -5734,7 +5774,12 @@ function updatePhysics(dt) {
     else if (isRunning) speed = 42.0;
 
     const targetH = isCrawling ? CRAWL_HEIGHT : (isCrouching ? CROUCH_HEIGHT : STAND_HEIGHT);
-    baseHeightOffset += (targetH - baseHeightOffset) * 12 * dt;
+    // Only interpolate height when crouching/crawling. Standing always = exact STAND_HEIGHT.
+    if (isCrouching || isCrawling || isCrouchTransitioning) {
+        baseHeightOffset += (targetH - baseHeightOffset) * 12 * dt;
+    } else {
+        baseHeightOffset = STAND_HEIGHT;
+    }
 
     direction.z = Number(moveForward) - Number(moveBack);
     direction.x = Number(moveRight) - Number(moveLeft);
@@ -6592,21 +6637,34 @@ function _getSwordHandBone() {
     const handNames = ['mixamorig:RightHand', 'RightHand', 'mixamorigRightHand', 'Hand_R', 'hand.R', 'Right_Hand', 'R_Hand'];
     let found = null;
     const candidates = [];
+
+    // Collect ALL bones: both direct scene-graph bones AND skeleton bones inside SkinnedMesh
+    const allBones = [];
+    const seen = new Set();
     knightModel.traverse(c => {
-        if (found) return;
-        if (c.isBone || c.type === 'Bone') {
-            const lower = c.name.toLowerCase();
-            for (const hn of handNames) {
-                if (c.name === hn || lower.includes('righthand')) {
-                    found = c;
-                    break;
-                }
-            }
-            if (!found && lower.includes('right') && lower.includes('hand')) candidates.push(c);
-            if (!found && (lower.includes('hand_r') || lower.includes('r_hand') || lower.includes('hand.r'))) candidates.push(c);
+        if ((c.isBone || c.type === 'Bone') && !seen.has(c.uuid)) {
+            allBones.push(c); seen.add(c.uuid);
+        }
+        if (c.isSkinnedMesh && c.skeleton) {
+            c.skeleton.bones.forEach(b => {
+                if (!seen.has(b.uuid)) { allBones.push(b); seen.add(b.uuid); }
+            });
         }
     });
+
+    for (const c of allBones) {
+        if (found) break;
+        const lower = c.name.toLowerCase();
+        for (const hn of handNames) {
+            if (c.name === hn || lower.includes('righthand')) { found = c; break; }
+        }
+        if (!found && (lower.includes('right') && lower.includes('hand'))) candidates.push(c);
+        if (!found && (lower.includes('hand_r') || lower.includes('r_hand') || lower.includes('hand.r'))) candidates.push(c);
+    }
+
     if (!found && candidates.length) found = candidates[0];
+    if (found) console.log('[Sword] Hand bone found:', found.name);
+    else       console.warn('[Sword] Hand bone NOT found. Bones available:', allBones.map(b => b.name).join(', '));
     _swordHandBone = found;
     return found;
 }
@@ -6615,68 +6673,85 @@ function attachSwordToHand() {
     if (swordMesh3D) return; // already attached
     const bone = _getSwordHandBone();
     if (!bone) {
-        console.warn('[Sword] RightHand bone not found — sword will not be visible in hand');
+        console.warn('[Sword] RightHand bone not found. Bones in model:',
+            (() => { const n=[]; if(knightModel) knightModel.traverse(c=>{
+                if(c.isBone||c.type==='Bone') n.push(c.name);
+                if(c.isSkinnedMesh&&c.skeleton) c.skeleton.bones.forEach(b=>n.push(b.name));
+            }); return [...new Set(n)].join(', '); })()
+        );
         return;
     }
+    console.log('[Sword] Attaching to bone:', bone.name);
 
-    swordMesh3D = new THREE.Group();
+    // Two-level group structure — mirrors the weapon editor's buildHand() exactly:
+    //   wepGroup  (swordMesh3D) — receives hand.pos and hand.rot; added to the bone
+    //   wepInner               — sits inside wepGroup; holds the model/fallback
+    //   wepModel  (clone/geo)  — receives autoScale + pivot offset inside wepInner
+    const wepGroup = new THREE.Group();
+    const wepInner = new THREE.Group();
+    wepGroup.add(wepInner);
+    swordMesh3D = wepGroup; // swordMesh3D is the outer group; detachSwordFromHand removes it from the bone
 
-    // Try to use the loaded GLB model first
     const glbRef = window._swordRockModelRef;
     if (glbRef) {
-        const clone = glbRef.clone(true);
-        // Deep-clone materials so emissive etc. are independent
-        clone.traverse(c => {
+        const wepModel = glbRef.clone(true);
+        wepModel.traverse(c => {
             if (c.isMesh) {
                 c.castShadow = true;
                 c.frustumCulled = false;
                 if (c.material) {
                     c.material = c.material.clone();
-                    if (c.material.emissive) {
-                        c.material.emissive = new THREE.Color(0xff3b08);
-                        c.material.emissiveIntensity = 0.75;
-                    }
+                    if (c.material.emissive) { c.material.emissive.setHex(0xff3b08); }
+                    c.material.emissiveIntensity = 0.75;
                 }
             }
         });
-        // Re-fit the clone to hand size: target ~0.9 world units tall
-        const bb = new THREE.Box3().setFromObject(clone);
-        const sz = new THREE.Vector3();
-        bb.getSize(sz);
-        const maxD = Math.max(sz.x, sz.y, sz.z);
-        const sc = maxD > 0.001 ? (SWORD_HAND_MAX_DIM / maxD) : 0.12;
-        clone.scale.setScalar(sc);
-        // Centre the clone so pivot is at handle base
-        clone.updateMatrixWorld(true);
-        const scaledBB = new THREE.Box3().setFromObject(clone);
-        const center = new THREE.Vector3();
-        scaledBB.getCenter(center);
-        clone.position.set(-center.x, -scaledBB.min.y, -center.z);
-        swordMesh3D.add(clone);
+
+        // STEP 1: Reset inherited transforms — bounding box must reflect true unscaled size
+        wepModel.scale.set(1, 1, 1);
+        wepModel.position.set(0, 0, 0);
+        wepModel.rotation.set(0, 0, 0);
+        wepModel.updateMatrixWorld(true);
+
+        // STEP 2: autoScale — longest axis of the model = SWORD_HAND_MAX_DIM (metres)
+        // Mirrors editor's autoScale(wepModel, sz)
+        const bb0 = new THREE.Box3().setFromObject(wepModel);
+        const sz0 = new THREE.Vector3(); bb0.getSize(sz0);
+        const maxD = Math.max(sz0.x, sz0.y, sz0.z);
+        wepModel.scale.setScalar(maxD > 0.001 ? SWORD_HAND_MAX_DIM / maxD : 0.12);
+
+        // STEP 3: applyPivotOffset — bottom-centre of scaled BB sits at wepInner origin,
+        // then shifted by SWORD_HAND_PIVOT. Mirrors editor's applyPivotOffset() exactly.
+        wepModel.updateMatrixWorld(true);
+        const bb1 = new THREE.Box3().setFromObject(wepModel);
+        const cen = new THREE.Vector3(); bb1.getCenter(cen);
+        wepModel.position.set(
+            -cen.x + SWORD_HAND_PIVOT[0],
+            -bb1.min.y + SWORD_HAND_PIVOT[1],
+            -cen.z + SWORD_HAND_PIVOT[2]
+        );
+
+        wepInner.add(wepModel);
     } else {
-        // Fallback box-geometry sword if GLB not yet loaded
-        const bladeMat = new THREE.MeshStandardMaterial({ color: 0xd9eef8, metalness: 0.96, roughness: 0.08, emissive: 0xff3b08, emissiveIntensity: 0.75 });
-        const edgeMat = new THREE.MeshStandardMaterial({ color: 0xffb15c, metalness: 0.75, roughness: 0.14, emissive: 0xff4a10, emissiveIntensity: 1.0 });
-        const handleMat = new THREE.MeshStandardMaterial({ color: 0x4a2411, roughness: 0.72, metalness: 0.05 });
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.86, 0.018), bladeMat);
-        blade.position.y = 0.58;
-        const glow = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.78, 0.024), edgeMat);
-        glow.position.y = 0.6;
-        const guard = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.045, 0.055), edgeMat);
-        guard.position.y = 0.14;
-        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.26, 0.055), handleMat);
-        handle.position.y = 0;
-        const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), edgeMat);
-        pommel.position.y = -0.17;
-        swordMesh3D.add(blade, glow, guard, handle, pommel);
-        swordMesh3D.traverse(c => { if (c.isMesh) { c.castShadow = true; c.frustumCulled = false; } });
+        // Fallback geometry sword when GLB hasn't loaded yet
+        const bladeMat  = new THREE.MeshStandardMaterial({ color:0xd9eef8, metalness:0.96, roughness:0.08, emissive:new THREE.Color(0xff3b08), emissiveIntensity:0.75 });
+        const edgeMat   = new THREE.MeshStandardMaterial({ color:0xffb15c, metalness:0.75, roughness:0.14, emissive:new THREE.Color(0xff4a10), emissiveIntensity:1.0 });
+        const handleMat = new THREE.MeshStandardMaterial({ color:0x4a2411, roughness:0.72, metalness:0.05 });
+        const blade  = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.86, 0.018), bladeMat);  blade.position.y  =  0.58;
+        const glow   = new THREE.Mesh(new THREE.BoxGeometry(0.02,  0.78, 0.024), edgeMat);   glow.position.y   =  0.60;
+        const guard  = new THREE.Mesh(new THREE.BoxGeometry(0.28,  0.045,0.055), edgeMat);   guard.position.y  =  0.14;
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05,  0.26, 0.055), handleMat); handle.position.y =  0.00;
+        const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8),    edgeMat);   pommel.position.y = -0.17;
+        wepInner.add(blade, glow, guard, handle, pommel);
+        wepInner.traverse(c => { if (c.isMesh) { c.castShadow = true; c.frustumCulled = false; } });
+        console.log('[Sword] GLB not ready — using fallback box geometry');
     }
 
-    // Position/rotation so the sword sits naturally in the right hand
-    swordMesh3D.position.set(...SWORD_HAND_POS);
-    swordMesh3D.rotation.set(...SWORD_HAND_ROT);
-    swordMesh3D.scale.setScalar(1.0);
-    bone.add(swordMesh3D);
+    // STEP 4: Place and orient the outer group on the hand bone (editor: wepGroup.position/rotation)
+    wepGroup.position.set(...SWORD_HAND_POS);
+    wepGroup.rotation.set(...SWORD_HAND_ROT);
+    bone.add(wepGroup);
+    console.log('[Sword] Attached. POS:', SWORD_HAND_POS, 'ROT:', SWORD_HAND_ROT, 'PIVOT:', SWORD_HAND_PIVOT);
 }
 
 function detachSwordFromHand() {
