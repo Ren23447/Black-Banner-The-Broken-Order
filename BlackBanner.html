@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blackbanner: The Broken Order — Swords</title>
+    <title>Blackbanner: The Broken Order — Block Sword</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M50 4 L96 20 L96 62 Q96 96 50 116 Q4 96 4 62 L4 20 Z' fill='%232a1e10' stroke='%23c8a96e' stroke-width='5'/%3E%3Cpath d='M50 18 L82 30 L82 62 Q82 84 50 100 Q18 84 18 62 L18 30 Z' fill='none' stroke='%23c8a96e' stroke-width='2.5'/%3E%3Cline x1='50' y1='30' x2='50' y2='90' stroke='%23c8a96e' stroke-width='2'/%3E%3Cline x1='28' y1='58' x2='72' y2='58' stroke='%23c8a96e' stroke-width='2'/%3E%3C/svg%3E">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1215,6 +1215,296 @@
         #btn-continue:not([disabled]) {
             opacity:1 !important; cursor:pointer !important;
         }
+
+        /* ═══════════════════════════════════════════════════════
+           SPREAD FLAME — AAA Ability Bar (bottom-right)
+           Dark medieval frame, gilded trim, ember-fire fill,
+           ornamental L-brackets, breathing READY glow.
+        ═══════════════════════════════════════════════════════ */
+        #spread-flame-cooldown-bar {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 900;
+            pointer-events: none;
+            filter: drop-shadow(0 6px 22px rgba(0,0,0,0.85))
+                    drop-shadow(0 0 32px rgba(180,90,20,0.18));
+        }
+        .sf-ability-wrap {
+            position: relative;
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            background:
+                linear-gradient(180deg, rgba(28,18,8,0.96) 0%, rgba(10,7,3,0.96) 100%);
+            border: 1px solid rgba(190, 158, 90, 0.35);
+            padding: 0;
+            min-width: 340px;
+            clip-path: polygon(
+                10px 0,
+                100% 0,
+                100% calc(100% - 10px),
+                calc(100% - 10px) 100%,
+                0 100%,
+                0 10px
+            );
+            box-shadow:
+                inset 0 1px 0 rgba(220,180,100,0.18),
+                inset 0 -1px 0 rgba(0,0,0,0.7),
+                inset 1px 0 0 rgba(200,168,90,0.06),
+                inset -1px 0 0 rgba(200,168,90,0.06);
+        }
+        /* Top hairline gold accent */
+        .sf-ability-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 12%; right: 12%;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(220,180,100,0.55) 30%,
+                rgba(255,210,130,0.85) 50%,
+                rgba(220,180,100,0.55) 70%,
+                transparent);
+            pointer-events: none;
+        }
+        /* Subtle inner texture / scanline-grain */
+        .sf-ability-wrap::after {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255,255,255,0.012) 0px,
+                    rgba(255,255,255,0.012) 1px,
+                    transparent 1px,
+                    transparent 3px);
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        /* Ornamental corner L-brackets (gilded targeting frame motif) */
+        .sf-corner {
+            position: absolute;
+            width: 12px; height: 12px;
+            border-color: rgba(220,180,100,0.85);
+            border-style: solid;
+            pointer-events: none;
+            filter: drop-shadow(0 0 3px rgba(255,200,100,0.35));
+        }
+        .sf-corner.tl { top: 4px;    left: 4px;    border-width: 1.5px 0 0 1.5px; }
+        .sf-corner.tr { top: 4px;    right: 4px;   border-width: 1.5px 1.5px 0 0; }
+        .sf-corner.bl { bottom: 4px; left: 4px;    border-width: 0 0 1.5px 1.5px; }
+        .sf-corner.br { bottom: 4px; right: 4px;   border-width: 0 1.5px 1.5px 0; }
+
+        /* Left icon slot */
+        .sf-icon-ring {
+            position: relative;
+            width: 72px;
+            height: 72px;
+            flex-shrink: 0;
+            background:
+                radial-gradient(circle at 50% 55%, rgba(160,70,15,0.22) 0%, rgba(0,0,0,0) 65%),
+                linear-gradient(180deg, rgba(20,12,4,0.85), rgba(4,3,1,0.95));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sf-icon-ring::after {
+            /* gilded divider between icon and bar */
+            content: '';
+            position: absolute;
+            top: 8px; bottom: 8px; right: 0;
+            width: 1px;
+            background: linear-gradient(180deg,
+                transparent,
+                rgba(220,180,100,0.55) 25%,
+                rgba(220,180,100,0.55) 75%,
+                transparent);
+        }
+        .sf-ring-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+        .sf-icon-inner {
+            position: relative;
+            z-index: 1;
+            width: 36px; height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 0 6px rgba(255,140,40,0.55))
+                    drop-shadow(0 0 14px rgba(220,90,20,0.30));
+            animation: sf-ember-flicker 2.6s ease-in-out infinite;
+        }
+        @keyframes sf-ember-flicker {
+            0%, 100% { filter: drop-shadow(0 0 5px  rgba(255,140,40,0.45))
+                              drop-shadow(0 0 12px rgba(220,90,20,0.25)); }
+            45%      { filter: drop-shadow(0 0 9px  rgba(255,170,60,0.75))
+                              drop-shadow(0 0 18px rgba(240,110,30,0.45)); }
+            70%      { filter: drop-shadow(0 0 6px  rgba(255,150,50,0.55))
+                              drop-shadow(0 0 14px rgba(230,100,25,0.32)); }
+        }
+
+        /* Right panel */
+        .sf-bar-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0;
+            padding: 12px 18px 12px 16px;
+        }
+        /* Title row */
+        .sf-title-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 9px;
+        }
+        .sf-ability-name {
+            font-family: 'Palatino Linotype', Georgia, serif;
+            font-size: 12px;
+            font-weight: normal;
+            letter-spacing: 4.5px;
+            text-transform: uppercase;
+            color: #e8c682;
+            text-shadow:
+                0 0 1px rgba(0,0,0,0.95),
+                0 0 10px rgba(220,150,60,0.35);
+        }
+        .sf-bind-hint {
+            font-family: 'Palatino Linotype', Georgia, serif;
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: rgba(200,170,110,0.55);
+            border: 1px solid rgba(200,170,110,0.30);
+            padding: 1px 6px;
+            background: rgba(0,0,0,0.35);
+            text-transform: uppercase;
+        }
+        /* Track */
+        .sf-track-outer {
+            position: relative;
+            height: 9px;
+            background:
+                linear-gradient(180deg, rgba(0,0,0,0.95), rgba(15,8,3,0.95));
+            border: 1px solid rgba(150,115,55,0.55);
+            overflow: hidden;
+            box-shadow:
+                inset 0 1px 2px rgba(0,0,0,0.95),
+                inset 0 -1px 0 rgba(220,180,100,0.10);
+        }
+        /* notched chevron edges on track */
+        .sf-track-outer::before,
+        .sf-track-outer::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 6px;
+            background: rgba(0,0,0,0.55);
+            z-index: 3;
+            pointer-events: none;
+        }
+        .sf-track-outer::before { left: 0;  clip-path: polygon(0 0, 100% 0, 0 100%); }
+        .sf-track-outer::after  { right: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+
+        .sf-track-groove { position: absolute; inset: 0; }
+        .sf-fill-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg,
+                #3a1400 0%,
+                #7a2a00 25%,
+                #c25408 55%,
+                #f08428 85%,
+                #ffc066 100%);
+            transition: width 0.18s linear, background 0.4s ease, box-shadow 0.4s ease;
+            position: relative;
+            z-index: 1;
+            box-shadow:
+                inset 0 1px 0 rgba(255,210,140,0.25),
+                inset 0 -1px 0 rgba(0,0,0,0.5),
+                0 0 10px rgba(255,140,40,0.55);
+        }
+        .sf-fill-bar::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 50%;
+            background: linear-gradient(180deg,
+                rgba(255,255,255,0.20),
+                rgba(255,255,255,0));
+            pointer-events: none;
+        }
+        .sf-fill-bar::after {
+            /* moving sheen */
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 30%;
+            left: -30%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(255,230,170,0.45),
+                transparent);
+            animation: sf-sheen 3.2s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes sf-sheen {
+            0%   { left: -30%; }
+            55%  { left: 110%; }
+            100% { left: 110%; }
+        }
+        .sf-charge-pulse {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg,
+                rgba(255,240,180,0.85),
+                rgba(255,210,120,0.95));
+            z-index: 2;
+            opacity: 0;
+            transition: width 0.05s linear;
+            box-shadow: 0 0 10px rgba(255,220,140,0.85);
+        }
+        /* Status row */
+        .sf-status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .sf-status-ready {
+            font-family: 'Palatino Linotype', Georgia, serif;
+            font-size: 10px;
+            letter-spacing: 3.5px;
+            text-transform: uppercase;
+            color: #f0d490;
+            text-shadow: 0 0 8px rgba(255,180,80,0.55);
+            animation: sf-ready-breathe 2.4s ease-in-out infinite;
+        }
+        .sf-status-cooling {
+            font-family: 'Palatino Linotype', Georgia, serif;
+            font-size: 10px;
+            letter-spacing: 3.5px;
+            text-transform: uppercase;
+            color: rgba(150,110,60,0.70);
+            text-shadow: none;
+            animation: none;
+        }
+        .sf-cd-timer {
+            font-family: 'Palatino Linotype', Georgia, serif;
+            font-size: 11px;
+            color: rgba(220,180,110,0.85);
+            letter-spacing: 1.5px;
+            font-variant-numeric: tabular-nums;
+        }
+        @keyframes sf-ready-breathe {
+            0%, 100% { opacity: 0.78; text-shadow: 0 0 4px rgba(255,180,80,0.30); }
+            50%      { opacity: 1.0;  text-shadow: 0 0 12px rgba(255,200,100,0.85); }
+        }
     </style>
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script type="importmap">
@@ -1291,17 +1581,6 @@
         <div class="hud-row">
             <div class="hud-top"><span>Endurance</span><span class="hud-value" id="stamina-value">100%</span></div>
             <div class="hud-track"><div class="hud-fill" id="stamina-fill"></div><div id="punch-stamina-preview" style="width:0%;opacity:0;"></div></div>
-        </div>
-        <!-- Spread Flame cooldown bar — only visible when Ember Blade is equipped -->
-        <div id="spread-flame-cooldown-bar" style="display:none;margin-top:6px;">
-            <div class="hud-top" style="display:flex;justify-content:space-between;">
-                <span style="color:#ff8800;font-size:10px;letter-spacing:2px;text-transform:uppercase;">&#128293; Spread Flame</span>
-                <span style="color:#ff8800;font-size:10px;">Right Click</span>
-            </div>
-            <div class="hud-track" style="height:7px;position:relative;">
-                <div id="spread-flame-cooldown-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#ff6600,#ffcc00);transition:width 0.15s linear;"></div>
-                <div id="spread-flame-charge-fill" style="position:absolute;top:0;left:0;height:100%;width:0%;background:rgba(255,255,100,0.85);opacity:0;transition:width 0.05s linear;box-shadow:0 0 8px #ffff44;"></div>
-            </div>
         </div>
     </div>
     <div id="interact-prompt">
@@ -2126,10 +2405,10 @@ const WEAPONS = {
         name: 'Ember Blade',
         glbUrl: 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb',
         hand: {
-            pos:  [0.06, 0.04, 0.0],   // bone-local position (metres)
-            rot:  [-1.35, 0.05, 0.18], // Euler XYZ (radians)
-            sz:   0.9,                  // auto-scale target: longest axis = 0.9 m
-            piv:  [0, 0, 0]            // pivot offset (grip centre)
+            pos:  [0.10, 0.19, 0.06],   // bone-local position (metres) — bone Y axis is inverted, so a POSITIVE value moves the sword DOWN toward the hand
+            rot:  [-2.25, 0.05, -1.39], // Euler XYZ (radians) — blade angled down toward the side (not vertical, so tip doesn't clip the floor)
+            sz:   1.5,                   // auto-scale target: longest axis (greatsword)
+            piv:  [0, 0, 0]             // pivot offset (grip centre)
         },
         stone: {
             pos:  [-23.7, 1.27, -24.2], // world position when embedded in rock
@@ -2293,6 +2572,21 @@ function registerKnightBoneName(name) {
 init();
 animate();
 
+// Browser requires a short grace period after the user exits pointer lock
+// before it can be re-acquired. Wrap every controls.lock() call here so the
+// "Pointer lock cannot be acquired immediately" rejection is never unhandled.
+// Defined at top level so all functions in the script can call it.
+let _plockPending = false;
+function safePointerLock() {
+    if (_plockPending) return;
+    if (typeof controls === 'undefined' || !controls) return;
+    _plockPending = true;
+    setTimeout(() => {
+        _plockPending = false;
+        try { controls.lock(); } catch(_) {}
+    }, 80);
+}
+
 function init() {
     scene = new THREE.Scene();
 
@@ -2362,6 +2656,9 @@ function init() {
 
     controls = new PointerLockControls(camera, document.body);
     scene.add(controls.getObject());
+
+    // safePointerLock is now defined at module scope (see above `function init()`)
+    // so other top-level functions (setupMenuButtons, openShop, etc.) can call it.
 
     // Performance mode: cap pixel ratio and allow AA to be disabled at startup
     const _savedAA = localStorage.getItem('bbSetting_aa');
@@ -3278,11 +3575,8 @@ function buildMap() {
 
     // ── Ember Blade — 3D sword embedded in the big rock at (-24, -24) ──────────
     // The sword only becomes interactable after mission 1 is completed.
-    // We load the GLB model from GitHub and position it jutting out of the rock.
+    // The sword is represented as a simple 3D block — no GLB model needed.
     (function() {
-        // ══ CONCRETE EDITOR: Replace these two URLs with your weapon GLB ══
-        const SWORD_GLB_PRIMARY  = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb';
-        const SWORD_GLB_FALLBACK = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb';
 
         // Rock position: (-24, -24) with scale 1.8 → world Y ≈ groundY(-24,-24) + 0.34*1.8
         const rockX = -24, rockZ = -24;
@@ -3306,78 +3600,61 @@ function buildMap() {
         scene.add(swordProxy);
         swordWorldProxy = swordProxy;
 
-        // Load the GLB sword model
-        const swordGltfLoader = new GLTFLoader();
+        // ── BLOCK SWORD: no GLB — use a simple 3D block as the sword ──────────
         const swordGroup = new THREE.Group();
         // Stone position/rotation come from WEAPONS.emberBlade.stone (set at top of script)
         swordGroup.position.set(...WEAPONS.emberBlade.stone.pos);
         swordGroup.rotation.set(...WEAPONS.emberBlade.stone.rot);
-        // angled as if wedged into rock
         scene.add(swordGroup);
         swordWorldGroup = swordGroup;
-        function _applySwordRockModel(gltf) {
-            const mdl = gltf.scene;
-            mdl.scale.set(1, 1, 1);
-            mdl.traverse(c => {
-                if (c.isMesh) {
-                    c.castShadow = true;
-                    c.receiveShadow = true;
-                    // Add emissive glow to the blade
-                    if (c.material) {
-                        c.material = c.material.clone();
-                        c.material.emissive = new THREE.Color(0xff3300);
-                        c.material.emissiveIntensity = 0.35;
-                    }
-                }
-            });
-            swordGroup.add(mdl);
-            // Auto-scale to hand-ready size; the rock display and held clone share this reference.
-            mdl.updateMatrixWorld(true);
-            const bb = new THREE.Box3().setFromObject(mdl);
-            const sz = new THREE.Vector3();
-            bb.getSize(sz);
-            const maxD = Math.max(sz.x, sz.y, sz.z);
-            const sc = maxD > 0.001 ? (SWORD_ROCK_MAX_DIM / maxD) : 0.16;
-            mdl.scale.setScalar(sc);
-            mdl.updateMatrixWorld(true);
-            const scaledBox = new THREE.Box3().setFromObject(mdl);
-            const center = new THREE.Vector3();
-            scaledBox.getCenter(center);
-            mdl.position.set(-center.x, -scaledBox.min.y - 0.18, -center.z);
-            // Store reference for hand attachment clone
-            window._swordRockModelRef = mdl;
-            // If the sword was already equipped (via saved state) but used fallback geometry, re-attach
-            if (isSwordEquipped && swordMesh3D) {
-                const bone = _getSwordHandBone();
-                if (bone) { detachSwordFromHand(); attachSwordToHand(); }
-            }
-        }
 
-        function _swordFallbackGeometry() {
-            // Fallback: visible blade shape — thicker so it shows up from a distance
-            const bladeMat = new THREE.MeshStandardMaterial({ color: 0xc8ddf0, metalness: 0.95, roughness: 0.08, emissive: 0xff2200, emissiveIntensity: 0.55 });
-            const handleMat = new THREE.MeshStandardMaterial({ color: 0x5c3010, roughness: 0.75 });
-            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.1, 0.06), bladeMat);
-            blade.position.y = 0.62;
-            const guard = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 0.09), bladeMat);
-            guard.position.y = 0.06;
-            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.36, 0.10), handleMat);
-            handle.position.y = -0.18;
-            [blade, guard, handle].forEach(m => { m.castShadow = true; m.frustumCulled = false; });
-            swordGroup.add(blade, guard, handle);
-            // For hand attachment: a flat (un-rotated) clone so the hand grip is correct
+        // Build the block sword geometry inline — no GLB needed
+        (function _buildBlockSword() {
+            const blockMat = new THREE.MeshStandardMaterial({
+                color: 0x8ab4d0,
+                metalness: 0.85,
+                roughness: 0.18,
+                emissive: new THREE.Color(0xff3300),
+                emissiveIntensity: 0.40
+            });
+            const accentMat = new THREE.MeshStandardMaterial({
+                color: 0xffb060,
+                metalness: 0.70,
+                roughness: 0.22,
+                emissive: new THREE.Color(0xff6600),
+                emissiveIntensity: 0.60
+            });
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0x4a2008, roughness: 0.80, metalness: 0.04 });
+
+            // Blade — tall flat block
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.13, 1.05, 0.055), blockMat);
+            blade.position.y = 0.60;
+            blade.castShadow = true; blade.frustumCulled = false;
+            // Edge highlight strip down the center
+            const edge = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.98, 0.072), accentMat);
+            edge.position.y = 0.60;
+            edge.castShadow = false; edge.frustumCulled = false;
+            // Guard — wide flat block
+            const guard = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.07, 0.08), accentMat);
+            guard.position.y = 0.09;
+            guard.castShadow = true; guard.frustumCulled = false;
+            // Handle — grip block
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.32, 0.09), handleMat);
+            handle.position.y = -0.16;
+            handle.castShadow = true; handle.frustumCulled = false;
+            // Pommel — small cube cap
+            const pommel = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.11, 0.13), accentMat);
+            pommel.position.y = -0.36;
+            pommel.castShadow = true; pommel.frustumCulled = false;
+
+            swordGroup.add(blade, edge, guard, handle, pommel);
+
+            // Build a reference group for hand attachment (same block layout, un-rotated)
             const handRef = new THREE.Group();
-            const bH = blade.clone(), gH = guard.clone(), hH = handle.clone();
-            [bH, gH, hH].forEach(m => { m.castShadow = true; m.frustumCulled = false; });
-            handRef.add(bH, gH, hH);
+            handRef.add(blade.clone(), edge.clone(), guard.clone(), handle.clone(), pommel.clone());
+            handRef.traverse(c => { if (c.isMesh) { c.castShadow = true; c.frustumCulled = false; } });
             window._swordRockModelRef = handRef;
-        }
-
-        swordGltfLoader.load(SWORD_GLB_PRIMARY, _applySwordRockModel, null, () => {
-            swordGltfLoader.load(SWORD_GLB_FALLBACK, _applySwordRockModel, null, () => {
-                _swordFallbackGeometry();
-            });
-        });
+        })();
 
         // The interactable — only active when sword quest is accepted
         const emberBladeItem = {
@@ -3845,7 +4122,7 @@ function toggleInventory() {
     } else {
         inv.classList.remove('open');
         if (gameState === 'PLAYING' || gameState === 'PAUSED') {
-            controls.lock();
+            safePointerLock();
         }
     }
 }
@@ -3972,7 +4249,7 @@ function setupMenuButtons() {
             window._ambientAudio.play().catch(() => {});
         }
         // Also request pointer lock for mouse-look (best-effort — game runs without it)
-        controls.lock();
+        safePointerLock();
     }
 
     document.getElementById('btn-play').addEventListener('click', () => {
@@ -3984,7 +4261,7 @@ function setupMenuButtons() {
     });
     document.getElementById('btn-resume').addEventListener('click', () => {
         pauseHomeMusic();
-        controls.lock();
+        safePointerLock();
     });
     document.getElementById('btn-controls').addEventListener('click', () => {
         document.getElementById('home-screen').classList.add('hidden');
@@ -4082,7 +4359,7 @@ function setupMenuButtons() {
             window._ambientAudio.volume = masterVolume * ambientVolume * 0.35;
             window._ambientAudio.play().catch(() => {});
         }
-        controls.lock();
+        safePointerLock();
     });
 
     controls.addEventListener('lock', () => {
@@ -4114,6 +4391,10 @@ function setupMenuButtons() {
             document.getElementById('crosshair').style.display = 'none';
             document.getElementById('view-indicator').style.display = 'none';
             document.getElementById('quick-menu').style.display = 'none';
+            // Hide the Spread Flame ability bar while paused (the per-frame HUD updater
+            // is skipped during PAUSE so it would otherwise stay frozen on screen)
+            const _sfBar = document.getElementById('spread-flame-cooldown-bar');
+            if (_sfBar) _sfBar.style.display = 'none';
             document.getElementById('pause-screen').classList.remove('hidden');
             if (window._ambientAudio) window._ambientAudio.pause();
             // Play home/menu music while paused (game music fades via music system)
@@ -4604,7 +4885,7 @@ function openQuestBook() {
 function closeQuestBook() {
     questBookOpen = false;
     document.getElementById('quest-book-screen').classList.remove('open');
-    if (gameState === 'PLAYING' || gameState === 'PAUSED') controls.lock();
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') safePointerLock();
 }
 
 // ——— Merchant Shop ——————————————————————————————————————————————————————————
@@ -4646,7 +4927,7 @@ function openShop() {
 function closeShop() {
     shopOpen = false;
     document.getElementById('shop-screen').classList.remove('open');
-    if (gameState === 'PLAYING' || gameState === 'PAUSED') controls.lock();
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') safePointerLock();
 }
 
 function renderShopUI() {
@@ -4731,7 +5012,7 @@ function completeQuest() {
         }, 2500);
     }
     saveGame(true);
-    if (gameState === 'PLAYING' || gameState === 'PAUSED') controls.lock();
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') safePointerLock();
 }
 
 function acceptSwordQuest() {
@@ -4757,7 +5038,7 @@ function completeSwordQuest() {
     showRewardToast(SWORD_QUEST_REWARD_GOLD, 'Ember Blade Reward Received');
     showNotif('Mission 2 Complete');
     saveGame(true);
-    if (gameState === 'PLAYING' || gameState === 'PAUSED') controls.lock();
+    if (gameState === 'PLAYING' || gameState === 'PAUSED') safePointerLock();
 }
 
 function checkQuestProgress() {
@@ -6669,89 +6950,79 @@ function _getSwordHandBone() {
     return found;
 }
 
+// ── Cached decompose temporaries (reused every frame, no GC pressure) ────────
+const _swBonePos   = new THREE.Vector3();
+const _swBoneQuat  = new THREE.Quaternion();
+const _swBoneScale = new THREE.Vector3();
+const _swLocalPos  = new THREE.Vector3();
+const _swHandQuat  = new THREE.Quaternion();
+const _swHandEuler = new THREE.Euler();
+
 function attachSwordToHand() {
     if (swordMesh3D) return; // already attached
-    const bone = _getSwordHandBone();
-    if (!bone) {
-        console.warn('[Sword] RightHand bone not found. Bones in model:',
-            (() => { const n=[]; if(knightModel) knightModel.traverse(c=>{
-                if(c.isBone||c.type==='Bone') n.push(c.name);
-                if(c.isSkinnedMesh&&c.skeleton) c.skeleton.bones.forEach(b=>n.push(b.name));
-            }); return [...new Set(n)].join(', '); })()
-        );
-        return;
-    }
-    console.log('[Sword] Attaching to bone:', bone.name);
 
-    // Two-level group structure — mirrors the weapon editor's buildHand() exactly:
-    //   wepGroup  (swordMesh3D) — receives hand.pos and hand.rot; added to the bone
-    //   wepInner               — sits inside wepGroup; holds the model/fallback
-    //   wepModel  (clone/geo)  — receives autoScale + pivot offset inside wepInner
+    // Build the block sword and add it directly to the scene.
+    // We NEVER parent it to a bone — instead _tickSwordWorldTransform() positions it
+    // by reading the hand bone's matrixWorld every frame. This is the only reliable
+    // method for SkinnedMesh skeletons in Three.js.
     const wepGroup = new THREE.Group();
-    const wepInner = new THREE.Group();
-    wepGroup.add(wepInner);
-    swordMesh3D = wepGroup; // swordMesh3D is the outer group; detachSwordFromHand removes it from the bone
+    wepGroup.name = 'blockSword';
 
-    const glbRef = window._swordRockModelRef;
-    if (glbRef) {
-        const wepModel = glbRef.clone(true);
-        wepModel.traverse(c => {
-            if (c.isMesh) {
-                c.castShadow = true;
-                c.frustumCulled = false;
-                if (c.material) {
-                    c.material = c.material.clone();
-                    if (c.material.emissive) { c.material.emissive.setHex(0xff3b08); }
-                    c.material.emissiveIntensity = 0.75;
-                }
-            }
-        });
+    const blockMat  = new THREE.MeshStandardMaterial({
+        color: 0xadd4f0, metalness: 0.92, roughness: 0.10,
+        emissive: new THREE.Color(0xff4400), emissiveIntensity: 0.55
+    });
+    const accentMat = new THREE.MeshStandardMaterial({
+        color: 0xc8860a, metalness: 0.78, roughness: 0.20,
+        emissive: new THREE.Color(0xff6600), emissiveIntensity: 0.80
+    });
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x2c1204, roughness: 0.85, metalness: 0.02 });
 
-        // STEP 1: Reset inherited transforms — bounding box must reflect true unscaled size
-        wepModel.scale.set(1, 1, 1);
-        wepModel.position.set(0, 0, 0);
-        wepModel.rotation.set(0, 0, 0);
-        wepModel.updateMatrixWorld(true);
+    // Greatsword layout in local space: grip centre at Y=0, blade tip at +Y, pommel at -Y
+    const blade  = new THREE.Mesh(new THREE.BoxGeometry(0.11,  1.10, 0.048), blockMat);  blade.position.set(0,  0.70, 0);
+    const edge   = new THREE.Mesh(new THREE.BoxGeometry(0.018, 1.05, 0.068), accentMat); edge.position.set(0,  0.70, 0);
+    const guard  = new THREE.Mesh(new THREE.BoxGeometry(0.42,  0.065, 0.075),accentMat); guard.position.set(0,  0.13, 0);
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.060, 0.36, 0.060), handleMat); handle.position.set(0, -0.07, 0);
+    const pommel = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.085, 0.095),accentMat); pommel.position.set(0, -0.30, 0);
 
-        // STEP 2: autoScale — longest axis of the model = SWORD_HAND_MAX_DIM (metres)
-        // Mirrors editor's autoScale(wepModel, sz)
-        const bb0 = new THREE.Box3().setFromObject(wepModel);
-        const sz0 = new THREE.Vector3(); bb0.getSize(sz0);
-        const maxD = Math.max(sz0.x, sz0.y, sz0.z);
-        wepModel.scale.setScalar(maxD > 0.001 ? SWORD_HAND_MAX_DIM / maxD : 0.12);
+    [blade, edge, guard, handle, pommel].forEach(m => {
+        m.castShadow = true;
+        m.receiveShadow = false;
+        m.frustumCulled = false;
+        wepGroup.add(m);
+    });
 
-        // STEP 3: applyPivotOffset — bottom-centre of scaled BB sits at wepInner origin,
-        // then shifted by SWORD_HAND_PIVOT. Mirrors editor's applyPivotOffset() exactly.
-        wepModel.updateMatrixWorld(true);
-        const bb1 = new THREE.Box3().setFromObject(wepModel);
-        const cen = new THREE.Vector3(); bb1.getCenter(cen);
-        wepModel.position.set(
-            -cen.x + SWORD_HAND_PIVOT[0],
-            -bb1.min.y + SWORD_HAND_PIVOT[1],
-            -cen.z + SWORD_HAND_PIVOT[2]
-        );
+    scene.add(wepGroup);
+    swordMesh3D = wepGroup;
 
-        wepInner.add(wepModel);
-    } else {
-        // Fallback geometry sword when GLB hasn't loaded yet
-        const bladeMat  = new THREE.MeshStandardMaterial({ color:0xd9eef8, metalness:0.96, roughness:0.08, emissive:new THREE.Color(0xff3b08), emissiveIntensity:0.75 });
-        const edgeMat   = new THREE.MeshStandardMaterial({ color:0xffb15c, metalness:0.75, roughness:0.14, emissive:new THREE.Color(0xff4a10), emissiveIntensity:1.0 });
-        const handleMat = new THREE.MeshStandardMaterial({ color:0x4a2411, roughness:0.72, metalness:0.05 });
-        const blade  = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.86, 0.018), bladeMat);  blade.position.y  =  0.58;
-        const glow   = new THREE.Mesh(new THREE.BoxGeometry(0.02,  0.78, 0.024), edgeMat);   glow.position.y   =  0.60;
-        const guard  = new THREE.Mesh(new THREE.BoxGeometry(0.28,  0.045,0.055), edgeMat);   guard.position.y  =  0.14;
-        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05,  0.26, 0.055), handleMat); handle.position.y =  0.00;
-        const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8),    edgeMat);   pommel.position.y = -0.17;
-        wepInner.add(blade, glow, guard, handle, pommel);
-        wepInner.traverse(c => { if (c.isMesh) { c.castShadow = true; c.frustumCulled = false; } });
-        console.log('[Sword] GLB not ready — using fallback box geometry');
+    // Immediately try to find the hand bone; if model isn't ready yet the tick will retry
+    if (!_swordHandBone) _swordHandBone = _getSwordHandBone();
+    console.log('[Sword] Block sword created, hand bone:', _swordHandBone ? _swordHandBone.name : 'pending');
+}
+
+// Called every PLAYING frame when sword is equipped — positions the block sword
+// by reading the hand bone's current world matrix so it perfectly tracks the skeleton.
+function _tickSwordWorldTransform() {
+    if (!swordMesh3D) return;
+
+    // Retry finding hand bone until skeleton is ready
+    if (!_swordHandBone) {
+        _swordHandBone = _getSwordHandBone();
+        if (!_swordHandBone) return;
     }
 
-    // STEP 4: Place and orient the outer group on the hand bone (editor: wepGroup.position/rotation)
-    wepGroup.position.set(...SWORD_HAND_POS);
-    wepGroup.rotation.set(...SWORD_HAND_ROT);
-    bone.add(wepGroup);
-    console.log('[Sword] Attached. POS:', SWORD_HAND_POS, 'ROT:', SWORD_HAND_ROT, 'PIVOT:', SWORD_HAND_PIVOT);
+    // Ensure the bone's world matrix is up to date this frame
+    _swordHandBone.updateWorldMatrix(true, false);
+    _swordHandBone.matrixWorld.decompose(_swBonePos, _swBoneQuat, _swBoneScale);
+
+    // Apply bone-local hand offset in world space
+    _swLocalPos.set(...SWORD_HAND_POS).applyQuaternion(_swBoneQuat);
+    swordMesh3D.position.copy(_swBonePos).add(_swLocalPos);
+
+    // Composite: bone world rotation × hand Euler rotation
+    _swHandEuler.set(...SWORD_HAND_ROT, 'XYZ');
+    _swHandQuat.setFromEuler(_swHandEuler);
+    swordMesh3D.quaternion.copy(_swBoneQuat).multiply(_swHandQuat);
 }
 
 function detachSwordFromHand() {
@@ -6762,70 +7033,89 @@ function detachSwordFromHand() {
 
 function updateSwordHandAttachment() {
     // Keep isSwordEquipped in sync with the active quick slot
-    // Quick slot 0 (index 0) is considered the "equip" slot for weapons
     let equipped = false;
-    let equippedItem = null;
     for (let i = 0; i < quickSlots.length; i++) {
         if (quickSlots[i] && quickSlots[i].name === 'Ember Blade') {
-            // Blade is in a quick slot — equip it if this is the "active" slot
-            // We use slot 0 (Q1) as the weapon equip slot
-            if (i === activeQuickSlotIndex) {
-                equipped = true;
-                equippedItem = quickSlots[i];
-            }
+            if (i === activeQuickSlotIndex) { equipped = true; break; }
         }
     }
-    // Also check if player just placed it in any quick slot with no specific selection — equip slot 0
     if (!equipped) {
         for (let i = 0; i < quickSlots.length; i++) {
             if (quickSlots[i] && quickSlots[i].name === 'Ember Blade') {
                 if (activeQuickSlotIndex === -1) {
                     equipped = true;
-                    equippedItem = quickSlots[i];
                     activeQuickSlotIndex = i;
                 }
                 break;
             }
         }
     }
-    // If the blade is no longer in any quick slot, unequip
     const bladeInQuick = quickSlots.some(s => s && s.name === 'Ember Blade');
-    if (!bladeInQuick) {
-        activeQuickSlotIndex = -1;
-        equipped = false;
-    }
+    if (!bladeInQuick) { activeQuickSlotIndex = -1; equipped = false; }
 
     if (equipped !== isSwordEquipped) {
         isSwordEquipped = equipped;
-        if (isSwordEquipped) {
-            attachSwordToHand();
-        } else {
-            detachSwordFromHand();
-        }
+        if (isSwordEquipped) attachSwordToHand();
+        else                  detachSwordFromHand();
     }
+
+    // Every frame: track bone and position the sword in world space
+    if (isSwordEquipped && swordMesh3D) _tickSwordWorldTransform();
 }
 
 function updateSwordCooldownHUD(dt) {
     const bar = document.getElementById('spread-flame-cooldown-bar');
     if (!bar) return;
-    if (!isSwordEquipped) { bar.style.display = 'none'; return; }
-    bar.style.display = 'block';
-    const fill = document.getElementById('spread-flame-cooldown-fill');
-    if (!fill) return;
-    if (spreadFlameCooldown <= 0) {
-        fill.style.width = '100%';
-        fill.style.background = 'linear-gradient(90deg, #ff6600, #ffcc00)';
-        bar.title = 'Spread Flame: READY (Right Click)';
-    } else {
-        const pct = (1 - spreadFlameCooldown / SPREAD_FLAME_COOLDOWN_MAX) * 100;
-        fill.style.width = pct + '%';
-        fill.style.background = 'linear-gradient(90deg, #550000, #aa3300)';
-        bar.title = 'Spread Flame: ' + Math.ceil(spreadFlameCooldown) + 's';
+    if (!isSwordEquipped || gameState === 'PAUSED' || gameState === 'HOME' || gameState === 'LOADING') {
+        bar.style.display = 'none'; return;
     }
-    // Charge indicator
+    bar.style.display = 'block';
+
+    const fill       = document.getElementById('spread-flame-cooldown-fill');
     const chargeFill = document.getElementById('spread-flame-charge-fill');
+    const statusEl   = document.getElementById('sf-status-text');
+    const timerEl    = document.getElementById('sf-cd-timer');
+    const ringArc    = document.getElementById('sf-ring-arc');
+
+    const RING_CIRC = 163.4; // 2π * 26
+
+    const ready = (spreadFlameCooldown <= 0);
+
+    const progress = ready ? 1 : (1 - spreadFlameCooldown / SPREAD_FLAME_COOLDOWN_MAX);
+
+    if (fill) {
+        fill.style.width = (progress * 100) + '%';
+        if (ready) {
+            fill.style.background = 'linear-gradient(90deg, #6b3800 0%, #a05a10 40%, #c8861a 100%)';
+        } else {
+            fill.style.background = 'linear-gradient(90deg, #1a0800 0%, #3a1200 55%, #5c2200 100%)';
+        }
+    }
+
+    // Ring arc — full when ready, drains during cooldown
+    if (ringArc) {
+        ringArc.style.strokeDashoffset = RING_CIRC * (1 - progress);
+    }
+
+    // Status label
+    if (statusEl) {
+        if (ready) {
+            statusEl.textContent = 'Ready';
+            statusEl.className = 'sf-status-ready';
+        } else {
+            statusEl.textContent = 'Recharging';
+            statusEl.className = 'sf-status-cooling';
+        }
+    }
+
+    // Countdown timer
+    if (timerEl) {
+        timerEl.textContent = ready ? '' : Math.ceil(spreadFlameCooldown) + 's';
+    }
+
+    // Charge pulse while charging
     if (chargeFill) {
-        if (attackChargeActive && spreadFlameCooldown <= 0 && isSwordEquipped) {
+        if (attackChargeActive && ready && isSwordEquipped) {
             const chargePct = Math.min(100, (attackChargeTimer / SPREAD_FLAME_CHARGE_TIME) * 100);
             chargeFill.style.width = chargePct + '%';
             chargeFill.style.opacity = '1';
@@ -6839,6 +7129,7 @@ function updateSwordCooldownHUD(dt) {
 function triggerSwordAttack() {
     if (isSwordAttacking || isSpreadFlameActive || gameState !== 'PLAYING') return;
     if (isStaminaExhausted) return;
+    if (!canJump) return; // No mid-air sword swings — must be grounded
     if (isCrawling || isCrouching || isLanding || isDying || isTurning || isRunStopping || isCrouchTransitioning || isRunJumping) return;
     const options = ['swordSlash1', 'swordSlash2'].filter(n => knightActions[n]);
     let attackName = null;
@@ -7058,6 +7349,7 @@ function spawnSpreadFlameGroundFire() {
 function triggerSpreadFlame() {
     if (isSpreadFlameActive || spreadFlameCooldown > 0 || gameState !== 'PLAYING') return;
     if (!isSwordEquipped) return;
+    if (!canJump) return; // No mid-air ability casts — must be grounded
     if (isCrawling || isCrouching || isLanding || isDying || isTurning) return;
 
     // Cancel any ongoing sword attack
@@ -7107,6 +7399,7 @@ function triggerPunch() {
         triggerSwordAttack();
         return;
     }
+    if (!canJump) return; // No mid-air punches — must be grounded
     if (isStaminaExhausted) return; // FIX: can't punch without stamina
     const moving = keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD;
     // Block punching while any movement key is held — looks jarring in motion.
@@ -7172,5 +7465,56 @@ function triggerPunch() {
 }
 
 </script>
+
+<!-- ═══ SPREAD FLAME — ABILITY BAR (bottom-right) ═══════════════════════ -->
+<div id="spread-flame-cooldown-bar" style="display:none;">
+    <div class="sf-ability-wrap">
+        <!-- Ornamental gilded corner brackets -->
+        <span class="sf-corner tl"></span>
+        <span class="sf-corner tr"></span>
+        <span class="sf-corner bl"></span>
+        <span class="sf-corner br"></span>
+        <!-- Icon slot -->
+        <div class="sf-icon-ring">
+            <!-- Cooldown ring arc — drawn as an SVG circle border -->
+            <svg class="sf-ring-svg" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+                <rect width="66" height="66" fill="none"/>
+                <circle cx="33" cy="33" r="26" fill="none" stroke="rgba(150,110,40,0.18)" stroke-width="2"/>
+                <circle id="sf-ring-arc" cx="33" cy="33" r="26" fill="none"
+                    stroke="rgba(180,138,55,0.65)" stroke-width="2"
+                    stroke-linecap="butt"
+                    stroke-dasharray="163.4" stroke-dashoffset="0"
+                    transform="rotate(-90 33 33)"/>
+            </svg>
+            <!-- Flame icon -->
+            <div class="sf-icon-inner">
+                <svg viewBox="0 0 28 34" width="24" height="30" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2 C11 8 8 10 8.5 16 C8.5 20 11 22 11 22 C10 19 11 17 12.5 16 C12.5 20 14 24 14 24 C14 24 15.5 20 15.5 16 C17 17 18 19 17 22 C17 22 19.5 20 19.5 16 C20 10 17 8 14 2Z"
+                        fill="rgba(180,120,40,0.85)" stroke="rgba(200,160,70,0.40)" stroke-width="0.5"/>
+                    <ellipse cx="14" cy="24" rx="5" ry="2" fill="rgba(180,120,40,0.18)"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Bar panel -->
+        <div class="sf-bar-panel">
+            <div class="sf-title-row">
+                <span class="sf-ability-name">Spread Flame</span>
+                <span class="sf-bind-hint">RMB</span>
+            </div>
+            <div class="sf-track-outer">
+                <div class="sf-track-groove">
+                    <div id="spread-flame-cooldown-fill" class="sf-fill-bar"></div>
+                    <div id="spread-flame-charge-fill" class="sf-charge-pulse"></div>
+                </div>
+            </div>
+            <div class="sf-status-row">
+                <span id="sf-status-text" class="sf-status-ready">Ready</span>
+                <span id="sf-cd-timer" class="sf-cd-timer"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
