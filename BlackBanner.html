@@ -2373,6 +2373,7 @@ let isAscendingStairs = false;
 
 // ── Sword system state ───────────────────────────────────────────────────────
 let swordMesh3D = null;           // The 3D sword mesh attached to player hand
+let _cachedSwordGLB = null;       // Pre-loaded broad_celtic_sword.glb scene (null = use fallback blocky mesh)
 let swordInteractable = null;     // The world interactable for the sword pickup
 let swordWorldGroup = null;
 let swordWorldProxy = null;
@@ -2408,8 +2409,8 @@ const WEAPONS = {
         name: 'Ember Blade',
         glbUrl: 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/10%5E9_%24w0rd.glb',
         hand: {
-            pos:  [0.10, 0.19, 0.06],   // bone-local position (metres) — bone Y axis is inverted, so a POSITIVE value moves the sword DOWN toward the hand
-            rot:  [-2.25, 0.05, -1.39], // Euler XYZ (radians) — blade angled down toward the side (not vertical, so tip doesn't clip the floor)
+            pos:  [1.055, 0.204, -0.170],   // bone-local position (metres) — bone Y axis is inverted, so a POSITIVE value moves the sword DOWN toward the hand
+            rot:  [-0.6800, 0.0500, 2.1682], // Euler XYZ (radians) — blade hanging down beside the leg (resting stance)
             sz:   1.5,                   // auto-scale target: longest axis (greatsword)
             piv:  [0, 0, 0]             // pivot offset (grip centre)
         },
@@ -2478,7 +2479,12 @@ const ANIM_URLS = {
     swordSlash2:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Slash.fbx',
     spreadFlame:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Attack.fbx',
     withdrawSword: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Withdrawing%20Sword.fbx',
-    sheathSword:   'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sheathing%20Sword.fbx'
+    sheathSword:   'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sheathing%20Sword.fbx',
+    // ── Ember Blade (Great Sword) — used while sword is equipped ──
+    gsIdle: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Great%20Sword%20Idle.fbx',
+    gsWalk: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Great%20Sword%20Walk.fbx',
+    gsRun:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Great%20Sword%20Run.fbx',
+    gsJump: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Great%20Sword%20Jump.fbx'
 };
 const animDataStore = {};
 const _knightBoneMap = {}; // normalized bone name → actual name in model skeleton
@@ -2859,6 +2865,13 @@ function init() {
 
             // Fetch and build all external FBX animation clips (async, non-blocking)
             if (knightMixer) loadAllAnims().catch(e => console.warn('[Anim] loadAllAnims failed:', e));
+            // Pre-load the real sword GLB so it's ready before the player first equips
+            preloadSwordGLB().catch(e => console.warn('[Sword] preloadSwordGLB failed:', e));
+            // Pre-load realistic tree + grass GLB models — anything placed before
+            // these arrive starts as blocky and is swapped automatically on completion.
+            preloadFlora().catch(e => console.warn('[Flora] preloadFlora failed:', e));
+            // Pre-load the dark-magic-potion model — placeholders swap on arrival.
+            preloadPotionGLB().catch(e => console.warn('[Potion] preloadPotionGLB failed:', e));
             _dismissLoading();
         },
         (xhr) => {
@@ -3055,9 +3068,11 @@ function buildMap() {
         return rock;
     };
 
-    const addPine = (x, z, s = 1, lean = 0) => {
-        const y = groundY(x, z);
-        const treeRecord = { x, z, y, s, burned: false, burning: false, parts: [] };
+    // ── Tree / grass placement ──────────────────────────────────────────────
+    // If the realistic GLB models from GitHub have preloaded by placement time
+    // we instantiate them; otherwise we fall back to the blocky version and a
+    // post-load swap (`_swapBlockyFloraToGLB`) replaces them once the GLB arrives.
+    const _addBlockyPine = (treeRecord, x, y, z, s, lean) => {
         const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, 2.15 * s, 8), barkMat);
         trunk.position.set(x, y + 1.05 * s, z);
         trunk.rotation.z = lean;
@@ -3073,19 +3088,36 @@ function buildMap() {
             scene.add(crown);
             treeRecord.parts.push(crown);
         }
-        // Invisible box collider for the trunk so the player cannot walk through trees
-        const trunkW = 0.5 * s;
-        const colliderGeo = new THREE.BoxGeometry(trunkW, 2.15 * s, trunkW);
+    };
+
+    const addPine = (x, z, s = 1, lean = 0) => {
+        const y = groundY(x, z);
+        const treeRecord = { x, z, y, s, lean, burned: false, burning: false, parts: [], _isBlocky: true, _wrap: null };
+        const isGLB = window._floraReady && (window._floraGLBs.tree1 || window._floraGLBs.tree2);
+        if (isGLB) {
+            _attachGLBTree(treeRecord);
+        } else {
+            _addBlockyPine(treeRecord, x, y, z, s, lean);
+        }
+        // Invisible trunk collider. The realistic GLB trees are ~9.5m tall and have
+        // a much wider trunk than the blocky stand-in, so we use a tall, wider box
+        // when a GLB tree is attached — otherwise the player could clip through the
+        // trunk (collider too narrow) or jump and stand on top of the small box
+        // while the tree visually rises 7 m above their head.
+        // We also attach the collider as a child of the wrap so post-load swaps
+        // (`_swapBlockyFloraToGLB`) can resize it consistently.
+        const colliderH = isGLB ? (8.5 * s) : (2.15 * s);
+        const colliderW = isGLB ? (0.95 * s) : (0.5 * s);
+        const colliderGeo = new THREE.BoxGeometry(colliderW, colliderH, colliderW);
         const colliderMesh = new THREE.Mesh(colliderGeo, new THREE.MeshBasicMaterial({ visible: false }));
-        colliderMesh.position.set(x, y + 1.05 * s, z);
+        colliderMesh.position.set(x, y + colliderH * 0.5, z);
         scene.add(colliderMesh);
         collidableMeshes.push(colliderMesh);
+        treeRecord._collider = colliderMesh;
         flammableTrees.push(treeRecord);
     };
 
-    const addGrassTuft = (x, z, s = 1) => {
-        const y = groundY(x, z);
-        const grassRecord = { x, z, y, s, burned: false, burning: false, parts: [] };
+    const _addBlockyGrass = (grassRecord, x, y, z, s) => {
         for (let i = 0; i < 3; i++) {
             const blade = new THREE.Mesh(new THREE.ConeGeometry(0.055 * s, 0.62 * s, 5), mossMat);
             blade.position.set(x + (i - 1) * 0.13 * s, y + 0.28 * s, z + Math.sin(i * 1.9) * 0.08 * s);
@@ -3094,6 +3126,16 @@ function buildMap() {
             blade.castShadow = true;
             scene.add(blade);
             grassRecord.parts.push(blade);
+        }
+    };
+
+    const addGrassTuft = (x, z, s = 1) => {
+        const y = groundY(x, z);
+        const grassRecord = { x, z, y, s, burned: false, burning: false, parts: [], _isBlocky: true, _wrap: null };
+        if (window._floraReady && window._floraGLBs.grass) {
+            _attachGLBGrass(grassRecord);
+        } else {
+            _addBlockyGrass(grassRecord, x, y, z, s);
         }
         flammableGrass.push(grassRecord);
     };
@@ -3818,32 +3860,80 @@ function createQuestBook(x, y, z) {
     return group;
 }
 
-function createPotionBottle(x, y, z, color, emissiveColor) {
-    const group = new THREE.Group();
+// Potion bottle — uses dark_magic_potion.glb when available, otherwise falls
+// back to the procedural blocky bottle. Anything created before the GLB
+// downloads is swapped in place once `_potionGLB` arrives.
+const _potionPlaceholders = []; // groups awaiting GLB swap
+const POTION_TARGET_HEIGHT = 0.78; // matches the original procedural bottle's height
+
+function _buildProceduralPotion(group, color, emissiveColor) {
     const mat = new THREE.MeshStandardMaterial({
         color, emissive: emissiveColor, emissiveIntensity: 0.55,
         transparent: true, opacity: 0.88, roughness: 0.1, metalness: 0.2
     });
     const corkMat = new THREE.MeshStandardMaterial({ color: 0x7a4e2a, roughness: 0.9 });
-
-    // Body
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.46, 10), mat);
+    const body     = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.46, 10), mat);
     body.position.y = 0;
-    // Shoulder taper
     const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.22, 0.18, 10), mat);
     shoulder.position.y = 0.32;
-    // Neck
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.22, 8), mat);
+    const neck     = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.22, 8), mat);
     neck.position.y = 0.52;
-    // Cork
-    const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.10, 8), corkMat);
+    const cork     = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.10, 8), corkMat);
     cork.position.y = 0.68;
-
     group.add(body, shoulder, neck, cork);
+}
+
+function _attachPotionGLB(group) {
+    const cached = window._potionGLB;
+    if (!cached) return false;
+    const inst = cached.clone(true);
+    const sFactor = POTION_TARGET_HEIGHT / Math.max(0.0001, cached.userData.baseSize.y);
+    inst.scale.setScalar(sFactor);
+    const min = cached.userData.baseMin, size = cached.userData.baseSize;
+    // Centre XZ on origin, place base at y = 0 (matches the procedural bottle's pivot).
+    inst.position.set(
+        -(min.x + size.x * 0.5) * sFactor,
+        -min.y * sFactor,
+        -(min.z + size.z * 0.5) * sFactor
+    );
+    inst.traverse(c => { if (c.isMesh) { c.castShadow = true; c.frustumCulled = false; } });
+    group.add(inst);
+    return true;
+}
+
+function createPotionBottle(x, y, z, color, emissiveColor) {
+    const group = new THREE.Group();
+    group.userData._isPotion = true;
+    group.userData._potionColor = color;
+    group.userData._potionEmissive = emissiveColor;
+
+    if (window._potionGLB) {
+        _attachPotionGLB(group);
+    } else {
+        _buildProceduralPotion(group, color, emissiveColor);
+        _potionPlaceholders.push(group);
+    }
     group.position.set(x, y, z);
-    group.traverse(c => { if (c.isMesh) { c.castShadow = true; } });
     scene.add(group);
     return group;
+}
+
+// Once the dark-magic-potion GLB finishes loading, replace any procedural
+// placeholder bottles in the world with the real model (same position/scale).
+function _swapProceduralPotionsToGLB() {
+    if (!window._potionGLB) return;
+    while (_potionPlaceholders.length) {
+        const g = _potionPlaceholders.pop();
+        // Remove old children (procedural meshes) but keep the group itself —
+        // existing references in `interactables`, `potionWorldGroup`, etc., stay valid.
+        for (let i = g.children.length - 1; i >= 0; i--) {
+            const c = g.children[i];
+            g.remove(c);
+            c.geometry?.dispose?.();
+        }
+        _attachPotionGLB(g);
+    }
+    console.log('[Potion] Swapped procedural potions to GLB.');
 }
 
 // ——— Inventory ———
@@ -5483,13 +5573,12 @@ function loadGame() {
               if (swordWorldGroup && swordWorldGroup.parent) swordWorldGroup.parent.remove(swordWorldGroup);
               if (swordWorldProxy && swordWorldProxy.parent) swordWorldProxy.parent.remove(swordWorldProxy);
               if (swordWorldLight && swordWorldLight.parent) swordWorldLight.parent.remove(swordWorldLight);
-              // Also activate glow for sword in quick slot if it was loaded from save
-              for (let i = 0; i < quickSlots.length; i++) {
-                  if (quickSlots[i] && quickSlots[i].name === 'Ember Blade') {
-                      activeQuickSlotIndex = i;
-                      break;
-                  }
-              }
+              // Do NOT pre-set activeQuickSlotIndex here. Pre-selecting the slot without
+              // actually equipping the sword (isSwordEquipped stays false) makes the slot
+              // appear active but its key press won't equip — leaving the sword inaccessible
+              // after a save load. Leave the slot un-selected so the player can press the
+              // hotkey to equip normally.
+              activeQuickSlotIndex = -1;
           }
           return true;
       } catch(e) { return false; }
@@ -6155,8 +6244,12 @@ function updatePhysics(dt) {
     }
 
     if (keys.Space && canJump && !isCrouching && !isCrawling) {
-        if (isRunning && isMoving && knightActions['runJump']) {
-            const dur = playOneShotKnightAnim('runJump', 0.06);
+        // Pick the run-jump clip: Great Sword variant when Ember Blade is equipped, else default.
+        const runJumpClip =
+            (isRunning && isMoving && isSwordEquipped && knightActions['gsJump']) ? 'gsJump' :
+            (isRunning && isMoving && knightActions['runJump'])                   ? 'runJump' : null;
+        if (runJumpClip) {
+            const dur = playOneShotKnightAnim(runJumpClip, 0.06);
             isRunJumping = true;
             clearTimeout(runJumpTimeout);
             runJumpTimeout = setTimeout(() => { isRunJumping = false; }, Math.max(0.45, dur || 0.8) * 1000);
@@ -6713,6 +6806,354 @@ function evalAnimScript(text) {
     }
 }
 
+// ─── Realistic flora (trees + grass) GLB preloader ──────────────────────────
+// Loaded once at startup. addPine/addGrassTuft consult `window._floraReady`
+// and `window._floraGLBs` to instantiate either the real models or the blocky
+// fallback. Anything placed before the GLBs arrive is swapped at the end.
+window._floraGLBs  = { tree1: null, tree2: null, grass: null };
+window._floraReady = false;
+
+const FLORA_URLS = {
+    tree1: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/tree.glb',
+    tree2: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/tree_gn.glb',
+    grass: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/realistics_grass_06.glb'
+};
+// Realistic target sizes (metres). Scaled per placement by the existing `s` factor.
+const FLORA_TREE_BASE_HEIGHT  = 9.5;   // ~real-world pine: 8–13 m after s∈[0.85,1.25]
+const FLORA_GRASS_BASE_HEIGHT = 0.45;  // ~ankle-to-knee tuft
+
+// Many free-asset GLBs ship with materials that render pure-white in a basic
+// three.js scene: textures left in linear colour-space, base colours set to
+// (1,1,1) with metalness=1 expecting an environment map, or transparent flags
+// with no alpha map. This pass normalises every material on a loaded flora
+// model so it renders correctly under the game's existing lighting.
+//
+// Fallback colours (used only when a mesh has no diffuse map):
+//   tree trunks → bark brown   tree leaves → forest green   grass → grass green
+function _normalizeFloraMaterials(root, kind) {
+    if (!root) return;
+    // Compute the model's vertical extent so we can heuristically distinguish
+    // "trunk" meshes (lower portion) from "leaf/canopy" meshes (upper portion).
+    root.updateMatrixWorld(true);
+    const fullBox  = new THREE.Box3().setFromObject(root);
+    const fullMinY = fullBox.min.y;
+    const fullMaxY = fullBox.max.y;
+    const fullH    = Math.max(0.0001, fullMaxY - fullMinY);
+
+    const BARK   = new THREE.Color(0x4a3320);
+    const LEAVES = new THREE.Color(0x3d6b2c);
+    const GRASS  = new THREE.Color(0x5a8a3a);
+
+    root.traverse(node => {
+        if (!node.isMesh || !node.material) return;
+        const mats = Array.isArray(node.material) ? node.material : [node.material];
+        const meshBox = new THREE.Box3().setFromObject(node);
+        const meshMidY = (meshBox.min.y + meshBox.max.y) * 0.5;
+        const heightFrac = (meshMidY - fullMinY) / fullH; // 0 = base, 1 = top
+
+        mats.forEach((mat, i) => {
+            if (!mat) return;
+            // Some loaders return the same material instance for many meshes —
+            // clone so per-mesh fallback colour assignment doesn't bleed across.
+            const cloned = mat.clone();
+
+            // Textures must declare sRGB colour-space, otherwise they render washed-out
+            // (and a pure-white base colour multiplied against them stays bright).
+            const colorMaps = ['map', 'emissiveMap'];
+            colorMaps.forEach(slot => {
+                const tex = cloned[slot];
+                if (tex && 'colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+            });
+
+            // Trees and grass should look matte — Sketchfab's default glossinessFactor
+            // is high which makes the bark/leaves render wet/shiny. Force a high
+            // roughness floor while keeping the diffuse texture intact.
+            if ('metalness' in cloned) cloned.metalness = 0.0;
+            if ('roughness' in cloned) cloned.roughness = Math.max(cloned.roughness ?? 0, 0.92);
+            if ('clearcoat' in cloned) cloned.clearcoat = 0;
+            if ('sheen'     in cloned) cloned.sheen     = 0;
+            if ('transmission' in cloned) cloned.transmission = 0;
+
+            // Foliage cards are usually transparent PNGs. If the material says it's
+            // transparent but has no alpha map, treat it as opaque so it doesn't
+            // become an invisible/white square. If it does have an alpha map, use
+            // alpha-test cutout so leaves render correctly without sorting issues.
+            if (cloned.transparent && !cloned.alphaMap && !(cloned.map && cloned.map.image)) {
+                cloned.transparent = false;
+            } else if (cloned.transparent || cloned.alphaMap) {
+                cloned.alphaTest = 0.45;
+                cloned.transparent = false;   // alphaTest cutout — no sorting needed
+                cloned.depthWrite  = true;
+            }
+
+            // Foliage is double-sided in most asset packs (single-quad leaves).
+            if (kind !== 'grass') cloned.side = THREE.DoubleSide;
+            else cloned.side = THREE.DoubleSide;
+
+            // Fallback diffuse colour — only applied when there's no base-colour
+            // map AND the existing colour is essentially white (the giveaway sign
+            // that the material was authored expecting a texture that's missing).
+            const hasMap = !!cloned.map;
+            const c = cloned.color;
+            const isWhitish = c && c.r > 0.92 && c.g > 0.92 && c.b > 0.92;
+            if (!hasMap && isWhitish) {
+                if (kind === 'grass') c.copy(GRASS);
+                else                  c.copy(heightFrac < 0.30 ? BARK : LEAVES);
+            }
+            // Even when a map exists, white modulator keeps the texture's true colours
+            // (no change needed). But if the GLB packed colour=black we'd kill the map —
+            // so guarantee a reasonable modulator.
+            if (hasMap && c && c.r < 0.05 && c.g < 0.05 && c.b < 0.05) c.setHex(0xffffff);
+
+            cloned.needsUpdate = true;
+            if (Array.isArray(node.material)) node.material[i] = cloned;
+            else node.material = cloned;
+        });
+    });
+}
+
+// ─── KHR_materials_pbrSpecularGlossiness re-implementation ──────────────────
+// Both flora GLBs are Sketchfab exports that *require* this extension. It was
+// removed from three.js's GLTFLoader in r147+, so without this plugin the
+// loader drops every diffuse/normal/specular texture binding and the meshes
+// render as naked white surfaces. We register a minimal extension handler that
+// binds the diffuseTexture (the only one we visually need) onto a standard
+// MeshStandardMaterial — three.js's regular pipeline handles normal & occlusion
+// maps from the standard glTF material fields automatically.
+function _makeSpecGlossExtension(parser) {
+    const NAME = 'KHR_materials_pbrSpecularGlossiness';
+    return {
+        name: NAME,
+        getMaterialType() { return THREE.MeshStandardMaterial; },
+        extendMaterialParams(materialIndex, materialParams) {
+            const materialDef = parser.json.materials[materialIndex];
+            const ext = materialDef.extensions && materialDef.extensions[NAME];
+            if (!ext) return Promise.resolve();
+            const pending = [];
+            // Diffuse factor → base colour modulator
+            materialParams.color = new THREE.Color(1, 1, 1);
+            materialParams.opacity = 1;
+            const diff = ext.diffuseFactor;
+            if (Array.isArray(diff)) {
+                materialParams.color.setRGB(diff[0], diff[1], diff[2]);
+                if (typeof diff[3] === 'number') materialParams.opacity = diff[3];
+            }
+            // Diffuse texture → base colour map (sRGB)
+            if (ext.diffuseTexture !== undefined) {
+                pending.push(parser.assignTexture(materialParams, 'map', ext.diffuseTexture, THREE.SRGBColorSpace));
+            }
+            // Glossiness ≈ inverse roughness (simple but visually fine for foliage)
+            materialParams.metalness = 0;
+            const gloss = (typeof ext.glossinessFactor === 'number') ? ext.glossinessFactor : 1;
+            materialParams.roughness = 1 - gloss * 0.85;
+            return Promise.all(pending);
+        }
+    };
+}
+
+// ─── Potion GLB preloader ───────────────────────────────────────────────────
+window._potionGLB = null;
+const POTION_URL = 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/dark_magic_potion.glb';
+
+async function preloadPotionGLB() {
+    const loader = new GLTFLoader();
+    loader.register(p => _makeSpecGlossExtension(p));
+    try {
+        const gltf = await loader.loadAsync(POTION_URL);
+        const m = gltf.scene;
+        m.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(m);
+        const size = new THREE.Vector3(); box.getSize(size);
+        m.userData.baseMin  = box.min.clone();
+        m.userData.baseSize = size.clone();
+        // The Sketchfab source uses alphaMode:BLEND with full alpha — meant for
+        // compositing on a transparent background. In our world that renders the
+        // bottle nearly invisible, so force it opaque. Also tame the gloss.
+        m.traverse(c => {
+            if (!c.isMesh || !c.material) return;
+            const mats = Array.isArray(c.material) ? c.material : [c.material];
+            mats.forEach(mat => {
+                if (mat.map && 'colorSpace' in mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+                mat.transparent = false;
+                mat.opacity = 1.0;
+                mat.depthWrite = true;
+                mat.alphaTest = 0.0;
+                mat.side = THREE.FrontSide;
+                if ('roughness' in mat) mat.roughness = Math.max(mat.roughness ?? 0, 0.35);
+                if ('metalness' in mat) mat.metalness = Math.min(mat.metalness ?? 0, 0.4);
+                mat.needsUpdate = true;
+            });
+        });
+        window._potionGLB = m;
+        console.log(`[Potion] Loaded dark_magic_potion.glb: ${size.toArray().map(v => v.toFixed(2)).join(' x ')} m`);
+        if (typeof _swapProceduralPotionsToGLB === 'function') _swapProceduralPotionsToGLB();
+    } catch (e) {
+        console.warn(`[Potion] dark_magic_potion.glb failed to load (${POTION_URL}):`, e.message);
+    }
+}
+
+async function preloadFlora() {
+    const loader = new GLTFLoader();
+    loader.register(p => _makeSpecGlossExtension(p));
+    await Promise.all(Object.entries(FLORA_URLS).map(async ([key, url]) => {
+        try {
+            const gltf = await loader.loadAsync(url);
+            const m = gltf.scene;
+            // Normalise materials BEFORE we cache — every later clone inherits the fix.
+            _normalizeFloraMaterials(m, key === 'grass' ? 'grass' : 'tree');
+            m.updateMatrixWorld(true);
+            const box = new THREE.Box3().setFromObject(m);
+            const size = new THREE.Vector3(); box.getSize(size);
+            // Cache the natural bounding box so we can scale at instantiate time
+            // (so a single call to FLORA_TREE_BASE_HEIGHT / size.y gives realistic height).
+            m.userData.baseMin  = box.min.clone();
+            m.userData.baseSize = size.clone();
+            window._floraGLBs[key] = m;
+            console.log(`[Flora] Loaded ${key}: ${size.toArray().map(v => v.toFixed(2)).join(' x ')} m`);
+        } catch (e) {
+            console.warn(`[Flora] ${key} failed to load (${url}):`, e.message);
+        }
+    }));
+    window._floraReady = true;
+    // Swap any blocky placeholders that were placed before GLBs arrived.
+    if (typeof _swapBlockyFloraToGLB === 'function') _swapBlockyFloraToGLB();
+}
+
+// Build a fresh, scaled, base-at-origin instance of a cached flora GLB.
+function _instantiateFloraGLB(cached, targetHeight) {
+    const inst = cached.clone(true);
+    const sFactor = targetHeight / Math.max(0.0001, cached.userData.baseSize.y);
+    inst.scale.setScalar(sFactor);
+    // Re-centre XZ on origin and place base of bounding box at y = 0 so the
+    // caller can simply add (x, groundY, z) to drop it on terrain.
+    const min  = cached.userData.baseMin;
+    const size = cached.userData.baseSize;
+    inst.position.set(
+        -(min.x + size.x * 0.5) * sFactor,
+        -min.y * sFactor,
+        -(min.z + size.z * 0.5) * sFactor
+    );
+    inst.traverse(c => {
+        if (c.isMesh) {
+            c.castShadow = true;
+            c.receiveShadow = true;
+            c.frustumCulled = false;
+        }
+    });
+    return inst;
+}
+
+// Attach a real-tree GLB instance to a tree record (random of tree1/tree2).
+// `treeRecord` already has x/y/z/s/lean and an empty parts[] — this fills parts[]
+// with the leaf meshes so igniteTree's per-mesh scorch logic still works.
+function _attachGLBTree(treeRecord) {
+    const t1 = window._floraGLBs.tree1, t2 = window._floraGLBs.tree2;
+    const cached = (t1 && t2) ? (Math.random() < 0.5 ? t1 : t2) : (t1 || t2);
+    if (!cached) return;
+    const wrap = _instantiateFloraGLB(cached, FLORA_TREE_BASE_HEIGHT * treeRecord.s);
+    wrap.position.x += treeRecord.x;
+    // Lift the trunk slightly above terrain — on hill slopes the GLB's circular
+    // root flare otherwise sinks into the uphill side, leaving the player able to
+    // see the model from inside. A small positive bias keeps the trunk visually
+    // above ground on inclines.
+    wrap.position.y += treeRecord.y + 0.45 * treeRecord.s;
+    wrap.position.z += treeRecord.z;
+    wrap.rotation.y = Math.random() * Math.PI * 2;
+    if (treeRecord.lean) wrap.rotation.z = treeRecord.lean;
+    scene.add(wrap);
+    treeRecord._wrap = wrap;
+    treeRecord._isBlocky = false;
+    wrap.traverse(c => { if (c.isMesh) treeRecord.parts.push(c); });
+}
+
+function _attachGLBGrass(grassRecord) {
+    const cached = window._floraGLBs.grass;
+    if (!cached) return;
+    const wrap = _instantiateFloraGLB(cached, FLORA_GRASS_BASE_HEIGHT * grassRecord.s);
+    wrap.position.x += grassRecord.x;
+    wrap.position.y += grassRecord.y;
+    wrap.position.z += grassRecord.z;
+    wrap.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(wrap);
+    grassRecord._wrap = wrap;
+    grassRecord._isBlocky = false;
+    wrap.traverse(c => { if (c.isMesh) grassRecord.parts.push(c); });
+}
+
+// After the GLBs finish loading, replace any blocky placeholders that were
+// placed during synchronous world generation.
+function _swapBlockyFloraToGLB() {
+    if (window._floraGLBs.tree1 || window._floraGLBs.tree2) {
+        for (const tree of flammableTrees) {
+            if (!tree._isBlocky || tree.burned) continue;
+            tree.parts.forEach(p => { scene.remove(p); p.geometry?.dispose?.(); });
+            tree.parts.length = 0;
+            _attachGLBTree(tree);
+            // Resize the trunk collider to match the now-much-taller GLB tree so
+            // the player can't walk through the trunk or jump on top of it.
+            if (tree._collider) {
+                const s = tree.s || 1;
+                const h = 8.5 * s, w = 0.95 * s;
+                tree._collider.geometry?.dispose?.();
+                tree._collider.geometry = new THREE.BoxGeometry(w, h, w);
+                tree._collider.position.y = tree.y + h * 0.5;
+            }
+        }
+    }
+    if (window._floraGLBs.grass) {
+        for (const grass of flammableGrass) {
+            if (!grass._isBlocky || grass.burned) continue;
+            grass.parts.forEach(p => { scene.remove(p); p.geometry?.dispose?.(); });
+            grass.parts.length = 0;
+            _attachGLBGrass(grass);
+        }
+    }
+    console.log('[Flora] Swapped blocky placeholders to GLB models.');
+}
+
+async function preloadSwordGLB() {
+    const url = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/broad_celtic_sword.glb';
+    try {
+        const loader = new GLTFLoader();
+        const gltf = await loader.loadAsync(url);
+        const model = gltf.scene;
+
+        // ── Auto-scale so the longest axis = SWORD_HAND_MAX_DIM (1.5m) ──────
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const longest = Math.max(size.x, size.y, size.z);
+        if (longest > 0) model.scale.setScalar(SWORD_HAND_MAX_DIM / longest);
+
+        // ── Re-centre pivot so the grip (≈25% up from pommel) sits at Y=0 ──
+        // This matches the blocky sword layout where Y=0 is near the guard/handle junction.
+        const box2 = new THREE.Box3().setFromObject(model);
+        const size2 = new THREE.Vector3();
+        box2.getSize(size2);
+        // Grip is roughly 20% from the bottom of a celtic sword (pommel end)
+        const gripY = box2.min.y + size2.y * 0.20;
+        model.position.set(
+            -(box2.min.x + size2.x * 0.5),  // centre X
+            -gripY,                           // grip at origin
+            -(box2.min.z + size2.z * 0.5)    // centre Z
+        );
+
+        model.traverse(c => {
+            if (c.isMesh) {
+                c.castShadow    = true;
+                c.receiveShadow = false;
+                c.frustumCulled = false;
+            }
+        });
+
+        _cachedSwordGLB = model;
+        console.log('[Sword] broad_celtic_sword.glb preloaded — size:', size2.toArray().map(v => v.toFixed(2)));
+    } catch (e) {
+        console.warn('[Sword] broad_celtic_sword.glb failed to load, using blocky fallback:', e.message);
+        _cachedSwordGLB = null;
+    }
+}
+
 async function loadAllAnims() {
     const loader = new FBXLoader();
     await Promise.all(Object.entries(ANIM_URLS).map(async ([name, url]) => {
@@ -6936,19 +7377,30 @@ function updateKnightAnimation(dt) {
         else if (knightActions['idle'])                playKnightAnim('idle', true, 0.16);
     } else if (isAscendingStairs) {
         idleSeconds = 0;
-        if (isRunning && knightActions['run']) playKnightAnim('run', true, 0.15);
+        const stairsRun = (isSwordEquipped && knightActions['gsRun']) ? 'gsRun' : 'run';
+        const stairsWalk = (isSwordEquipped && knightActions['gsWalk']) ? 'gsWalk' : 'walk';
+        if (isRunning && knightActions[stairsRun]) playKnightAnim(stairsRun, true, 0.15);
         else if (knightActions['ascendStairs']) playKnightAnim('ascendStairs', true, 0.15);
-        else if (knightActions['walk'])         playKnightAnim('walk', true);
+        else if (knightActions[stairsWalk])     playKnightAnim(stairsWalk, true);
     } else if (isRunning && isMoving) {
         idleSeconds = 0;
-        if      (knightActions['run'])  playKnightAnim('run',  true);
+        // Ember Blade equipped → use Great Sword Run, else default run.
+        if      (isSwordEquipped && knightActions['gsRun']) playKnightAnim('gsRun', true);
+        else if (knightActions['run'])  playKnightAnim('run',  true);
+        else if (isSwordEquipped && knightActions['gsWalk']) playKnightAnim('gsWalk', true);
         else if (knightActions['walk']) playKnightAnim('walk', true);
     } else if (isMoving) {
         idleSeconds = 0;
-        if (knightActions['walk']) playKnightAnim('walk', true);
+        // Ember Blade equipped → use Great Sword Walk.
+        if      (isSwordEquipped && knightActions['gsWalk']) playKnightAnim('gsWalk', true);
+        else if (knightActions['walk']) playKnightAnim('walk', true);
     } else {
         idleSeconds += dt || 0;
-        if (idleSeconds >= 20 && knightActions['sadIdle']) {
+        // ── AFK with Ember Blade equipped: after 20s, switch to Great Sword Idle.
+        // Before 20s, the regular standing idle plays (unchanged behaviour).
+        if (isSwordEquipped && idleSeconds >= 20 && knightActions['gsIdle']) {
+            playKnightAnim('gsIdle', true, 0.75);
+        } else if (idleSeconds >= 20 && knightActions['sadIdle']) {
             playKnightAnim('sadIdle', true, 0.75);
         } else if (knightActions['neutralIdle']) {
             playKnightAnim('neutralIdle', true, idleSeconds >= 5 ? 0.5 : 0.22);
@@ -7008,8 +7460,24 @@ const _swHandEuler = new THREE.Euler();
 
 function _buildSwordMesh() {
     const wepGroup = new THREE.Group();
-    wepGroup.name = 'blockSword';
+    wepGroup.name = 'swordMesh';
 
+    // ── PRIMARY: use the preloaded broad_celtic_sword.glb ───────────────────
+    if (_cachedSwordGLB) {
+        const clone = _cachedSwordGLB.clone(true);
+        clone.traverse(c => {
+            if (c.isMesh) {
+                c.castShadow    = true;
+                c.receiveShadow = false;
+                c.frustumCulled = false;
+            }
+        });
+        wepGroup.add(clone);
+        return wepGroup;
+    }
+
+    // ── FALLBACK: blocky procedural sword (if GLB failed to load) ───────────
+    wepGroup.name = 'blockSword';
     const blockMat  = new THREE.MeshStandardMaterial({
         color: 0xadd4f0, metalness: 0.92, roughness: 0.10,
         emissive: new THREE.Color(0xff4400), emissiveIntensity: 0.55
