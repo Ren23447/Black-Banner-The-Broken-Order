@@ -2380,6 +2380,9 @@ let swordWorldLight = null;
 let isSwordEquipped = false;      // True when sword is in active quick slot
 let isSwordAttacking = false;     // True during sword normal attack animation
 let swordAttackTimeout = null;
+let isSwordWithdrawing = false;   // True while playing the draw/equip animation
+let isSwordSheathing = false;     // True while playing the sheath/unequip animation
+let _sheathSwordTimeout = null;   // Timer for sheathing completion
 let isSpreadFlameActive = false;  // True during Spread Flame ability animation
 let spreadFlameTimeout = null;
 let spreadFlameCooldown = 0;      // Seconds remaining on Skyrim-style cooldown (max 45)
@@ -2473,7 +2476,9 @@ const ANIM_URLS = {
     death:    'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Death.fbx',
     swordSlash1:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Great%20Sword%20Slash.fbx',
     swordSlash2:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Slash.fbx',
-    spreadFlame:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Attack.fbx'
+    spreadFlame:  'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sword%20And%20Shield%20Attack.fbx',
+    withdrawSword: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Withdrawing%20Sword.fbx',
+    sheathSword:   'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/Sheathing%20Sword.fbx'
 };
 const animDataStore = {};
 const _knightBoneMap = {}; // normalized bone name → actual name in model skeleton
@@ -4174,7 +4179,10 @@ function setupMenuButtons() {
         selectedSlot = -1;
         activeQuickSlotIndex = -1;
         isSwordEquipped = false;
-        detachSwordFromHand();
+        isSwordWithdrawing = false;
+        isSwordSheathing = false;
+        clearTimeout(_sheathSwordTimeout);
+        if (swordMesh3D) { if (swordMesh3D.parent) swordMesh3D.parent.remove(swordMesh3D); swordMesh3D = null; }
         spreadFlameCooldown = 0;
         lastSwordAttackName = null;
         isSwordAttacking = false;
@@ -4699,6 +4707,32 @@ function setupInputListeners() {
     document.addEventListener('keyup', e => {
         if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
     });
+
+    // Mouse wheel — scroll through quick slots (cycle forward/backward through occupied slots)
+    document.addEventListener('wheel', e => {
+        if (gameState !== 'PLAYING' || !controls.isLocked) return;
+        // Collect indices that have items
+        const occupiedSlots = [];
+        for (let i = 0; i < quickSlots.length; i++) {
+            if (quickSlots[i]) occupiedSlots.push(i);
+        }
+        if (occupiedSlots.length === 0) return;
+
+        const currentPos = occupiedSlots.indexOf(activeQuickSlotIndex);
+        let nextPos;
+        if (e.deltaY > 0) {
+            // Scroll down → next slot
+            nextPos = (currentPos + 1) % occupiedSlots.length;
+        } else {
+            // Scroll up → previous slot
+            nextPos = (currentPos - 1 + occupiedSlots.length) % occupiedSlots.length;
+        }
+        const nextIdx = occupiedSlots[nextPos];
+        // Only switch if it's a different slot
+        if (nextIdx !== activeQuickSlotIndex) {
+            useQuickSlot(nextIdx);
+        }
+    }, { passive: true });
 
     // Left click = sword attack or Spread Flame (instant, no hold required)
     // Right-click = Spread Flame special ability (instant, if off cooldown)
@@ -5478,7 +5512,10 @@ function respawn() {
     inventoryItems = new Array(MAX_SLOTS).fill(null);
     quickSlots     = [null, null, null, null];
     isSwordEquipped = false;
-    detachSwordFromHand();
+    isSwordWithdrawing = false;
+    isSwordSheathing = false;
+    clearTimeout(_sheathSwordTimeout);
+    if (swordMesh3D) { if (swordMesh3D.parent) swordMesh3D.parent.remove(swordMesh3D); swordMesh3D = null; }
     activeQuickSlotIndex = -1;
     spreadFlameCooldown = 0;
     lastSwordAttackName = null;
@@ -6066,10 +6103,10 @@ function updatePhysics(dt) {
     direction.x = Number(moveRight) - Number(moveLeft);
     direction.normalize();
 
-    const horizontalDrag = (isPunching || isSwordAttacking || isSpreadFlameActive) ? 28.0 : (groundedAtFrameStart ? 7.0 : 0.35);
+    const horizontalDrag = (isPunching || isSwordAttacking || isSpreadFlameActive || isSwordWithdrawing || isSwordSheathing) ? 28.0 : (groundedAtFrameStart ? 7.0 : 0.35);
     velocity.x -= velocity.x * horizontalDrag * dt;
     velocity.z -= velocity.z * horizontalDrag * dt;
-    const _blockMove = isPunching || isSwordAttacking || isSpreadFlameActive;
+    const _blockMove = isPunching || isSwordAttacking || isSpreadFlameActive || isSwordWithdrawing || isSwordSheathing;
     if (!_blockMove && groundedAtFrameStart && (moveForward || moveBack)) velocity.z -= direction.z * speed * dt;
     if (!_blockMove && groundedAtFrameStart && (moveLeft || moveRight))   velocity.x -= direction.x * speed * dt;
 
@@ -6435,6 +6472,17 @@ function useQuickSlot(idx) {
       const item = quickSlots[idx];
       if (!item) return;
       if (item.type === 'weapon') {
+          // Toggle: pressing the same slot key again unequips the weapon
+          if (activeQuickSlotIndex === idx && (isSwordEquipped || isSwordWithdrawing)) {
+              activeQuickSlotIndex = -1;
+              isSwordEquipped = false;
+              detachSwordFromHand();
+              renderQuickMenu();
+              showNotif('Unequipped: ' + item.name);
+              return;
+          }
+          // Ignore if sheathing is in progress
+          if (isSwordSheathing) return;
           activeQuickSlotIndex = idx;
           updateSwordHandAttachment();
           renderQuickMenu();
@@ -6860,7 +6908,7 @@ function playKnightAnim(name, loop = true, xfade = 0.15) {
 }
 
 function updateKnightAnimation(dt) {
-    if (isPunching || isSwordAttacking || isSpreadFlameActive || isLanding || isDying || isPlayerDead || isTurning || isRunStopping || isCrouchTransitioning) return;
+    if (isPunching || isSwordAttacking || isSpreadFlameActive || isLanding || isDying || isPlayerDead || isTurning || isRunStopping || isCrouchTransitioning || isSwordWithdrawing || isSwordSheathing) return;
 
     // In the air / jumping
     if (!canJump) {
@@ -6958,13 +7006,7 @@ const _swLocalPos  = new THREE.Vector3();
 const _swHandQuat  = new THREE.Quaternion();
 const _swHandEuler = new THREE.Euler();
 
-function attachSwordToHand() {
-    if (swordMesh3D) return; // already attached
-
-    // Build the block sword and add it directly to the scene.
-    // We NEVER parent it to a bone — instead _tickSwordWorldTransform() positions it
-    // by reading the hand bone's matrixWorld every frame. This is the only reliable
-    // method for SkinnedMesh skeletons in Three.js.
+function _buildSwordMesh() {
     const wepGroup = new THREE.Group();
     wepGroup.name = 'blockSword';
 
@@ -6978,7 +7020,6 @@ function attachSwordToHand() {
     });
     const handleMat = new THREE.MeshStandardMaterial({ color: 0x2c1204, roughness: 0.85, metalness: 0.02 });
 
-    // Greatsword layout in local space: grip centre at Y=0, blade tip at +Y, pommel at -Y
     const blade  = new THREE.Mesh(new THREE.BoxGeometry(0.11,  1.10, 0.048), blockMat);  blade.position.set(0,  0.70, 0);
     const edge   = new THREE.Mesh(new THREE.BoxGeometry(0.018, 1.05, 0.068), accentMat); edge.position.set(0,  0.70, 0);
     const guard  = new THREE.Mesh(new THREE.BoxGeometry(0.42,  0.065, 0.075),accentMat); guard.position.set(0,  0.13, 0);
@@ -6992,12 +7033,48 @@ function attachSwordToHand() {
         wepGroup.add(m);
     });
 
+    return wepGroup;
+}
+
+function attachSwordToHand() {
+    if (swordMesh3D) return; // already attached
+    if (isSwordWithdrawing) return; // animation already in progress
+
+    // Cancel any pending sheath
+    if (isSwordSheathing) {
+        clearTimeout(_sheathSwordTimeout);
+        isSwordSheathing = false;
+        if (knightActions['sheathSword']) knightActions['sheathSword'].stop();
+    }
+
+    // Attach the sword mesh immediately so it appears in-hand from the first frame,
+    // making the withdraw animation look like the character is actually pulling it out.
+    const wepGroup = _buildSwordMesh();
     scene.add(wepGroup);
     swordMesh3D = wepGroup;
-
-    // Immediately try to find the hand bone; if model isn't ready yet the tick will retry
     if (!_swordHandBone) _swordHandBone = _getSwordHandBone();
-    console.log('[Sword] Block sword created, hand bone:', _swordHandBone ? _swordHandBone.name : 'pending');
+
+    // Play the withdraw animation on top of the already-visible sword
+    const withdrawAction = knightActions['withdrawSword'];
+    if (withdrawAction && knightMixer) {
+        isSwordWithdrawing = true;
+        const prev = knightActions[currentAnimState];
+        if (prev && prev !== withdrawAction) prev.fadeOut(0.10);
+        withdrawAction.reset();
+        withdrawAction.setLoop(THREE.LoopOnce, 1);
+        withdrawAction.clampWhenFinished = true;
+        withdrawAction.fadeIn(0.10);
+        withdrawAction.play();
+        currentAnimState = 'withdrawSword';
+
+        const dur = (withdrawAction.getClip()?.duration > 0) ? withdrawAction.getClip().duration : 1.0;
+        setTimeout(() => {
+            isSwordWithdrawing = false;
+            if (knightActions['withdrawSword']) knightActions['withdrawSword'].fadeOut(0.12);
+            currentAnimState = '__reset__';
+        }, dur * 1000);
+    }
+    console.log('[Sword] Block sword attached, hand bone:', _swordHandBone ? _swordHandBone.name : 'pending');
 }
 
 // Called every PLAYING frame when sword is equipped — positions the block sword
@@ -7026,9 +7103,45 @@ function _tickSwordWorldTransform() {
 }
 
 function detachSwordFromHand() {
-    if (!swordMesh3D) return;
-    if (swordMesh3D.parent) swordMesh3D.parent.remove(swordMesh3D);
-    swordMesh3D = null;
+    // If withdraw is still in progress, cancel it and go straight to detach
+    if (isSwordWithdrawing) {
+        isSwordWithdrawing = false;
+        if (knightActions['withdrawSword']) knightActions['withdrawSword'].stop();
+        currentAnimState = '__reset__';
+    }
+    if (isSwordSheathing) return; // already sheathing
+
+    const sheathAction = knightActions['sheathSword'];
+    if (sheathAction && knightMixer && swordMesh3D) {
+        isSwordSheathing = true;
+        const prev = knightActions[currentAnimState];
+        if (prev && prev !== sheathAction) prev.fadeOut(0.10);
+        sheathAction.reset();
+        sheathAction.setLoop(THREE.LoopOnce, 1);
+        sheathAction.clampWhenFinished = true;
+        sheathAction.fadeIn(0.10);
+        sheathAction.play();
+        currentAnimState = 'sheathSword';
+
+        const dur = (sheathAction.getClip()?.duration > 0) ? sheathAction.getClip().duration : 1.0;
+        clearTimeout(_sheathSwordTimeout);
+        _sheathSwordTimeout = setTimeout(() => {
+            isSwordSheathing = false;
+            if (knightActions['sheathSword']) knightActions['sheathSword'].fadeOut(0.12);
+            currentAnimState = '__reset__';
+            // Remove the sword mesh after the animation finishes
+            if (swordMesh3D) {
+                if (swordMesh3D.parent) swordMesh3D.parent.remove(swordMesh3D);
+                swordMesh3D = null;
+            }
+        }, dur * 1000);
+    } else {
+        // No animation available — detach immediately
+        if (swordMesh3D) {
+            if (swordMesh3D.parent) swordMesh3D.parent.remove(swordMesh3D);
+            swordMesh3D = null;
+        }
+    }
 }
 
 function updateSwordHandAttachment() {
@@ -7060,7 +7173,8 @@ function updateSwordHandAttachment() {
     }
 
     // Every frame: track bone and position the sword in world space
-    if (isSwordEquipped && swordMesh3D) _tickSwordWorldTransform();
+    // Also tick during withdraw/sheath animations so the sword follows the hand
+    if (swordMesh3D && (isSwordEquipped || isSwordWithdrawing || isSwordSheathing)) _tickSwordWorldTransform();
 }
 
 function updateSwordCooldownHUD(dt) {
@@ -7128,6 +7242,7 @@ function updateSwordCooldownHUD(dt) {
 
 function triggerSwordAttack() {
     if (isSwordAttacking || isSpreadFlameActive || gameState !== 'PLAYING') return;
+    if (isSwordWithdrawing || isSwordSheathing) return; // Can't attack while drawing or sheathing
     if (isStaminaExhausted) return;
     if (!canJump) return; // No mid-air sword swings — must be grounded
     if (isCrawling || isCrouching || isLanding || isDying || isTurning || isRunStopping || isCrouchTransitioning || isRunJumping) return;
@@ -7349,6 +7464,7 @@ function spawnSpreadFlameGroundFire() {
 function triggerSpreadFlame() {
     if (isSpreadFlameActive || spreadFlameCooldown > 0 || gameState !== 'PLAYING') return;
     if (!isSwordEquipped) return;
+    if (isSwordWithdrawing || isSwordSheathing) return; // Can't use ability while drawing or sheathing
     if (!canJump) return; // No mid-air ability casts — must be grounded
     if (isCrawling || isCrouching || isLanding || isDying || isTurning) return;
 
