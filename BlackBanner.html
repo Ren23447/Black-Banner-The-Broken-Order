@@ -4303,10 +4303,16 @@ function createQuestBook(x, y, z) {
     return group;
 }
 
-// Potion bottle — uses dark_magic_potion.glb when available, otherwise falls
+// Potion bottle — uses healing_potion.glb when available, otherwise falls
 // back to the procedural blocky bottle. Anything created before the GLB
 // downloads is swapped in place once `_potionGLB` arrives.
-const _potionPlaceholders = []; // groups awaiting GLB swap
+//
+// IMPORTANT: stored on globalThis so `createPotionBottle` (called from
+// `buildMap` early in module evaluation) can reference it without hitting
+// a `const`/`let` temporal-dead-zone error. Module-scoped `const` would
+// throw because buildMap runs before this line is evaluated.
+globalThis._potionPlaceholders ??= []; // groups awaiting GLB swap / refresh
+globalThis._potionGLBState     ??= 'pending'; // 'pending' | 'ready' | 'failed'
 // Bottle target height in world units. Big enough to spot from across a room
 // (a true 22 cm bottle is invisible at game distances) but still recognisably
 // hand-held.
@@ -4400,31 +4406,104 @@ function createPotionBottle(x, y, z, color, emissiveColor) {
     group.userData._potionColor = color;
     group.userData._potionEmissive = emissiveColor;
 
-    // Always use the procedural bottle — it's guaranteed visible and emissive.
-    // The Sketchfab GLB has 23 animation channels that pose its sub-meshes
-    // far apart at rest, which makes the loaded model invisible in-game.
+    // Always build the procedural bottle as a fallback — it's guaranteed to
+    // exist on the group so collision/interaction queries always have geometry.
     _buildProceduralPotion(group, color, emissiveColor);
     group.position.set(x, y, z);
+
+    // Track this group so the GLB loader can swap (or the cheat code can refresh) it.
+    const _placeholders = (globalThis._potionPlaceholders ??= []);
+    if (!_placeholders.includes(group)) _placeholders.push(group);
+
+    if (globalThis._potionGLBState === 'ready' && window._potionGLB) {
+        // GLB already loaded → attach immediately.
+        _replaceGroupWithGLB(group);
+    }
+    // Otherwise, leave the procedural bottle VISIBLE so the player always sees
+    // something. The swap function will replace it once the GLB downloads.
+
     scene.add(group);
     return group;
 }
 
-// Once the dark-magic-potion GLB finishes loading, replace any procedural
-// placeholder bottles in the world with the real model (same position/scale).
+// Strip a group's current children (procedural OR previously-attached GLB)
+// and attach a fresh clone of the cached GLB. Keeps the group itself so any
+// references in `interactables`, `potionWorldGroup`, etc. stay valid.
+function _replaceGroupWithGLB(group) {
+    if (!window._potionGLB) return false;
+    for (let i = group.children.length - 1; i >= 0; i--) {
+        const c = group.children[i];
+        group.remove(c);
+        c.traverse?.(o => {
+            o.geometry?.dispose?.();
+            if (o.material) {
+                const mats = Array.isArray(o.material) ? o.material : [o.material];
+                mats.forEach(m => m.dispose?.());
+            }
+        });
+    }
+    const ok = _attachPotionGLB(group);
+    group.visible = true;
+    return ok;
+}
+
+// Rebuild a group's procedural blocky bottle (used when GLB load fails OR
+// when the cheat code resets state before re-trying the download).
+function _rebuildGroupAsProcedural(group) {
+    for (let i = group.children.length - 1; i >= 0; i--) {
+        const c = group.children[i];
+        group.remove(c);
+        c.traverse?.(o => {
+            o.geometry?.dispose?.();
+            if (o.material) {
+                const mats = Array.isArray(o.material) ? o.material : [o.material];
+                mats.forEach(m => m.dispose?.());
+            }
+        });
+    }
+    _buildProceduralPotion(group, group.userData._potionColor, group.userData._potionEmissive);
+}
+
+// Called by the preloader on SUCCESS — swap every tracked potion group from
+// its procedural placeholder to the real GLB and reveal them.
 function _swapProceduralPotionsToGLB() {
     if (!window._potionGLB) return;
-    while (_potionPlaceholders.length) {
-        const g = _potionPlaceholders.pop();
-        // Remove old children (procedural meshes) but keep the group itself —
-        // existing references in `interactables`, `potionWorldGroup`, etc., stay valid.
-        for (let i = g.children.length - 1; i >= 0; i--) {
-            const c = g.children[i];
-            g.remove(c);
-            c.geometry?.dispose?.();
-        }
-        _attachPotionGLB(g);
+    const _placeholders = (globalThis._potionPlaceholders ??= []);
+    for (const g of _placeholders) _replaceGroupWithGLB(g);
+    globalThis._potionGLBState = 'ready';
+    console.log(`[Potion] Swapped ${_placeholders.length} potion(s) to GLB.`);
+}
+
+// Called by the preloader on FAILURE — make sure every tracked potion group
+// shows its procedural blocky fallback bottle and is visible.
+function _revealProceduralPotions() {
+    const _placeholders = (globalThis._potionPlaceholders ??= []);
+    for (const g of _placeholders) {
+        // If a previous attempt already attached a GLB to the group, replace
+        // it with a fresh procedural build so the user sees the fallback.
+        const hasGLB = g.children.some(c => !c.geometry); // GLB instances are Object3D wrappers
+        if (hasGLB || g.children.length === 0) _rebuildGroupAsProcedural(g);
+        g.visible = true;
     }
-    console.log('[Potion] Swapped procedural potions to GLB.');
+    globalThis._potionGLBState = 'failed';
+    console.log(`[Potion] Falling back to procedural bottle for ${_placeholders.length} potion(s).`);
+}
+
+// In-game refresh — re-download the GLB and swap every tracked potion group.
+// Triggered by the "bottle" cheat code (see _setupPotionRefreshCheat).
+async function refreshPotionGLB() {
+    console.log('[Potion] Refresh requested — re-downloading healing_potion.glb…');
+    // Reset state and rebuild every group as the procedural bottle (visible)
+    // while we fetch — the player keeps seeing a bottle the whole time.
+    window._potionGLB = null;
+    globalThis._potionGLBState = 'pending';
+    const _placeholders = (globalThis._potionPlaceholders ??= []);
+    for (const g of _placeholders) {
+        _rebuildGroupAsProcedural(g);
+        g.visible = true;
+    }
+    await preloadPotionGLB();
+    // preloadPotionGLB() calls swap-or-reveal internally based on success/failure.
 }
 
 // ——— Inventory ———
@@ -7410,92 +7489,124 @@ function updateCompass() {
         }
     }
 
-    // ─── Central ornament: tall flame + ringed 4-point star + pendant ─
+    // ─── Central ornament: tall diamond cartouche + 8-point compass star ─
     const drawCenter = () => {
         ctx.save();
         ctx.translate(cx, MID_Y);
         const goldStroke = 'rgba(232,200,140,0.95)';
         const goldFill   = 'rgba(232,200,140,0.92)';
+        const goldStrokeSoft = 'rgba(210,178,118,0.85)';
 
-        // Backplate cartouche (vertical pointed oval behind the star)
+        // ── Tall pointed diamond cartouche (vertical lozenge behind star) ──
         ctx.beginPath();
-        ctx.moveTo(0, -28);
-        ctx.bezierCurveTo( 14, -18,  14,  18,  0,  28);
-        ctx.bezierCurveTo(-14,  18, -14, -18,  0, -28);
-        ctx.fillStyle = 'rgba(8,6,4,0.92)';
+        ctx.moveTo(0, -34);
+        ctx.lineTo( 11, 0);
+        ctx.lineTo( 0,  34);
+        ctx.lineTo(-11, 0);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(8,6,4,0.94)';
         ctx.fill();
         ctx.strokeStyle = goldStroke;
         ctx.lineWidth = 1.2;
+        ctx.lineJoin = 'miter';
+        ctx.stroke();
+        // Inner trace inside cartouche
+        ctx.beginPath();
+        ctx.moveTo(0, -29);
+        ctx.lineTo( 8.5, 0);
+        ctx.lineTo( 0,  29);
+        ctx.lineTo(-8.5, 0);
+        ctx.closePath();
+        ctx.strokeStyle = 'rgba(210,178,118,0.45)';
+        ctx.lineWidth = 0.55;
         ctx.stroke();
 
-        // Tall flame spike rising above the cartouche (5-flame)
+        // ── Crown spire above cartouche (3 small upward spikes) ──
         ctx.beginPath();
-        ctx.moveTo(0, -32);
-        ctx.lineTo(-3, -22); ctx.lineTo(-1.4, -24);
-        ctx.lineTo(-2.2, -18); ctx.lineTo(0, -20);
-        ctx.lineTo( 2.2, -18); ctx.lineTo( 1.4, -24);
-        ctx.lineTo( 3,   -22); ctx.closePath();
+        // Center spike
+        ctx.moveTo(0, -44); ctx.lineTo(-2, -34); ctx.lineTo(2, -34); ctx.closePath();
         ctx.fillStyle = goldFill;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        // Small side spikes
+        ctx.beginPath();
+        ctx.moveTo(-6, -38); ctx.lineTo(-7.5, -33); ctx.lineTo(-4.5, -33); ctx.closePath();
+        ctx.moveTo( 6, -38); ctx.lineTo( 7.5, -33); ctx.lineTo( 4.5, -33); ctx.closePath();
+        ctx.fillStyle = goldFill;
+        ctx.fill();
         ctx.stroke();
 
-        // Side wing flourishes (sweeping out to either side)
+        // ── Horizontal flourish wings extending into the bar ──
         ctx.strokeStyle = goldStroke;
-        ctx.lineWidth = 1.1;
+        ctx.lineWidth = 1.0;
         ctx.beginPath();
-        // Upper wing — left
-        ctx.moveTo(-10, -10);
-        ctx.quadraticCurveTo(-22, -10, -32, -2);
-        ctx.moveTo(-14, -8);
-        ctx.quadraticCurveTo(-22, -4, -28,  2);
-        // Upper wing — right
-        ctx.moveTo( 10, -10);
-        ctx.quadraticCurveTo( 22, -10,  32, -2);
-        ctx.moveTo( 14, -8);
-        ctx.quadraticCurveTo( 22, -4,  28,  2);
+        // Left wing — upper curve
+        ctx.moveTo(-10, -3);
+        ctx.quadraticCurveTo(-22, -8, -34, -4);
+        // Left wing — lower curve
+        ctx.moveTo(-10,  3);
+        ctx.quadraticCurveTo(-22,  8, -34,  4);
+        // Right wing — upper curve
+        ctx.moveTo( 10, -3);
+        ctx.quadraticCurveTo( 22, -8,  34, -4);
+        // Right wing — lower curve
+        ctx.moveTo( 10,  3);
+        ctx.quadraticCurveTo( 22,  8,  34,  4);
         ctx.stroke();
-        // Wingtip leaves
+        // Pointed tips at wing ends
         ctx.fillStyle = goldFill;
         ctx.beginPath();
-        ctx.moveTo(-32, -2); ctx.lineTo(-36, -4); ctx.lineTo(-34, 1); ctx.closePath();
-        ctx.moveTo( 32, -2); ctx.lineTo( 36, -4); ctx.lineTo( 34, 1); ctx.closePath();
+        ctx.moveTo(-34, -4); ctx.lineTo(-40, 0); ctx.lineTo(-34, 4); ctx.closePath();
+        ctx.moveTo( 34, -4); ctx.lineTo( 40, 0); ctx.lineTo( 34, 4); ctx.closePath();
         ctx.fill();
-
-        // Ring around the central star
-        ctx.beginPath();
-        ctx.arc(0, -2, 9, 0, Math.PI * 2);
-        ctx.strokeStyle = goldStroke;
-        ctx.lineWidth = 1.1;
-        ctx.stroke();
-
-        // 4-point star inside the ring
-        ctx.beginPath();
-        ctx.moveTo(0, -11);
-        ctx.lineTo(2.2, -3.5); ctx.lineTo(9, -2);
-        ctx.lineTo(2.2, -0.5); ctx.lineTo(0, 7);
-        ctx.lineTo(-2.2, -0.5); ctx.lineTo(-9, -2);
-        ctx.lineTo(-2.2, -3.5); ctx.closePath();
-        ctx.fillStyle = goldFill;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.strokeStyle = 'rgba(0,0,0,0.6)';
         ctx.lineWidth = 0.5;
         ctx.stroke();
 
-        // Hanging pendant (small diamond) at bottom of cartouche
+        // ── 8-point compass star at center ──
+        const longR = 11, shortR = 4.5;
         ctx.beginPath();
-        ctx.moveTo(0, 18); ctx.lineTo(3, 22); ctx.lineTo(0, 26); ctx.lineTo(-3, 22);
+        for (let i = 0; i < 8; i++) {
+            const a = (i * Math.PI / 4) - Math.PI / 2;
+            const r = (i % 2 === 0) ? longR : shortR * 0.85;
+            const x = Math.cos(a) * r;
+            const y = Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
         ctx.closePath();
-        ctx.fillStyle = 'rgba(8,6,4,0.95)';
-        ctx.fill();
-        ctx.strokeStyle = goldStroke;
-        ctx.lineWidth = 0.9;
-        ctx.stroke();
-        // Tiny gold dot inside pendant
         ctx.fillStyle = goldFill;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+
+        // Inner dark facet on the 4 cardinal points (gives dimensional look)
         ctx.beginPath();
-        ctx.arc(0, 22, 0.9, 0, Math.PI * 2);
+        ctx.moveTo(0, -longR);
+        ctx.lineTo(1.4, 0);
+        ctx.lineTo(-1.4, 0);
+        ctx.closePath();
+        ctx.moveTo(0,  longR);
+        ctx.lineTo(1.4, 0);
+        ctx.lineTo(-1.4, 0);
+        ctx.closePath();
+        ctx.moveTo( longR, 0);
+        ctx.lineTo(0,  1.4);
+        ctx.lineTo(0, -1.4);
+        ctx.closePath();
+        ctx.moveTo(-longR, 0);
+        ctx.lineTo(0,  1.4);
+        ctx.lineTo(0, -1.4);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(80,58,28,0.55)';
+        ctx.fill();
+
+        // Tiny center dot
+        ctx.beginPath();
+        ctx.arc(0, 0, 1.1, 0, Math.PI * 2);
+        ctx.fillStyle = goldFill;
         ctx.fill();
 
         ctx.restore();
@@ -7510,25 +7621,49 @@ function updateCompass() {
         const goldStroke = 'rgba(232,200,140,0.95)';
         const goldFill   = 'rgba(232,200,140,0.92)';
 
-        // Spiky 6-point star body (long outward + short up/down + inward)
+        // Outer horn flourishes (curved spikes sweeping up and down,
+        // mirroring the reference image's antler-like ornaments)
+        ctx.strokeStyle = goldStroke;
+        ctx.lineWidth = 1.1;
         ctx.beginPath();
-        ctx.moveTo(  18,   0);   // outward spear tip
-        ctx.lineTo(   6,  -3);
-        ctx.lineTo(   8, -14);   // upper-outer spike
-        ctx.lineTo(   2,  -6);
-        ctx.lineTo(  -4, -14);   // upper-inner spike
-        ctx.lineTo(  -8,  -4);
-        ctx.lineTo( -16,  -2);   // inward spike (toward bar)
-        ctx.lineTo(  -8,   4);
-        ctx.lineTo(  -4,  14);   // lower-inner spike
-        ctx.lineTo(   2,   6);
-        ctx.lineTo(   8,  14);   // lower-outer spike
-        ctx.lineTo(   6,   3);
+        // Upper outer horn — curves up and outward
+        ctx.moveTo(  4,  -2);
+        ctx.quadraticCurveTo(  10, -10,  16, -16);
+        // Upper inner horn — shorter, tighter curve
+        ctx.moveTo( -2,  -4);
+        ctx.quadraticCurveTo(  -2, -12,   4, -16);
+        // Lower outer horn
+        ctx.moveTo(  4,   2);
+        ctx.quadraticCurveTo(  10,  10,  16,  16);
+        // Lower inner horn
+        ctx.moveTo( -2,   4);
+        ctx.quadraticCurveTo(  -2,  12,   4,  16);
+        ctx.stroke();
+        // Pointed tips on horns
+        ctx.fillStyle = goldFill;
+        ctx.beginPath();
+        ctx.moveTo( 16, -16); ctx.lineTo( 19, -19); ctx.lineTo( 13, -17); ctx.closePath();
+        ctx.moveTo(  4, -16); ctx.lineTo(  6, -19); ctx.lineTo(  2, -17); ctx.closePath();
+        ctx.moveTo( 16,  16); ctx.lineTo( 19,  19); ctx.lineTo( 13,  17); ctx.closePath();
+        ctx.moveTo(  4,  16); ctx.lineTo(  6,  19); ctx.lineTo(  2,  17); ctx.closePath();
+        ctx.fill();
+
+        // Spiky 4-point star body (outward spear + small up/down spikes + inward)
+        ctx.beginPath();
+        ctx.moveTo(  20,   0);   // outward spear tip
+        ctx.lineTo(   5,  -3);
+        ctx.lineTo(   2,  -9);   // upper spike
+        ctx.lineTo(  -3,  -3);
+        ctx.lineTo( -14,  -2);   // inward spike (toward bar)
+        ctx.lineTo( -14,   2);
+        ctx.lineTo(  -3,   3);
+        ctx.lineTo(   2,   9);   // lower spike
+        ctx.lineTo(   5,   3);
         ctx.closePath();
         ctx.fillStyle = 'rgba(14,10,6,0.95)';
         ctx.fill();
         ctx.strokeStyle = goldStroke;
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 1.3;
         ctx.lineJoin = 'miter';
         ctx.stroke();
 
@@ -7783,45 +7918,106 @@ function _makeSpecGlossExtension(parser) {
 }
 
 // ─── Potion GLB preloader ───────────────────────────────────────────────────
+// The model the player sees: healing_potion.glb (from the GitHub repo).
+// If this fails to load, the player sees the procedural blocky bottle instead.
 window._potionGLB = null;
-const POTION_URL = 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/dark_magic_potion.glb';
+// Use jsdelivr (same CDN every other GLB in this file uses) — it serves the
+// correct `model/gltf-binary` content-type, has reliable global edge caching,
+// and avoids the rare-but-real raw.githubusercontent.com hiccups.
+const POTION_URL = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/healing_potion.glb';
 
-async function preloadPotionGLB() {
+async function _loadPotionFromURL(url, label) {
     const loader = new GLTFLoader();
     loader.register(p => _makeSpecGlossExtension(p));
-    try {
-        const gltf = await loader.loadAsync(POTION_URL);
-        const m = gltf.scene;
-        m.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(m);
-        const size = new THREE.Vector3(); box.getSize(size);
-        m.userData.baseMin  = box.min.clone();
-        m.userData.baseSize = size.clone();
-        // The Sketchfab source uses alphaMode:BLEND with full alpha — meant for
-        // compositing on a transparent background. In our world that renders the
-        // bottle nearly invisible, so force it opaque. Also tame the gloss.
-        m.traverse(c => {
-            if (!c.isMesh || !c.material) return;
-            const mats = Array.isArray(c.material) ? c.material : [c.material];
-            mats.forEach(mat => {
-                if (mat.map && 'colorSpace' in mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
-                mat.transparent = false;
-                mat.opacity = 1.0;
-                mat.depthWrite = true;
-                mat.alphaTest = 0.0;
-                mat.side = THREE.FrontSide;
-                if ('roughness' in mat) mat.roughness = Math.max(mat.roughness ?? 0, 0.35);
-                if ('metalness' in mat) mat.metalness = Math.min(mat.metalness ?? 0, 0.4);
-                mat.needsUpdate = true;
-            });
+    console.log(`[Potion] Fetching ${label} from ${url}…`);
+    let lastPct = -1;
+    const gltf = await new Promise((resolve, reject) => {
+        loader.load(
+            url,
+            resolve,
+            (xhr) => {
+                if (xhr.total > 0) {
+                    const pct = Math.floor((xhr.loaded / xhr.total) * 100);
+                    if (pct !== lastPct && pct % 10 === 0) {
+                        console.log(`[Potion] ${label} download: ${pct}% (${xhr.loaded}/${xhr.total} bytes)`);
+                        lastPct = pct;
+                    }
+                }
+            },
+            (err) => reject(err instanceof Error ? err : new Error(String(err && err.message || err)))
+        );
+    });
+    const m = gltf.scene;
+    m.updateMatrixWorld(true);
+    let box = new THREE.Box3().setFromObject(m);
+    let size = new THREE.Vector3(); box.getSize(size);
+
+    // Normalise materials — force opaque and tame gloss so the bottle reads
+    // correctly in-world (Sketchfab sources often ship alphaMode:BLEND).
+    m.traverse(c => {
+        if (!c.isMesh || !c.material) return;
+        const mats = Array.isArray(c.material) ? c.material : [c.material];
+        mats.forEach(mat => {
+            if (mat.map && 'colorSpace' in mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+            mat.transparent = false;
+            mat.opacity = 1.0;
+            mat.depthWrite = true;
+            mat.alphaTest = 0.0;
+            mat.side = THREE.FrontSide;
+            if ('roughness' in mat) mat.roughness = Math.max(mat.roughness ?? 0, 0.35);
+            if ('metalness' in mat) mat.metalness = Math.min(mat.metalness ?? 0, 0.4);
+            mat.needsUpdate = true;
         });
-        window._potionGLB = m;
-        console.log(`[Potion] Loaded dark_magic_potion.glb: ${size.toArray().map(v => v.toFixed(2)).join(' x ')} m`);
+    });
+
+    // Pre-normalise scale so the cached model is sized correctly when
+    // _attachPotionGLB later reads its bounding box. This guarantees the
+    // healing_potion.glb (which may ship at a very different native scale
+    // than dark_magic_potion.glb) is rendered at the same in-world height
+    // as the original potion (POTION_TARGET_HEIGHT).
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const sFactor = POTION_TARGET_HEIGHT / maxDim;
+    m.scale.multiplyScalar(sFactor);
+    m.updateMatrixWorld(true);
+    box = new THREE.Box3().setFromObject(m);
+    size = new THREE.Vector3(); box.getSize(size);
+
+    m.userData.baseMin  = box.min.clone();
+    m.userData.baseSize = size.clone();
+    console.log(`[Potion] Loaded ${label}: ${size.toArray().map(v => v.toFixed(2)).join(' x ')} m`);
+    return m;
+}
+
+async function preloadPotionGLB() {
+    // Try to load healing_potion.glb. If it fails for any reason — network,
+    // 404, parse error — surface the error and fall back to the procedural
+    // blocky bottle so the player still sees something.
+    try {
+        window._potionGLB = await _loadPotionFromURL(POTION_URL, 'healing_potion.glb');
         if (typeof _swapProceduralPotionsToGLB === 'function') _swapProceduralPotionsToGLB();
     } catch (e) {
-        console.warn(`[Potion] dark_magic_potion.glb failed to load (${POTION_URL}):`, e.message);
+        console.warn(`[Potion] healing_potion.glb failed to load (${POTION_URL}):`, e.message);
+        if (typeof _revealProceduralPotions === 'function') _revealProceduralPotions();
     }
 }
+
+// ─── In-game cheat code: type "bottle" to refresh the potion model ──────────
+function _setupPotionRefreshCheat() {
+    const SEQUENCE = 'bottle'; // case-insensitive
+    let buffer = '';
+    document.addEventListener('keydown', (e) => {
+        // Ignore modifier-only or non-character keys (Shift, Ctrl, etc.)
+        if (!e.key || e.key.length !== 1) return;
+        buffer = (buffer + e.key.toLowerCase()).slice(-SEQUENCE.length);
+        if (buffer === SEQUENCE) {
+            buffer = '';
+            console.log('[Potion] Cheat code "bottle" detected — refreshing potion model.');
+            refreshPotionGLB().catch(err => console.warn('[Potion] refreshPotionGLB failed:', err));
+        }
+    });
+}
+// Wire up the cheat code as soon as the script runs.
+_setupPotionRefreshCheat();
 
 async function preloadFlora() {
     // Tiny helper: update the loading-screen flora status line. Purely
