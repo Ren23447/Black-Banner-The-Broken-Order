@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -954,7 +954,8 @@
         .qm-left:hover { transform: translateY(-50%) translateX(-5px) scale(1.04); }
         .qm-right:hover { transform: translateY(-50%) translateX(5px) scale(1.04); }
         .qm-center { display: none; }
-        .qm-slot-icon { position: relative; z-index: 2; font-size: 23px; line-height: 1; filter: drop-shadow(0 0 12px rgba(255,231,172,0.62)); }
+        .qm-slot-icon { position: relative; z-index: 2; font-size: 23px; line-height: 1; filter: drop-shadow(0 0 12px rgba(255,231,172,0.62)); display: inline-flex; align-items: center; justify-content: center; }
+        .qm-slot-icon img { width: 30px; height: 30px; object-fit: contain; display: block; image-rendering: -webkit-optimize-contrast; }
         .qm-slot-name {
             position: absolute;
             left: 50%;
@@ -2346,7 +2347,7 @@ let knightModel = null, knightMixer = null, knightActions = {};
 // dynamically when the GLB loads (defaults to 0.92 hip-height fallback).
 // This drives how high we lift the model off the ground so the feet sit on
 // the terrain instead of sinking into it.
-let KNIGHT_FOOT_OFFSET = 0.92;
+let KNIGHT_FOOT_OFFSET = 0.82;
 let clock = new THREE.Clock();
 let gameState = 'LOADING';
 let prevGameState = 'HOME';
@@ -2854,9 +2855,13 @@ function init() {
                 // Add a 0.15 m breathing-room lift so the soles never bury into
                 // the snow on uneven terrain (animation-frame poses can dip the
                 // bind-pose feet a few cm below the static bbox).
-                KNIGHT_FOOT_OFFSET = -_kBox.min.y + 0.15;
+                // Extra visual lift so the knight clearly stands ABOVE the
+                // floor rather than appearing partially sunk into it. This is
+                // a pure rendering offset — animations are unaffected because
+                // KNIGHT_FOOT_OFFSET is only added to the model's Y position.
+                KNIGHT_FOOT_OFFSET = -_kBox.min.y + 1.65;
                 if (!isFinite(KNIGHT_FOOT_OFFSET) || KNIGHT_FOOT_OFFSET < 0.20) {
-                    KNIGHT_FOOT_OFFSET = 1.07;
+                    KNIGHT_FOOT_OFFSET = 2.55;
                 }
             }
             console.log('[Knight] foot offset:', KNIGHT_FOOT_OFFSET.toFixed(3));
@@ -5063,6 +5068,24 @@ function setupInputListeners() {
     document.addEventListener('keyup', e => {
         if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
     });
+
+    // ── Live foot-offset tuner: [ lowers, ] raises (5 cm steps), \ resets.
+    // Lets the user dial in KNIGHT_FOOT_OFFSET without a reload. Console logs
+    // the new value so it can be hard-coded later if desired.
+    (function() {
+        const STEP = 0.05;
+        let _knightFootBaseline = null;
+        document.addEventListener('keydown', (e) => {
+            if (e.code !== 'BracketLeft' && e.code !== 'BracketRight' && e.code !== 'Backslash') return;
+            if (typeof KNIGHT_FOOT_OFFSET !== 'number') return;
+            if (_knightFootBaseline === null) _knightFootBaseline = KNIGHT_FOOT_OFFSET;
+            if (e.code === 'BracketLeft')  KNIGHT_FOOT_OFFSET -= STEP;
+            if (e.code === 'BracketRight') KNIGHT_FOOT_OFFSET += STEP;
+            if (e.code === 'Backslash')    KNIGHT_FOOT_OFFSET = _knightFootBaseline;
+            console.log('[Knight] foot offset →', KNIGHT_FOOT_OFFSET.toFixed(3));
+            if (typeof showNotif === 'function') showNotif('Foot offset: ' + KNIGHT_FOOT_OFFSET.toFixed(2) + ' m');
+        });
+    })();
 
     // ── Secret combo: G → R → A → S → S forces a fresh grass GLB reload + swap.
     // Useful if the grass model came in invisible / failed silently. The combo
@@ -7607,12 +7630,39 @@ function retargetFBXClipToKnight(sourceClip, animName) {
                 tracks.push(cloned);
                 continue;
             }
-            for (let i = 0; i < values.length; i += 3) {
-                relative[i] = isHips ? 0 : values[i] - baseX;
-                relative[i + 1] = isHips ? 0 : values[i + 1] - baseY;
-                relative[i + 2] = isHips ? 0 : values[i + 2] - baseZ;
+            if (isHips) {
+                // Preserve hip VERTICAL motion (bob, weight-shift, sword-swing
+                // dip, idle breathing) — strip only horizontal translation so
+                // the character stays at the player's pPos. Vertical motion is
+                // CLAMPED to ±0.30 m so a wild FBX root spike can't launch the
+                // model off-screen, and animations where the engine already
+                // drives vertical position (jump/fall/land) keep Y zeroed so
+                // the model doesn't double-bounce.
+                const PHYSICS_DRIVEN_VERTICAL = new Set([
+                    'jump', 'runJump', 'gsJump', 'fall', 'land', 'hardLand'
+                ]);
+                const keepY = !PHYSICS_DRIVEN_VERTICAL.has(animName);
+                for (let i = 0; i < values.length; i += 3) {
+                    relative[i] = 0;
+                    if (keepY) {
+                        let dy = values[i + 1] - baseY;
+                        if (dy >  0.30) dy =  0.30;
+                        if (dy < -0.30) dy = -0.30;
+                        relative[i + 1] = dy;
+                    } else {
+                        relative[i + 1] = 0;
+                    }
+                    relative[i + 2] = 0;
+                }
+                cloned = new THREE.VectorKeyframeTrack(bone + '.position', track.times, relative);
+                tracks.push(cloned);
+                continue;
             }
-            cloned = new THREE.VectorKeyframeTrack(bone + '.position', track.times, relative);
+            // Non-hip position tracks: keep the FBX values raw. Mixamo rigs
+            // usually hold limb-bone positions constant (just bind offsets), so
+            // subtracting frame-0 would zero the offset and collapse the limb
+            // toward its parent's origin. Pass the values through untouched.
+            cloned = new THREE.VectorKeyframeTrack(bone + '.position', track.times, new Float32Array(values));
             tracks.push(cloned);
             continue;
         }
@@ -8461,13 +8511,12 @@ function triggerPunch() {
                     stroke-dasharray="163.4" stroke-dashoffset="0"
                     transform="rotate(-90 33 33)"/>
             </svg>
-            <!-- Flame icon -->
+            <!-- Flame icon — Ember Sword power image, fits perfectly in the circular slot -->
             <div class="sf-icon-inner">
-                <svg viewBox="0 0 28 34" width="24" height="30" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2 C11 8 8 10 8.5 16 C8.5 20 11 22 11 22 C10 19 11 17 12.5 16 C12.5 20 14 24 14 24 C14 24 15.5 20 15.5 16 C17 17 18 19 17 22 C17 22 19.5 20 19.5 16 C20 10 17 8 14 2Z"
-                        fill="rgba(180,120,40,0.85)" stroke="rgba(200,160,70,0.40)" stroke-width="0.5"/>
-                    <ellipse cx="14" cy="24" rx="5" ry="2" fill="rgba(180,120,40,0.18)"/>
-                </svg>
+                <img src="https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/firepower.png"
+                     alt="Ember Sword Power"
+                     style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;pointer-events:none;"
+                     draggable="false">
             </div>
         </div>
 
