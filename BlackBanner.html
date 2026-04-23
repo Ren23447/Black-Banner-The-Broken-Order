@@ -208,7 +208,7 @@
                Using min-width/height ensures the image can't shrink below viewport size. */
             position: absolute;
             top: 50%; left: 50%;
-            min-width: 110%; min-height: 110%;
+            min-width: 510%; min-height: 510%;
             width: auto; height: auto;
             display: block;
             object-fit: cover;
@@ -384,6 +384,25 @@
             color: rgba(200,169,110,0.38);
             font-family: 'Palatino Linotype', Palatino, Georgia, serif;
             min-width: 56px; white-space: nowrap;
+        }
+
+        /* Flora (trees + grass) status — shown under the loading bar.
+           Loads in the background and never blocks the bar. */
+        #ls-flora-status {
+            margin-top: 10px;
+            font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+            color: rgba(200,169,110,0.55);
+            font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+            text-align: center;
+            text-shadow: 0 0 8px rgba(200,169,110,0.25);
+            transition: color 0.4s ease, opacity 0.6s ease;
+        }
+        #ls-flora-status.ready {
+            color: rgba(140,200,120,0.85);
+            text-shadow: 0 0 10px rgba(140,200,120,0.35);
+        }
+        #ls-flora-status.failed {
+            color: rgba(220,120,90,0.85);
         }
 
         @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
@@ -577,8 +596,11 @@
             font-size: 10px; color: #c8a96e; opacity: 1;
             text-shadow: 0 0 6px rgba(200,169,110,0.8);
         }
-        .inv-item-icon { font-size: 28px; }
+        .inv-item-icon { font-size: 36px; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+        .inv-item-icon img { max-width: 92%; max-height: 92%; width: auto; height: auto; object-fit: contain; image-rendering: -webkit-optimize-contrast; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); pointer-events:none; }
         .inv-item-name { font-size: 9px; color: #8a7550; letter-spacing: 1px; text-align: center; margin-top: 2px; }
+        /* When the icon is an image we hide the name so the artwork fills the slot. */
+        .inv-slot.icon-image .inv-item-name { display: none; }
           .inv-item-count {
               position: absolute;
               bottom: 2px;
@@ -616,7 +638,8 @@
         .inv-qslot::before { content: attr(data-label); position: absolute; top: 5px; left: 7px; color: rgba(200,169,110,0.36); font-size: 8px; letter-spacing: 1.5px; }
         .inv-qslot:hover { border-color: rgba(232,208,160,0.70); background: radial-gradient(circle at 50% 15%, rgba(200,169,110,0.15), rgba(0,0,0,0.24)); box-shadow: 0 0 14px rgba(200,169,110,0.16), inset 0 0 16px rgba(0,0,0,0.28); }
         .inv-qslot.empty { color: rgba(200,169,110,0.28); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
-        .inv-qslot-icon { font-size: 24px; filter: drop-shadow(0 0 9px rgba(232,208,160,0.35)); }
+        .inv-qslot-icon { font-size: 24px; filter: drop-shadow(0 0 9px rgba(232,208,160,0.35)); display:flex; align-items:center; justify-content:center; height:28px; }
+        .inv-qslot-icon img { max-width: 100%; max-height: 100%; width:auto; height:auto; object-fit: contain; pointer-events:none; }
         .inv-qslot-name { color: #a89263; font-size: 9px; letter-spacing: 1px; text-align: center; margin-top: 4px; }
         .inv-qslot-return { margin-top: 6px; color: rgba(232,208,160,0.62); font-size: 8px; letter-spacing: 1.4px; text-transform: uppercase; }
         #item-tooltip { position: fixed; display: none; z-index: 40; width: 285px; pointer-events: none; padding: 14px 16px; background: linear-gradient(135deg, rgba(16,11,6,0.97), rgba(3,3,2,0.96)); border: 1px solid rgba(232,208,160,0.46); border-left: 3px solid rgba(232,208,160,0.82); box-shadow: 0 20px 45px rgba(0,0,0,0.72), inset 0 0 26px rgba(200,169,110,0.06), 0 0 24px rgba(200,169,110,0.10); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); opacity: 0; transform: translateY(6px) scale(0.98); transition: opacity 0.12s ease, transform 0.12s ease; }
@@ -1708,6 +1731,8 @@
             </div>
             <div id="loading-pct">0%</div>
         </div>
+        <!-- Background flora load indicator (does NOT gate the bar) -->
+        <div id="ls-flora-status">&#9670; Trees &amp; Grass &mdash; gathering from the woods&hellip; &#9670;</div>
         <!-- Shown after loading completes; click unlocks audio and enters home menu -->
         <div id="ls-continue" style="display:none; margin-top:18px; text-align:center; cursor:pointer;">
             <span id="ls-continue-text" style="
@@ -2309,6 +2334,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
@@ -2316,6 +2342,11 @@ import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 // ——— State ———
 let camera, tpCamera, scene, renderer, controls;
 let knightModel = null, knightMixer = null, knightActions = {};
+// Distance from the knight model's local origin down to its feet. Set
+// dynamically when the GLB loads (defaults to 0.92 hip-height fallback).
+// This drives how high we lift the model off the ground so the feet sit on
+// the terrain instead of sinking into it.
+let KNIGHT_FOOT_OFFSET = 0.92;
 let clock = new THREE.Clock();
 let gameState = 'LOADING';
 let prevGameState = 'HOME';
@@ -2543,7 +2574,7 @@ let shopOpen = false;
 let questState = 'available';
 let questBookInteractable = null;
 let questBookGroup = null;
-const QUEST_BOOK_POSITION = new THREE.Vector3(4, 1.25, 12);
+const QUEST_BOOK_POSITION = new THREE.Vector3(4, 1.95, 12);
 const QUEST_ARENA_POSITION = new THREE.Vector3(15, 0.65, 5);
 const WAYPOINT_VISIBLE_RANGE = 34;
 // ── Sword Quest (Mission 2) — unlocks after first mission completed ─────────
@@ -2809,9 +2840,27 @@ function init() {
             try {
             knightModel = gltf.scene;
             knightModel.scale.set(1, 1, 1);
-            knightModel.position.set(-3, 0.92, 33);
             knightModel.rotation.y = Math.PI;
             knightModel.visible = true;
+            // Measure where the model's feet actually are relative to its
+            // local origin, so we can place the origin exactly KNIGHT_FOOT_OFFSET
+            // above the ground every frame and the feet land flush.
+            knightModel.position.set(0, 0, 0);
+            knightModel.updateMatrixWorld(true);
+            const _kBox = new THREE.Box3().setFromObject(knightModel);
+            if (isFinite(_kBox.min.y)) {
+                // Distance from origin down to lowest vertex (positive number
+                // when the feet are below the origin, which is the usual case).
+                // Add a 0.15 m breathing-room lift so the soles never bury into
+                // the snow on uneven terrain (animation-frame poses can dip the
+                // bind-pose feet a few cm below the static bbox).
+                KNIGHT_FOOT_OFFSET = -_kBox.min.y + 0.15;
+                if (!isFinite(KNIGHT_FOOT_OFFSET) || KNIGHT_FOOT_OFFSET < 0.20) {
+                    KNIGHT_FOOT_OFFSET = 1.07;
+                }
+            }
+            console.log('[Knight] foot offset:', KNIGHT_FOOT_OFFSET.toFixed(3));
+            knightModel.position.set(-3, KNIGHT_FOOT_OFFSET, 33);
             scene.add(knightModel);
             _swordHandBone = null; // clear cache so bone re-resolved from fresh model
 
@@ -3453,11 +3502,160 @@ function buildMap() {
 
     // ——— Interactables ———
 
-    addBox(2.4, 0.18, 1.35, QUEST_BOOK_POSITION.x, 0.82, QUEST_BOOK_POSITION.z, woodMat);
-    addBox(0.18, 1.25, 0.18, QUEST_BOOK_POSITION.x - 0.95, 0.38, QUEST_BOOK_POSITION.z - 0.48, woodMat);
-    addBox(0.18, 1.25, 0.18, QUEST_BOOK_POSITION.x + 0.95, 0.38, QUEST_BOOK_POSITION.z - 0.48, woodMat);
-    addBox(0.18, 1.25, 0.18, QUEST_BOOK_POSITION.x - 0.95, 0.38, QUEST_BOOK_POSITION.z + 0.48, woodMat);
-    addBox(0.18, 1.25, 0.18, QUEST_BOOK_POSITION.x + 0.95, 0.38, QUEST_BOOK_POSITION.z + 0.48, woodMat);
+    // ── Wood Table (GLB) — replaces the original blocky table under the quest book ──
+    // Original blocky table footprint: 2.4 (x) × ~1.0 (y, top at 0.91) × 1.35 (z)
+    (function() {
+        const tx = QUEST_BOOK_POSITION.x;
+        const tz = QUEST_BOOK_POSITION.z;
+        // Larger, more imposing table — restored from previous version.
+        const TABLE_W = 4.6;   // x size
+        const TABLE_H = 1.6;   // y size
+        const TABLE_D = 2.8;   // z size
+
+        const tableGroup = new THREE.Group();
+        // Position + rotation chosen in tabler.html and confirmed in-game.
+        tableGroup.position.set(tx + (-13.040), 0.000, tz + (-0.023));
+        tableGroup.rotation.set(0.0000, 1.5708, 0.0000);
+        scene.add(tableGroup);
+
+        // Invisible collision proxy — keeps player blocked whether GLB loads or not.
+        // Box collider sized to the original blocky table footprint.
+        const tableProxy = new THREE.Mesh(
+            new THREE.BoxGeometry(TABLE_W, TABLE_H, TABLE_D),
+            new THREE.MeshBasicMaterial({ visible: false })
+        );
+        tableProxy.position.set(0, TABLE_H / 2, 0);
+        tableGroup.add(tableProxy);
+        tableGroup.updateMatrixWorld(true);
+        collidableMeshes.push(tableProxy);
+
+        const TABLE_URL_PRIMARY  = 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/wood_table.glb';
+        const TABLE_URL_FALLBACK = 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/wood_table.glb';
+
+        function _applyTableModel(gltf) {
+            const model = gltf.scene;
+            tableGroup.add(model);
+            tableGroup.updateMatrixWorld(true);
+
+            // Measure native bounds and scale uniformly so the model fits the
+            // original blocky table's footprint (matching width / depth / height).
+            const rawBox = new THREE.Box3().setFromObject(model);
+            const rawW = rawBox.max.x - rawBox.min.x;
+            const rawH = rawBox.max.y - rawBox.min.y;
+            const rawD = rawBox.max.z - rawBox.min.z;
+
+            const sX = rawW > 0.0001 ? TABLE_W / rawW : 1;
+            const sY = rawH > 0.0001 ? TABLE_H / rawH : 1;
+            const sZ = rawD > 0.0001 ? TABLE_D / rawD : 1;
+            // Use the smallest axis ratio so the table never exceeds the original
+            // bounding box on any axis (keeps proportions natural).
+            const s = Math.min(sX, sY, sZ);
+            model.scale.setScalar(s);
+
+            // Re-measure and ground the base at y = 0
+            tableGroup.updateMatrixWorld(true);
+            const scaledBox = new THREE.Box3().setFromObject(model);
+            model.position.y -= scaledBox.min.y;
+
+            // Match collider to the actual scaled model footprint. The proxy
+            // is a child of a 90°-rotated tableGroup, so its position is in
+            // tableGroup-LOCAL space — we must convert the world-space box
+            // centre back into local space (worldToLocal handles the rotation),
+            // and we must size the proxy in LOCAL axes too (swap W/D under
+            // the 90° Y rotation by re-measuring the model's local AABB).
+            const localBox = new THREE.Box3().setFromObject(model);
+            // Express the world AABB centre in tableGroup's local frame:
+            const worldCenter = new THREE.Vector3(
+                (localBox.max.x + localBox.min.x) / 2,
+                (localBox.max.y + localBox.min.y) / 2,
+                (localBox.max.z + localBox.min.z) / 2
+            );
+            const localCenter = tableGroup.worldToLocal(worldCenter.clone());
+            // Re-measure the model in its own local frame (ignoring tableGroup
+            // rotation) to size the box collider on the correct local axes.
+            // model.matrixWorld == tableGroup.matrixWorld * model.matrix.
+            // We want the box in tableGroup's local space → invert tableGroup
+            // and apply to world AABB corners.
+            const invGroup = new THREE.Matrix4().copy(tableGroup.matrixWorld).invert();
+            const localAabb = new THREE.Box3();
+            const corners = [
+                new THREE.Vector3(localBox.min.x, localBox.min.y, localBox.min.z),
+                new THREE.Vector3(localBox.min.x, localBox.min.y, localBox.max.z),
+                new THREE.Vector3(localBox.min.x, localBox.max.y, localBox.min.z),
+                new THREE.Vector3(localBox.min.x, localBox.max.y, localBox.max.z),
+                new THREE.Vector3(localBox.max.x, localBox.min.y, localBox.min.z),
+                new THREE.Vector3(localBox.max.x, localBox.min.y, localBox.max.z),
+                new THREE.Vector3(localBox.max.x, localBox.max.y, localBox.min.z),
+                new THREE.Vector3(localBox.max.x, localBox.max.y, localBox.max.z)
+            ];
+            for (const c of corners) {
+                c.applyMatrix4(invGroup);
+                localAabb.expandByPoint(c);
+            }
+            const lW = localAabb.max.x - localAabb.min.x;
+            const lH = localAabb.max.y - localAabb.min.y;
+            const lD = localAabb.max.z - localAabb.min.z;
+            tableProxy.geometry.dispose();
+            tableProxy.geometry = new THREE.BoxGeometry(lW, lH, lD);
+            tableProxy.position.set(
+                (localAabb.max.x + localAabb.min.x) / 2,
+                (localAabb.max.y + localAabb.min.y) / 2,
+                (localAabb.max.z + localAabb.min.z) / 2
+            );
+            tableProxy.rotation.set(0, 0, 0); // local axes — parent rotation handles world orientation
+            tableGroup.updateMatrixWorld(true);
+
+            // Matte wood look — not shiny.
+            model.traverse(c => {
+                if (c.isMesh) {
+                    c.castShadow = true;
+                    c.receiveShadow = true;
+                    if (c.material) {
+                        c.material.roughness = 0.95;
+                        c.material.metalness = 0.0;
+                        if ('envMapIntensity' in c.material) c.material.envMapIntensity = 0.35;
+                        if (c.material.specularIntensity !== undefined) c.material.specularIntensity = 0.1;
+                        c.material.needsUpdate = true;
+                    }
+                }
+            });
+
+            _reportAsset && _reportAsset('woodTable', 1);
+        }
+
+        function _fallbackTableGeometry(reason) {
+            _reportAsset && _reportAsset('woodTable', 1);
+            console.warn('[WoodTable] wood_table.glb load failed (' + reason + '), using blocky fallback.');
+            // Build the blocky fallback as children of tableGroup so it inherits
+            // the new position + 90° Y rotation chosen in tabler.html.
+            const woodMatLocal = (typeof woodMat !== 'undefined') ? woodMat
+                : new THREE.MeshStandardMaterial({ color: 0x6a4a22, roughness: 0.92 });
+            const _addLocalBox = (w, h, d, lx, ly, lz) => {
+                const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), woodMatLocal);
+                m.position.set(lx, ly, lz);
+                m.castShadow = true; m.receiveShadow = true;
+                tableGroup.add(m);
+            };
+            _addLocalBox(2.4, 0.18, 1.35, 0,     0.82, 0);
+            _addLocalBox(0.18, 1.25, 0.18, -0.95, 0.38, -0.48);
+            _addLocalBox(0.18, 1.25, 0.18,  0.95, 0.38, -0.48);
+            _addLocalBox(0.18, 1.25, 0.18, -0.95, 0.38,  0.48);
+            _addLocalBox(0.18, 1.25, 0.18,  0.95, 0.38,  0.48);
+        }
+
+        const tableLoader = new GLTFLoader();
+        tableLoader.load(
+            TABLE_URL_PRIMARY,
+            _applyTableModel,
+            null,
+            (err) => {
+                const reason = (err && (err.message || String(err))) || 'unknown';
+                console.warn('[WoodTable] Primary URL failed:', reason, '— trying fallback');
+                tableLoader.load(TABLE_URL_FALLBACK, _applyTableModel, null,
+                    (err2) => _fallbackTableGeometry((err2 && err2.message) || 'both URLs failed'));
+            }
+        );
+    })();
     questBookGroup = createQuestBook(QUEST_BOOK_POSITION.x, QUEST_BOOK_POSITION.y, QUEST_BOOK_POSITION.z);
     const questLight = new THREE.PointLight(0xffc46e, 1.25, 5);
     questLight.position.set(QUEST_BOOK_POSITION.x, QUEST_BOOK_POSITION.y + 0.55, QUEST_BOOK_POSITION.z);
@@ -3705,7 +3903,7 @@ function buildMap() {
 
         // The interactable — only active when sword quest is accepted
         const emberBladeItem = {
-            name: 'Ember Blade', icon: '🗡', type: 'weapon', weight: 5,
+            name: 'Ember Blade', icon: 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/EmberSword.png', type: 'weapon', weight: 5,
             desc: 'An ancient sword of the Broken Order, pried from a buried rock. Its blade pulses with bound flame. Equip to wield. Right-click to instantly unleash Spread Flame.',
             onEquip: () => { isSwordEquipped = true; attachSwordToHand(); },
             onUnequip: () => { isSwordEquipped = false; detachSwordFromHand(); }
@@ -3864,39 +4062,89 @@ function createQuestBook(x, y, z) {
 // back to the procedural blocky bottle. Anything created before the GLB
 // downloads is swapped in place once `_potionGLB` arrives.
 const _potionPlaceholders = []; // groups awaiting GLB swap
-const POTION_TARGET_HEIGHT = 0.78; // matches the original procedural bottle's height
+// Bottle target height in world units. Big enough to spot from across a room
+// (a true 22 cm bottle is invisible at game distances) but still recognisably
+// hand-held.
+const POTION_TARGET_HEIGHT = 0.6;
 
 function _buildProceduralPotion(group, color, emissiveColor) {
-    const mat = new THREE.MeshStandardMaterial({
-        color, emissive: emissiveColor, emissiveIntensity: 0.55,
-        transparent: true, opacity: 0.88, roughness: 0.1, metalness: 0.2
+    // Glowing glass body — opaque rim plus a bright inner glow so it reads
+    // clearly from across the map. Larger than a real bottle on purpose: a
+    // 22 cm bottle is invisible at video-game distances.
+    const glassMat = new THREE.MeshStandardMaterial({
+        color, emissive: emissiveColor, emissiveIntensity: 1.6,
+        transparent: true, opacity: 0.9, roughness: 0.15, metalness: 0.25
+    });
+    const liquidMat = new THREE.MeshStandardMaterial({
+        color: emissiveColor, emissive: emissiveColor, emissiveIntensity: 2.4,
+        roughness: 0.3, metalness: 0.0
     });
     const corkMat = new THREE.MeshStandardMaterial({ color: 0x7a4e2a, roughness: 0.9 });
-    const body     = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.46, 10), mat);
-    body.position.y = 0;
-    const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.22, 0.18, 10), mat);
-    shoulder.position.y = 0.32;
-    const neck     = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.22, 8), mat);
-    neck.position.y = 0.52;
-    const cork     = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.10, 8), corkMat);
-    cork.position.y = 0.68;
-    group.add(body, shoulder, neck, cork);
+
+    // ~70 cm tall total — easy to spot.
+    const body     = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.26, 0.66, 16), glassMat);
+    body.position.y = 0.33;
+    const liquid   = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.24, 0.58, 16), liquidMat);
+    liquid.position.y = 0.30;
+    const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.32, 0.26, 16), glassMat);
+    shoulder.position.y = 0.79;
+    const neck     = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.13, 0.32, 12), glassMat);
+    neck.position.y = 1.06;
+    const cork     = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.12, 0.16, 12), corkMat);
+    cork.position.y = 1.30;
+    group.add(body, liquid, shoulder, neck, cork);
 }
 
 function _attachPotionGLB(group) {
     const cached = window._potionGLB;
     if (!cached) return false;
-    const inst = cached.clone(true);
-    const sFactor = POTION_TARGET_HEIGHT / Math.max(0.0001, cached.userData.baseSize.y);
-    inst.scale.setScalar(sFactor);
-    const min = cached.userData.baseMin, size = cached.userData.baseSize;
-    // Centre XZ on origin, place base at y = 0 (matches the procedural bottle's pivot).
-    inst.position.set(
-        -(min.x + size.x * 0.5) * sFactor,
-        -min.y * sFactor,
-        -(min.z + size.z * 0.5) * sFactor
-    );
+    // Skinned/animated GLBs (the dark-magic-potion has skinned meshes and a
+    // "Take 001" animation) render at the bind pose / origin when cloned with
+    // the regular Object3D.clone — SkeletonUtils.clone rebinds the skeleton
+    // properly so the bottle actually appears.
+    const inst = cloneSkinned(cached);
     inst.traverse(c => { if (c.isMesh) { c.castShadow = true; c.frustumCulled = false; } });
+
+    // Reset root transforms so we can measure the model's true size. Sketchfab
+    // exports often have non-trivial root-node transforms baked into the scene
+    // graph that throw off naive scale math.
+    inst.position.set(0, 0, 0);
+    inst.rotation.set(0, 0, 0);
+    inst.scale.set(1, 1, 1);
+    inst.updateMatrixWorld(true);
+
+    // Force any meshes that came in fully transparent (Sketchfab BLEND defaults)
+    // to render — the cached preloader does this on the source, but skinned
+    // material clones can come through with the original alpha settings.
+    inst.traverse(c => {
+        if (!c.isMesh || !c.material) return;
+        const mats = Array.isArray(c.material) ? c.material : [c.material];
+        mats.forEach(mat => {
+            mat.transparent = false;
+            mat.opacity = 1.0;
+            mat.depthWrite = true;
+            mat.alphaTest = 0.0;
+            mat.visible = true;
+            mat.needsUpdate = true;
+        });
+    });
+
+    // Measure post-reset, then scale by the largest axis so the bottle always
+    // ends up roughly POTION_TARGET_HEIGHT regardless of orientation.
+    let box = new THREE.Box3().setFromObject(inst);
+    let size = box.getSize(new THREE.Vector3());
+    let maxDim = Math.max(size.x, size.y, size.z);
+    if (!isFinite(maxDim) || maxDim < 1e-4) maxDim = 1;
+    const sFactor = POTION_TARGET_HEIGHT / maxDim;
+    inst.scale.setScalar(sFactor);
+    inst.updateMatrixWorld(true);
+
+    // Re-measure after scaling and centre XZ on origin, base at y = 0.
+    box = new THREE.Box3().setFromObject(inst);
+    size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    inst.position.set(-center.x, -box.min.y, -center.z);
+
     group.add(inst);
     return true;
 }
@@ -3907,12 +4155,10 @@ function createPotionBottle(x, y, z, color, emissiveColor) {
     group.userData._potionColor = color;
     group.userData._potionEmissive = emissiveColor;
 
-    if (window._potionGLB) {
-        _attachPotionGLB(group);
-    } else {
-        _buildProceduralPotion(group, color, emissiveColor);
-        _potionPlaceholders.push(group);
-    }
+    // Always use the procedural bottle — it's guaranteed visible and emissive.
+    // The Sketchfab GLB has 23 animation channels that pose its sub-meshes
+    // far apart at rest, which makes the loaded model invisible in-game.
+    _buildProceduralPotion(group, color, emissiveColor);
     group.position.set(x, y, z);
     scene.add(group);
     return group;
@@ -4031,18 +4277,34 @@ function _invDoDrop(targetType, targetIdx) {
     renderQuickMenu(); // FIX: update HUD quick-use bar after drag-drop
 }
 
+// Returns true when the item icon string is an image URL/path rather than an emoji.
+function _iconIsImage(icon) {
+    return typeof icon === 'string' && /^(https?:|\/|\.\/|data:image)|\.(png|jpg|jpeg|webp|gif|svg)(\?|$)/i.test(icon);
+}
+// Ready-to-insert HTML for an item icon (img tag for images, escaped text otherwise).
+function iconHTML(icon) {
+    if (!icon) return '?';
+    if (_iconIsImage(icon)) {
+        const safe = String(icon).replace(/"/g, '&quot;');
+        return '<img src="' + safe + '" alt="" draggable="false">';
+    }
+    return String(icon).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function renderInventoryGrid() {
     const grid = document.getElementById('inv-grid');
     grid.innerHTML = '';
     for (let i = 0; i < MAX_SLOTS; i++) {
         const slot = document.createElement('div');
+        const isImg = inventoryItems[i] && _iconIsImage(inventoryItems[i].icon);
         slot.className = 'inv-slot' +
             (inventoryItems[i] ? ' occupied' : '') +
-            (selectedSlot === i ? ' selected' : '');
+            (selectedSlot === i ? ' selected' : '') +
+            (isImg ? ' icon-image' : '');
         if (inventoryItems[i]) {
             const icon = document.createElement('div');
             icon.className = 'inv-item-icon';
-              icon.textContent = inventoryItems[i].icon || '?';
+              icon.innerHTML = iconHTML(inventoryItems[i].icon);
               const name = document.createElement('div');
               name.className = 'inv-item-name';
               name.textContent = inventoryItems[i].name || '';
@@ -4095,7 +4357,7 @@ function renderInventoryGrid() {
                     </div>`;
                 }
                 detail.innerHTML = `
-                    <div class="inv-detail-name">${item.icon || ''} ${item.name}</div>
+                    <div class="inv-detail-name">${iconHTML(item.icon)} ${item.name}</div>
                     <div class="inv-detail-desc">${item.desc || ''}</div>
                     ${useBtn}
                     ${qAssign}
@@ -4110,8 +4372,9 @@ function renderInventoryGrid() {
                         btn.addEventListener('click', () => {
                             const qIdx = parseInt(btn.dataset.qslot);
                             assignToQuickSlot(qIdx, item, selectedSlot);
-                            activeQuickSlotIndex = qIdx; // auto-equip weapon
-                            showNotif('Moved to Quick Slot');
+                            // Do NOT auto-equip — player must press the quick-slot key (Q1/Q2/Q3/Q4) to equip.
+                            const qLabels = ['Q1 ▲', 'Q3 ◄', 'Q4 ►', 'Q2 ▼'];
+                            showNotif('Moved to ' + (qLabels[qIdx] || ('Quick Slot ' + (qIdx + 1))) + ' — press its hotkey to equip');
                         });
                     });
                 }
@@ -4134,7 +4397,7 @@ function renderInventoryQuickSlots() {
         slot.className = 'inv-qslot' + (item ? '' : ' empty');
         slot.dataset.label = labels[i] || ('Q' + (i + 1));
         if (item) {
-            slot.innerHTML = '<div class="inv-qslot-icon">' + (item.icon || '?') + '</div><div class="inv-qslot-name">' + (item.name || '') + '</div>' + ((item.count || 1) > 1 ? '<div class="inv-qslot-count">x' + item.count + '</div>' : '') + '<div class="inv-qslot-return">Return</div>';
+            slot.innerHTML = '<div class="inv-qslot-icon">' + iconHTML(item.icon) + '</div><div class="inv-qslot-name">' + (item.name || '') + '</div>' + ((item.count || 1) > 1 ? '<div class="inv-qslot-count">x' + item.count + '</div>' : '') + '<div class="inv-qslot-return">Return</div>';
             slot.draggable = true;
             slot.addEventListener('click', () => moveQuickSlotToInventory(i));
             slot.addEventListener('mouseenter', (e) => showItemTooltip(item, e));
@@ -4167,7 +4430,10 @@ function showItemTooltip(item, event) {
     if (!item) return;
     const tooltip = document.getElementById('item-tooltip');
     if (!tooltip) return;
-    tooltip.innerHTML = '<div class="tooltip-title">' + (item.icon || '') + ' ' + (item.name || 'Unknown Item') + '</div><div class="tooltip-desc">' + (item.desc || 'No description available.') + '</div><div class="tooltip-type">' + (item.type || 'item') + '  •  Weight ' + formatWeight(getItemWeight(item)) + '</div>';
+    // For the Ember Blade, hide the icon image and show only the name + what it does.
+    const isEmber = (item.name === 'Ember Blade');
+    const titleIcon = isEmber ? '' : (iconHTML(item.icon) + ' ');
+    tooltip.innerHTML = '<div class="tooltip-title">' + titleIcon + (item.name || 'Unknown Item') + '</div><div class="tooltip-desc">' + (item.desc || 'No description available.') + '</div><div class="tooltip-type">' + (item.type || 'item') + '  •  Weight ' + formatWeight(getItemWeight(item)) + '</div>';
     tooltip.style.display = 'block';
     requestAnimationFrame(() => tooltip.classList.add('visible'));
     moveItemTooltip(event);
@@ -4797,6 +5063,74 @@ function setupInputListeners() {
     document.addEventListener('keyup', e => {
         if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
     });
+
+    // ── Secret combo: G → R → A → S → S forces a fresh grass GLB reload + swap.
+    // Useful if the grass model came in invisible / failed silently. The combo
+    // resets after 1.5s of inactivity between presses, and only fires once per
+    // completed sequence.
+    (function() {
+        const SEQ = ['KeyG','KeyR','KeyA','KeyS','KeyS'];
+        let idx = 0, lastT = 0;
+        document.addEventListener('keydown', (e) => {
+            const now = performance.now();
+            if (now - lastT > 1500) idx = 0;
+            lastT = now;
+            if (e.code === SEQ[idx]) {
+                idx++;
+                if (idx === SEQ.length) {
+                    idx = 0;
+                    _refreshGrassGLB();
+                }
+            } else if (e.code === SEQ[0]) {
+                idx = 1;
+            } else {
+                idx = 0;
+            }
+        });
+
+        async function _refreshGrassGLB() {
+            console.log('[Grass] G-R-A-S-S combo → re-fetching GLB and swapping all tufts.');
+            try {
+                const url = (typeof FLORA_URLS !== 'undefined' && FLORA_URLS.grass)
+                    ? FLORA_URLS.grass + '?t=' + Date.now()  // bust CDN cache
+                    : 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/realistics_grass_06.glb?t=' + Date.now();
+                const loader = new GLTFLoader();
+                if (typeof _makeSpecGlossExtension === 'function') {
+                    loader.register(p => _makeSpecGlossExtension(p));
+                }
+                const gltf = await loader.loadAsync(url);
+                const m = gltf.scene;
+                if (typeof _normalizeFloraMaterials === 'function') _normalizeFloraMaterials(m, 'grass');
+                m.updateMatrixWorld(true);
+                const box = new THREE.Box3().setFromObject(m);
+                const size = new THREE.Vector3(); box.getSize(size);
+                m.userData.baseMin  = box.min.clone();
+                m.userData.baseSize = size.clone();
+                window._floraGLBs.grass = m;
+                window._floraReady = true;
+                console.log('[Grass] Refresh OK — size:', size.toArray().map(v => v.toFixed(2)).join(' x '));
+
+                // Tear down every existing grass tuft (blocky or GLB) and reattach.
+                if (Array.isArray(flammableGrass)) {
+                    for (const g of flammableGrass) {
+                        if (g.burned) continue;
+                        if (g._wrap) { scene.remove(g._wrap); g._wrap = null; }
+                        if (Array.isArray(g.parts)) {
+                            g.parts.forEach(p => { scene.remove(p); p.geometry?.dispose?.(); });
+                            g.parts.length = 0;
+                        }
+                        g._isBlocky = true;          // _attachGLBGrass sets back to false
+                        _attachGLBGrass(g);
+                    }
+                    console.log('[Grass] Re-attached', flammableGrass.length, 'tufts.');
+                }
+                if (typeof showNotif === 'function') showNotif('Grass refreshed');
+            } catch (err) {
+                console.warn('[Grass] Refresh FAILED:', err && err.message);
+                if (typeof showNotif === 'function') showNotif('Grass refresh failed — see console');
+            }
+        }
+    })();
 
     // Mouse wheel — scroll through quick slots (cycle forward/backward through occupied slots)
     document.addEventListener('wheel', e => {
@@ -5473,7 +5807,7 @@ function buildItemCatalog() {
             desc: 'A fragment of a shattered longsword. Ancient runes line the broken blade — a relic of the Broken Order.'
         },
         'Ember Blade': {
-            name: 'Ember Blade', icon: '🗡', type: 'weapon', weight: 5,
+            name: 'Ember Blade', icon: 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/EmberSword.png', type: 'weapon', weight: 5,
             desc: 'An ancient sword of the Broken Order, pried from a buried rock. Its blade pulses with bound flame. Equip to wield. Right-click to instantly unleash Spread Flame.',
             onEquip: () => { isSwordEquipped = true; attachSwordToHand(); },
             onUnequip: () => { isSwordEquipped = false; detachSwordFromHand(); }
@@ -6064,7 +6398,10 @@ function animate() {
             // visualScaleY the feet rise by (1 - visualScaleY) * 0.92.  Subtract that
             // same amount from the root Y so the feet stay exactly on the ground surface.
             const crawlRootDrop = (isCrawling || currentAnimState === 'crawl') ? -0.18 : 0;
-            const rootY = pPos.y - baseHeightOffset + 0.92 * visualScaleY + crawlRootDrop;
+            // Lift the model so its feet land exactly on the player's feet
+            // (pPos.y - baseHeightOffset). KNIGHT_FOOT_OFFSET is measured from
+            // the loaded GLB so the model never sinks into the ground.
+            const rootY = pPos.y - baseHeightOffset + KNIGHT_FOOT_OFFSET * visualScaleY + crawlRootDrop;
             knightModel.position.set(pPos.x, rootY, pPos.z);
             knightModel.rotation.set(0, modelFacing, 0);
             knightModel.scale.set(1, visualScaleY, 1);
@@ -6616,7 +6953,7 @@ function renderQuickMenu() {
             slot.classList.add('qm-active');
             const icon = document.createElement('span');
             icon.className = 'qm-slot-icon';
-            icon.textContent = item.icon || '?';
+            icon.innerHTML = iconHTML(item.icon);
             slot.insertBefore(icon, slot.firstChild);
             const name = document.createElement('span');
             name.className = 'qm-slot-name';
@@ -6814,13 +7151,13 @@ window._floraGLBs  = { tree1: null, tree2: null, grass: null };
 window._floraReady = false;
 
 const FLORA_URLS = {
-    tree1: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/tree.glb',
-    tree2: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/tree_gn.glb',
-    grass: 'https://raw.githubusercontent.com/Ren23447/Black-Banner-The-Broken-Order/main/realistics_grass_06.glb'
+    tree1: 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/tree.glb',
+    tree2: 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/tree_gn.glb',
+    grass: 'https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/realistics_grass_06.glb'
 };
 // Realistic target sizes (metres). Scaled per placement by the existing `s` factor.
 const FLORA_TREE_BASE_HEIGHT  = 9.5;   // ~real-world pine: 8–13 m after s∈[0.85,1.25]
-const FLORA_GRASS_BASE_HEIGHT = 0.45;  // ~ankle-to-knee tuft
+const FLORA_GRASS_BASE_HEIGHT = 0.85;  // ~ankle-to-knee tuft (visibly thick)
 
 // Many free-asset GLBs ship with materials that render pure-white in a basic
 // three.js scene: textures left in linear colour-space, base colours set to
@@ -6878,7 +7215,28 @@ function _normalizeFloraMaterials(root, kind) {
             // transparent but has no alpha map, treat it as opaque so it doesn't
             // become an invisible/white square. If it does have an alpha map, use
             // alpha-test cutout so leaves render correctly without sorting issues.
-            if (cloned.transparent && !cloned.alphaMap && !(cloned.map && cloned.map.image)) {
+            if (kind === 'grass') {
+                // Grass: trust the loader's transparency exactly as-shipped, but
+                // make sure the material can never end up invisible. We saw cases
+                // where a 0.10+ alphaTest erased every blade because the alpha
+                // texture is mostly soft/low-alpha — so disable cutout entirely
+                // and rely on standard alpha blending. If the mesh truly has no
+                // alpha (just opaque grass-card geometry), force opaque so the
+                // quads always show.
+                cloned.alphaTest   = 0;
+                cloned.opacity     = 1;
+                cloned.visible     = true;
+                cloned.colorWrite  = true;
+                if (!cloned.alphaMap && !(cloned.map && cloned.map.image)) {
+                    // No alpha source at all → render as solid grass-green quads
+                    // so the user sees SOMETHING instead of an empty patch.
+                    cloned.transparent = false;
+                    cloned.color = GRASS.clone();
+                } else {
+                    cloned.transparent = true;
+                    cloned.depthWrite  = false;
+                }
+            } else if (cloned.transparent && !cloned.alphaMap && !(cloned.map && cloned.map.image)) {
                 cloned.transparent = false;
             } else if (cloned.transparent || cloned.alphaMap) {
                 cloned.alphaTest = 0.45;
@@ -6993,6 +7351,19 @@ async function preloadPotionGLB() {
 }
 
 async function preloadFlora() {
+    // Tiny helper: update the loading-screen flora status line. Purely
+    // informational — does NOT gate the loading bar in any way.
+    const _floraStatus = (text, cls) => {
+        const el = document.getElementById('ls-flora-status');
+        if (!el) return;
+        el.innerHTML = text;
+        el.classList.remove('ready', 'failed');
+        if (cls) el.classList.add(cls);
+    };
+    const total = Object.keys(FLORA_URLS).length;
+    let done = 0, ok = 0, failed = 0;
+    _floraStatus(`&#9670; Trees &amp; Grass &mdash; loading 0/${total} &#9670;`);
+
     const loader = new GLTFLoader();
     loader.register(p => _makeSpecGlossExtension(p));
     await Promise.all(Object.entries(FLORA_URLS).map(async ([key, url]) => {
@@ -7009,30 +7380,32 @@ async function preloadFlora() {
             m.userData.baseMin  = box.min.clone();
             m.userData.baseSize = size.clone();
             window._floraGLBs[key] = m;
+            ok++;
             console.log(`[Flora] Loaded ${key}: ${size.toArray().map(v => v.toFixed(2)).join(' x ')} m`);
         } catch (e) {
+            failed++;
             console.warn(`[Flora] ${key} failed to load (${url}):`, e.message);
+        } finally {
+            done++;
+            _floraStatus(`&#9670; Trees &amp; Grass &mdash; loading ${done}/${total} &#9670;`);
         }
     }));
     window._floraReady = true;
     // Swap any blocky placeholders that were placed before GLBs arrived.
     if (typeof _swapBlockyFloraToGLB === 'function') _swapBlockyFloraToGLB();
+
+    if (failed === 0) {
+        _floraStatus('&#9670; Trees &amp; Grass &mdash; ready &#9670;', 'ready');
+    } else if (ok > 0) {
+        _floraStatus(`&#9670; Trees &amp; Grass &mdash; ${ok}/${total} loaded (${failed} failed) &#9670;`, 'failed');
+    } else {
+        _floraStatus('&#9670; Trees &amp; Grass &mdash; failed to load &#9670;', 'failed');
+    }
 }
 
 // Build a fresh, scaled, base-at-origin instance of a cached flora GLB.
 function _instantiateFloraGLB(cached, targetHeight) {
     const inst = cached.clone(true);
-    const sFactor = targetHeight / Math.max(0.0001, cached.userData.baseSize.y);
-    inst.scale.setScalar(sFactor);
-    // Re-centre XZ on origin and place base of bounding box at y = 0 so the
-    // caller can simply add (x, groundY, z) to drop it on terrain.
-    const min  = cached.userData.baseMin;
-    const size = cached.userData.baseSize;
-    inst.position.set(
-        -(min.x + size.x * 0.5) * sFactor,
-        -min.y * sFactor,
-        -(min.z + size.z * 0.5) * sFactor
-    );
     inst.traverse(c => {
         if (c.isMesh) {
             c.castShadow = true;
@@ -7040,6 +7413,34 @@ function _instantiateFloraGLB(cached, targetHeight) {
             c.frustumCulled = false;
         }
     });
+
+    // Reset root transforms so we measure the model's actual size — Sketchfab
+    // exports often bake non-trivial transforms into the root, which makes the
+    // cached baseSize unreliable for naive height-based scaling.
+    inst.position.set(0, 0, 0);
+    inst.rotation.set(0, 0, 0);
+    inst.scale.set(1, 1, 1);
+    inst.updateMatrixWorld(true);
+
+    let box = new THREE.Box3().setFromObject(inst);
+    let size = box.getSize(new THREE.Vector3());
+    let refY = size.y;
+    if (!isFinite(refY) || refY < 1e-4) refY = Math.max(size.x, size.z, 1);
+    const sFactor = targetHeight / refY;
+    inst.scale.setScalar(sFactor);
+    inst.updateMatrixWorld(true);
+
+    // Re-measure post-scale and place base of bounding box at y = 0, centred on XZ.
+    box = new THREE.Box3().setFromObject(inst);
+    const center = box.getCenter(new THREE.Vector3());
+    // Safety: if the GLB pivot sits BELOW its geometry (negative box.min.y),
+    // -box.min.y lifts the base to local 0. If the pivot sits ABOVE the
+    // geometry (positive box.min.y, model hangs below origin), we still want
+    // the lowest vertex at local 0 — so use the same expression. Either way,
+    // never let the result be negative (which would sink it underground).
+    const liftY = Math.max(0, -box.min.y);
+    inst.position.set(-center.x, liftY, -center.z);
+
     return inst;
 }
 
@@ -7052,11 +7453,10 @@ function _attachGLBTree(treeRecord) {
     if (!cached) return;
     const wrap = _instantiateFloraGLB(cached, FLORA_TREE_BASE_HEIGHT * treeRecord.s);
     wrap.position.x += treeRecord.x;
-    // Lift the trunk slightly above terrain — on hill slopes the GLB's circular
-    // root flare otherwise sinks into the uphill side, leaving the player able to
-    // see the model from inside. A small positive bias keeps the trunk visually
-    // above ground on inclines.
-    wrap.position.y += treeRecord.y + 0.45 * treeRecord.s;
+    // Sit the trunk's base directly on the terrain. _instantiateFloraGLB
+    // already places the model with its bounding-box base at local y=0, so
+    // adding the ground height puts the trunk flush with the ground.
+    wrap.position.y += treeRecord.y;
     wrap.position.z += treeRecord.z;
     wrap.rotation.y = Math.random() * Math.PI * 2;
     if (treeRecord.lean) wrap.rotation.z = treeRecord.lean;
@@ -7620,17 +8020,8 @@ function updateSwordHandAttachment() {
             if (i === activeQuickSlotIndex) { equipped = true; break; }
         }
     }
-    if (!equipped) {
-        for (let i = 0; i < quickSlots.length; i++) {
-            if (quickSlots[i] && quickSlots[i].name === 'Ember Blade') {
-                if (activeQuickSlotIndex === -1) {
-                    equipped = true;
-                    activeQuickSlotIndex = i;
-                }
-                break;
-            }
-        }
-    }
+    // Auto-equip on Ember Blade entering a quick slot has been disabled.
+    // The player must press the matching quick-slot hotkey (Q1/Q2/Q3/Q4) to equip.
     const bladeInQuick = quickSlots.some(s => s && s.name === 'Ember Blade');
     if (!bladeInQuick) { activeQuickSlotIndex = -1; equipped = false; }
 
