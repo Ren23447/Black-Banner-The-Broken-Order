@@ -882,110 +882,167 @@
             background: linear-gradient(90deg, #174610 0%, #4d9d25 52%, #b8ef5a 100%) !important;
             box-shadow: 0 0 16px rgba(120,220,65,0.35), inset 0 1px 0 rgba(210,255,155,0.25) !important;
         }
+        /* ═══════════════════ QUICK ACCESS — GILDED CROSS (compact) ═══════════════════
+           Sits to the LEFT of the health/stamina HUD (HUD starts at left:168px),
+           so this container is anchored at left:14px with a 150x150 footprint.
+           Each slot frame is a single inline SVG that draws the ornate dark
+           bronze square with mid-side notches, corner studs, and inner bezel
+           — matches the reference image exactly. */
         #quick-menu {
             position: absolute;
-            bottom: 18px; left: 18px;
-            width: 156px; height: 156px;
+            bottom: 24px; left: 14px;
+            width: 150px; height: 150px;
             display: none;
             pointer-events: none; z-index: 15;
-            filter: drop-shadow(0 20px 28px rgba(0,0,0,0.72));
+            filter: drop-shadow(0 8px 14px rgba(0,0,0,0.85));
         }
-        #quick-menu::before {
-            content: '';
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(45deg);
-            width: 62px; height: 62px;
-            background: linear-gradient(135deg, rgba(236,213,155,0.14), rgba(27,20,12,0.96) 32%, rgba(6,5,4,0.98) 68%, rgba(236,213,155,0.10));
-            border: 1px solid rgba(238,219,164,0.50);
-            box-shadow: inset 0 0 24px rgba(0,0,0,0.86), 0 0 18px rgba(238,219,164,0.14);
+        .qm-cross {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
         }
-        #quick-menu::after {
-            content: '';
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 22px; height: 22px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,239,190,0.46), rgba(114,84,39,0.16) 48%, transparent 70%);
-            border: 1px solid rgba(255,239,190,0.30);
-            box-shadow: 0 0 20px rgba(238,219,164,0.18);
+        /* The metallic bridges that link each slot to the central medallion */
+        .qm-bridge {
+            position: absolute;
+            background:
+                linear-gradient(180deg, #2a1d0e 0%, #6e5026 50%, #2a1d0e 100%);
+            box-shadow: 0 0 0 1px #000, inset 0 1px 0 rgba(255,220,150,0.25);
+            z-index: 1;
         }
+        .qm-bridge.h { top: 50%; left: 50%; width: 52px; height: 8px; transform: translate(-50%, -50%); }
+        .qm-bridge.v { top: 50%; left: 50%; width: 8px; height: 52px; transform: translate(-50%, -50%);
+            background: linear-gradient(90deg, #2a1d0e 0%, #6e5026 50%, #2a1d0e 100%); }
+
+        /* Central round bronze medallion */
+        .qm-medallion {
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            width: 46px; height: 46px;
+            z-index: 4;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+        }
+        .qm-medallion svg { width: 100%; height: 100%; display: block; }
+
+        /* ── Slot — built entirely from inline SVG for crisp ornate shape ── */
         .qm-slot {
             position: absolute;
-            width: 54px; height: 54px;
-            background: radial-gradient(circle at 50% 28%, rgba(92,70,38,0.42), rgba(18,14,10,0.96) 50%, rgba(3,3,3,0.98));
-            border: 1px solid rgba(220,202,153,0.42);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 17px;
-            color: rgba(226,210,164,0.68);
-            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, filter 0.18s ease;
-            pointer-events: auto;
+            width: 50px; height: 50px;
             cursor: pointer;
-            clip-path: polygon(50% 0, 92% 16%, 100% 50%, 92% 84%, 50% 100%, 8% 84%, 0 50%, 8% 16%);
-            box-shadow: inset 0 0 22px rgba(0,0,0,0.82), inset 0 1px 0 rgba(255,246,214,0.14), 0 0 0 1px rgba(0,0,0,0.70), 0 10px 22px rgba(0,0,0,0.52);
-        }
-        .qm-slot::before {
-            content: '';
-            position: absolute; inset: 5px;
-            border: 1px solid rgba(255,236,185,0.16);
-            clip-path: polygon(50% 0, 92% 16%, 100% 50%, 92% 84%, 50% 100%, 8% 84%, 0 50%, 8% 16%);
-            pointer-events: none;
-        }
-        .qm-slot::after {
-            content: '';
-            position: absolute; inset: 0;
-            background: linear-gradient(160deg, rgba(255,255,255,0.16), transparent 30%, rgba(0,0,0,0.44) 78%);
-            pointer-events: none;
-        }
-        .qm-slot:hover {
-            background: radial-gradient(circle at 50% 25%, rgba(167,128,63,0.72), rgba(36,26,15,0.98) 56%, rgba(5,4,3,0.98));
-            border-color: rgba(255,240,194,0.94);
-            box-shadow: inset 0 0 22px rgba(0,0,0,0.58), inset 0 1px 0 rgba(255,246,214,0.22), 0 0 26px rgba(238,219,164,0.34), 0 12px 27px rgba(0,0,0,0.62);
-            filter: brightness(1.18) saturate(1.10);
-        }
-        .qm-slot.qm-active {
-            border-color: rgba(255,244,205,0.98);
-            background: radial-gradient(circle at 50% 30%, rgba(190,145,68,0.86), rgba(45,31,15,0.98) 58%, rgba(5,4,3,0.98));
-            color: rgba(255,244,213,0.98);
-            box-shadow: inset 0 0 23px rgba(0,0,0,0.54), inset 0 1px 0 rgba(255,246,214,0.26), 0 0 28px rgba(238,219,164,0.42), 0 10px 30px rgba(0,0,0,0.64);
-        }
-        .qm-up { left: 50%; top: 0; transform: translateX(-50%); }
-        .qm-down { left: 50%; bottom: 0; transform: translateX(-50%); }
-        .qm-left { left: 0; top: 50%; transform: translateY(-50%); }
-        .qm-right { right: 0; top: 50%; transform: translateY(-50%); }
-        .qm-up:hover { transform: translateX(-50%) translateY(-5px) scale(1.04); }
-        .qm-down:hover { transform: translateX(-50%) translateY(5px) scale(1.04); }
-        .qm-left:hover { transform: translateY(-50%) translateX(-5px) scale(1.04); }
-        .qm-right:hover { transform: translateY(-50%) translateX(5px) scale(1.04); }
-        .qm-center { display: none; }
-        .qm-slot-icon { position: relative; z-index: 2; font-size: 23px; line-height: 1; filter: drop-shadow(0 0 12px rgba(255,231,172,0.62)); display: inline-flex; align-items: center; justify-content: center; }
-        .qm-slot-icon img { width: 30px; height: 30px; object-fit: contain; display: block; image-rendering: -webkit-optimize-contrast; }
-        .qm-slot-name {
-            position: absolute;
-            left: 50%;
-            bottom: -18px;
-            transform: translateX(-50%);
-            width: 92px;
+            pointer-events: auto;
             z-index: 3;
-            color: rgba(242,229,188,0.9);
-            font-size: 8px;
-            letter-spacing: 1px;
-            text-align: center;
-            text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-shadow: 0 2px 8px #000;
+            display: flex; align-items: center; justify-content: center;
+            /* Use a separate .qm-slot-inner for the animated transforms so the
+               cardinal positioning transform on .qm-slot is never fought.   */
         }
-        .qm-slot.qm-equipped {
-            border-color: rgba(255,123,40,1);
-            box-shadow: inset 0 0 23px rgba(0,0,0,0.54), inset 0 1px 0 rgba(255,246,214,0.26), 0 0 30px rgba(255,92,24,0.58), 0 10px 30px rgba(0,0,0,0.64);
+        .qm-slot-inner {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            transform: scale(1);
+            /* Clean AAA easing — no overshoot. Quick attack curve in, slow decay out. */
+            transition: transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        filter    0.18s cubic-bezier(0.22, 0.61, 0.36, 1);
+            will-change: transform, filter;
+            transform-origin: center center;
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
         }
+        .qm-slot .qm-frame {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            display: block;
+            pointer-events: none;
+        }
+        /* The tinted overlay on the frame — smooth opacity + colour fade */
+        .qm-slot .qm-frame .qm-frame-tint {
+            opacity: 0;
+            fill: #c8a96e;
+            transition: opacity 0.25s ease-out, fill 0.25s ease-out;
+        }
+        .qm-slot:hover .qm-frame .qm-frame-tint { opacity: 0.32; }
+        .qm-slot.qm-active .qm-frame .qm-frame-tint { opacity: 0.48; }
+        .qm-slot.qm-equipped .qm-frame .qm-frame-tint {
+            opacity: 0.85;
+            fill: #ff7a28;
+        }
+
+        /* Hover — small clean lift + warm glow, no overshoot */
+        .qm-slot:hover .qm-slot-inner {
+            transform: scale(1.04);
+            filter: brightness(1.14) drop-shadow(0 0 6px rgba(238,219,164,0.45));
+        }
+        .qm-slot:active .qm-slot-inner {
+            transform: scale(0.98);
+            transition: transform 0.07s linear, filter 0.07s linear;
+        }
+        /* Equipped — slow steady ember glow (filter-only, no scale judder) */
+        .qm-slot.qm-equipped .qm-slot-inner {
+            animation: qm-ember-pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes qm-ember-pulse {
+            0%, 100% { filter: brightness(1.08) drop-shadow(0 0 6px rgba(255,120,40,0.50)); }
+            50%      { filter: brightness(1.16) drop-shadow(0 0 12px rgba(255,150,60,0.78)); }
+        }
+        .qm-slot.qm-equipped:hover .qm-slot-inner {
+            animation: none;
+            transform: scale(1.04);
+            filter: brightness(1.20) drop-shadow(0 0 12px rgba(255,150,60,0.80));
+        }
+
+        /* Cross cardinal positioning — only translation here, no transitions
+           on the position transform itself, so motion stays clean. */
+        .qm-up    { left: 50%; top: 0;     transform: translateX(-50%); }
+        .qm-down  { left: 50%; bottom: 0;  transform: translateX(-50%); }
+        .qm-left  { left: 0;   top: 50%;   transform: translateY(-50%); }
+        .qm-right { right: 0;  top: 50%;   transform: translateY(-50%); }
+        .qm-center { display: none; }
+
+        /* Soft entry animation for the whole quick menu when it appears */
+        #quick-menu { opacity: 0; transition: opacity 0.35s ease-out; }
+        #quick-menu[style*="block"] { opacity: 1; }
+        .qm-medallion svg { animation: qm-medallion-glow 4.5s ease-in-out infinite; }
+        @keyframes qm-medallion-glow {
+            0%, 100% { filter: drop-shadow(0 0 4px rgba(200,169,110,0.18)); }
+            50%      { filter: drop-shadow(0 0 10px rgba(200,169,110,0.42)); }
+        }
+
+        /* Item icon centered inside slot */
+        .qm-slot-icon {
+            position: relative;
+            z-index: 2;
+            width: 26px; height: 26px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 18px; line-height: 1;
+            filter: drop-shadow(0 0 4px rgba(255,231,172,0.55)) drop-shadow(0 1px 1px rgba(0,0,0,0.9));
+        }
+        .qm-slot-icon img {
+            width: 26px; height: 26px;
+            object-fit: contain; display: block;
+            image-rendering: -webkit-optimize-contrast;
+        }
+        .qm-slot-name { display: none; }
+
+        /* Number badge — small diamond plaque jutting off the outer edge */
         .qm-key-hint {
             position: absolute;
-            right: 8px; bottom: 5px;
-            z-index: 2;
+            z-index: 5;
+            width: 14px; height: 14px;
+            background: linear-gradient(135deg, #5a4022 0%, #2a1d0e 60%, #110a04 100%);
+            box-shadow: 0 0 0 1px #000, inset 0 0 0 1px #6e5026, 0 1px 2px rgba(0,0,0,0.8);
+            color: #d8b87a;
+            font-family: 'Palatino Linotype', Palatino, Georgia, serif;
             font-size: 8px;
-            color: rgba(255,239,198,0.58);
-            letter-spacing: 1px;
+            font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            text-shadow: 0 1px 0 #000;
             pointer-events: none;
         }
+        .qm-up    .qm-key-hint { left: 50%; bottom: -6px; transform: translateX(-50%) rotate(45deg); }
+        .qm-down  .qm-key-hint { left: 50%; bottom: -6px; transform: translateX(-50%) rotate(45deg); }
+        .qm-left  .qm-key-hint { left: 50%; bottom: -6px; transform: translateX(-50%) rotate(45deg); }
+        .qm-right .qm-key-hint { left: 50%; bottom: -6px; transform: translateX(-50%) rotate(45deg); }
+        .qm-key-hint > span { transform: rotate(-45deg); display: block; line-height: 1; }
         #compass-canvas {
             position: absolute !important;
             top: 10px !important; left: 50% !important; transform: translateX(-50%) !important;
@@ -1241,9 +1298,10 @@
         }
 
         /* ═══════════════════════════════════════════════════════
-           SPREAD FLAME — AAA Ability Bar (bottom-right)
-           Dark medieval frame, gilded trim, ember-fire fill,
-           ornamental L-brackets, breathing READY glow.
+           SPREAD FLAME — AAA Ability Bar  (Ember Blade redesign)
+           Circular gilded medallion w/ 4 diamond cardinal points,
+           rectangular dark-stone plaque w/ ornate corner flourishes,
+           recessed ember bar, "READY" with divider ornament.
         ═══════════════════════════════════════════════════════ */
         #spread-flame-cooldown-bar {
             position: fixed;
@@ -1251,114 +1309,130 @@
             right: 30px;
             z-index: 900;
             pointer-events: none;
-            filter: drop-shadow(0 6px 22px rgba(0,0,0,0.85))
-                    drop-shadow(0 0 32px rgba(180,90,20,0.18));
+            filter: drop-shadow(0 8px 26px rgba(0,0,0,0.88))
+                    drop-shadow(0 0 38px rgba(200,100,30,0.20));
         }
+        /* Outer wrapper just provides padding so the medallion can overhang */
         .sf-ability-wrap {
             position: relative;
-            display: flex;
-            align-items: stretch;
-            gap: 0;
-            background:
-                linear-gradient(180deg, rgba(28,18,8,0.96) 0%, rgba(10,7,3,0.96) 100%);
-            border: 1px solid rgba(190, 158, 90, 0.35);
-            padding: 0;
-            min-width: 340px;
-            clip-path: polygon(
-                10px 0,
-                100% 0,
-                100% calc(100% - 10px),
-                calc(100% - 10px) 100%,
-                0 100%,
-                0 10px
-            );
-            box-shadow:
-                inset 0 1px 0 rgba(220,180,100,0.18),
-                inset 0 -1px 0 rgba(0,0,0,0.7),
-                inset 1px 0 0 rgba(200,168,90,0.06),
-                inset -1px 0 0 rgba(200,168,90,0.06);
+            display: block;
+            padding-left: 56px;        /* room for the medallion overhang */
+            min-width: 460px;
         }
-        /* Top hairline gold accent */
-        .sf-ability-wrap::before {
+
+        /* ── Rectangular plaque (right side) ───────────────────────── */
+        .sf-plaque {
+            position: relative;
+            min-height: 108px;
+            background:
+                /* faint warm vignette */
+                radial-gradient(ellipse at 30% 50%, rgba(80,45,15,0.25) 0%, transparent 65%),
+                /* parchment / dark stone grain */
+                linear-gradient(180deg, #18120a 0%, #0c0905 55%, #0a0704 100%);
+            border: 1px solid rgba(150,115,55,0.55);
+            box-shadow:
+                inset 0 1px 0 rgba(220,180,100,0.22),
+                inset 0 -1px 0 rgba(0,0,0,0.85),
+                inset 0 0 38px rgba(0,0,0,0.65);
+            padding: 14px 22px 12px 78px;   /* left padding clears medallion */
+        }
+        /* Gilded inner frame */
+        .sf-plaque::before {
             content: '';
             position: absolute;
-            top: 0; left: 12%; right: 12%;
-            height: 1px;
-            background: linear-gradient(90deg,
-                transparent,
-                rgba(220,180,100,0.55) 30%,
-                rgba(255,210,130,0.85) 50%,
-                rgba(220,180,100,0.55) 70%,
-                transparent);
+            inset: 4px;
+            border: 1px solid rgba(190,150,75,0.55);
+            box-shadow:
+                inset 0 0 18px rgba(0,0,0,0.55),
+                inset 0 1px 0 rgba(255,210,140,0.10);
             pointer-events: none;
         }
-        /* Subtle inner texture / scanline-grain */
-        .sf-ability-wrap::after {
+        /* Stone-grain noise overlay */
+        .sf-plaque::after {
             content: '';
             position: absolute; inset: 0;
             background:
-                repeating-linear-gradient(
-                    0deg,
-                    rgba(255,255,255,0.012) 0px,
-                    rgba(255,255,255,0.012) 1px,
-                    transparent 1px,
-                    transparent 3px);
+                repeating-linear-gradient(0deg,
+                    rgba(255,235,180,0.018) 0 1px,
+                    transparent 1px 3px),
+                repeating-linear-gradient(90deg,
+                    rgba(0,0,0,0.05) 0 2px,
+                    transparent 2px 5px);
+            mix-blend-mode: overlay;
             pointer-events: none;
-            opacity: 0.6;
+            opacity: 0.55;
         }
-        /* Ornamental corner L-brackets (gilded targeting frame motif) */
+        /* Ornamental corner flourishes — small filigree diamonds */
         .sf-corner {
             position: absolute;
-            width: 12px; height: 12px;
-            border-color: rgba(220,180,100,0.85);
-            border-style: solid;
+            width: 18px; height: 18px;
             pointer-events: none;
-            filter: drop-shadow(0 0 3px rgba(255,200,100,0.35));
+            z-index: 3;
+            filter: drop-shadow(0 0 2px rgba(0,0,0,0.9))
+                    drop-shadow(0 0 4px rgba(255,200,110,0.25));
         }
-        .sf-corner.tl { top: 4px;    left: 4px;    border-width: 1.5px 0 0 1.5px; }
-        .sf-corner.tr { top: 4px;    right: 4px;   border-width: 1.5px 1.5px 0 0; }
-        .sf-corner.bl { bottom: 4px; left: 4px;    border-width: 0 0 1.5px 1.5px; }
-        .sf-corner.br { bottom: 4px; right: 4px;   border-width: 0 1.5px 1.5px 0; }
+        .sf-corner.tl { top: -4px; left: -4px; }
+        .sf-corner.tr { top: -4px; right: -4px; transform: scaleX(-1); }
+        .sf-corner.bl { bottom: -4px; left: -4px; transform: scaleY(-1); }
+        .sf-corner.br { bottom: -4px; right: -4px; transform: scale(-1,-1); }
+        .sf-corner svg { display:block; width:100%; height:100%; }
 
-        /* Left icon slot */
-        .sf-icon-ring {
-            position: relative;
-            width: 72px;
-            height: 72px;
-            flex-shrink: 0;
+        /* ── Medallion (left, overhanging) — SVG-based for crisp metalwork ── */
+        .sf-medallion {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 150px;
+            height: 150px;
+            z-index: 4;
+            pointer-events: none;
+            filter: drop-shadow(0 6px 14px rgba(0,0,0,0.9));
+        }
+        .sf-medallion svg.sf-frame {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            overflow: visible;
+        }
+        /* Dark inner cavity sits exactly where the SVG inner ring inner edge is */
+        .sf-med-core {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 64%; height: 64%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
             background:
-                radial-gradient(circle at 50% 55%, rgba(160,70,15,0.22) 0%, rgba(0,0,0,0) 65%),
-                linear-gradient(180deg, rgba(20,12,4,0.85), rgba(4,3,1,0.95));
+                radial-gradient(circle at 50% 62%,
+                    rgba(120,55,15,0.50) 0%,
+                    rgba(20,10,4,0.97) 60%,
+                    #020100 100%);
+            box-shadow: inset 0 0 18px rgba(0,0,0,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        .sf-icon-ring::after {
-            /* gilded divider between icon and bar */
-            content: '';
-            position: absolute;
-            top: 8px; bottom: 8px; right: 0;
-            width: 1px;
-            background: linear-gradient(180deg,
-                transparent,
-                rgba(220,180,100,0.55) 25%,
-                rgba(220,180,100,0.55) 75%,
-                transparent);
+            overflow: hidden;
+            z-index: 2;
         }
         .sf-ring-svg {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 50%; left: 50%;
+            width: 78%; height: 78%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            pointer-events: none;
         }
         .sf-icon-inner {
             position: relative;
             z-index: 1;
-            width: 36px; height: 36px;
+            width: 78%; height: 78%;
             display: flex;
             align-items: center;
             justify-content: center;
-            filter: drop-shadow(0 0 6px rgba(255,140,40,0.55))
-                    drop-shadow(0 0 14px rgba(220,90,20,0.30));
+            filter: drop-shadow(0 0 10px rgba(255,150,50,0.85))
+                    drop-shadow(0 0 22px rgba(230,90,20,0.55));
             animation: sf-ember-flicker 2.6s ease-in-out infinite;
         }
         @keyframes sf-ember-flicker {
@@ -1370,113 +1444,125 @@
                               drop-shadow(0 0 14px rgba(230,100,25,0.32)); }
         }
 
-        /* Right panel */
+        /* Right panel content (sits inside .sf-plaque) */
         .sf-bar-panel {
-            flex: 1;
+            position: relative;
+            z-index: 2;
             display: flex;
             flex-direction: column;
             justify-content: center;
             gap: 0;
-            padding: 12px 18px 12px 16px;
         }
         /* Title row */
         .sf-title-row {
             display: flex;
-            align-items: baseline;
+            align-items: center;
             justify-content: space-between;
-            margin-bottom: 9px;
+            margin-bottom: 10px;
         }
         .sf-ability-name {
             font-family: 'Palatino Linotype', Georgia, serif;
-            font-size: 12px;
+            font-size: 17px;
             font-weight: normal;
-            letter-spacing: 4.5px;
+            letter-spacing: 5.5px;
             text-transform: uppercase;
             color: #e8c682;
             text-shadow:
-                0 0 1px rgba(0,0,0,0.95),
-                0 0 10px rgba(220,150,60,0.35);
+                0 1px 0 rgba(0,0,0,0.95),
+                0 0 12px rgba(220,150,60,0.45);
         }
         .sf-bind-hint {
             font-family: 'Palatino Linotype', Georgia, serif;
-            font-size: 9px;
+            font-size: 10px;
             letter-spacing: 2px;
-            color: rgba(200,170,110,0.55);
-            border: 1px solid rgba(200,170,110,0.30);
-            padding: 1px 6px;
-            background: rgba(0,0,0,0.35);
+            color: rgba(220,190,130,0.85);
+            border: 1px solid rgba(190,150,75,0.65);
+            padding: 3px 9px;
+            background: rgba(0,0,0,0.55);
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.6);
             text-transform: uppercase;
         }
-        /* Track */
+        /* Track (recessed ember bar) */
         .sf-track-outer {
             position: relative;
-            height: 9px;
+            height: 14px;
             background:
-                linear-gradient(180deg, rgba(0,0,0,0.95), rgba(15,8,3,0.95));
-            border: 1px solid rgba(150,115,55,0.55);
-            overflow: hidden;
+                linear-gradient(180deg, rgba(0,0,0,0.98), rgba(20,10,3,0.95));
+            border: 1px solid rgba(150,115,55,0.7);
+            overflow: visible;
             box-shadow:
-                inset 0 1px 2px rgba(0,0,0,0.95),
-                inset 0 -1px 0 rgba(220,180,100,0.10);
+                inset 0 2px 3px rgba(0,0,0,0.95),
+                inset 0 -1px 0 rgba(220,180,100,0.12),
+                0 0 12px rgba(255,120,30,0.18);
         }
-        /* notched chevron edges on track */
+        /* Diamond endcaps on the track */
         .sf-track-outer::before,
         .sf-track-outer::after {
             content: '';
             position: absolute;
-            top: 0; bottom: 0;
-            width: 6px;
-            background: rgba(0,0,0,0.55);
-            z-index: 3;
-            pointer-events: none;
+            top: 50%;
+            width: 8px; height: 8px;
+            background: linear-gradient(135deg, #6b5230 0%, #d4b27a 50%, #5e4a30 100%);
+            border: 1px solid rgba(0,0,0,0.85);
+            transform: translateY(-50%) rotate(45deg);
+            z-index: 4;
+            box-shadow: inset 0 0 2px rgba(255,220,150,0.6);
         }
-        .sf-track-outer::before { left: 0;  clip-path: polygon(0 0, 100% 0, 0 100%); }
-        .sf-track-outer::after  { right: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+        .sf-track-outer::before { left: -5px; }
+        .sf-track-outer::after  { right: -5px; }
 
-        .sf-track-groove { position: absolute; inset: 0; }
+        .sf-track-groove { position: absolute; inset: 0; overflow: hidden; }
         .sf-fill-bar {
             height: 100%;
             width: 100%;
-            background: linear-gradient(90deg,
-                #3a1400 0%,
-                #7a2a00 25%,
-                #c25408 55%,
-                #f08428 85%,
-                #ffc066 100%);
+            background:
+                /* hot core highlight */
+                radial-gradient(ellipse at 50% 50%, rgba(255,240,180,0.55) 0%, transparent 55%),
+                linear-gradient(90deg,
+                    #2a0a00 0%,
+                    #6e2400 18%,
+                    #b04408 38%,
+                    #e8761c 60%,
+                    #ffb050 82%,
+                    #ffe0a0 100%);
             transition: width 0.18s linear, background 0.4s ease, box-shadow 0.4s ease;
             position: relative;
             z-index: 1;
             box-shadow:
-                inset 0 1px 0 rgba(255,210,140,0.25),
-                inset 0 -1px 0 rgba(0,0,0,0.5),
-                0 0 10px rgba(255,140,40,0.55);
+                inset 0 1px 0 rgba(255,230,170,0.45),
+                inset 0 -2px 2px rgba(0,0,0,0.55),
+                0 0 12px rgba(255,140,40,0.7);
         }
         .sf-fill-bar::before {
+            /* turbulent ember texture */
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 50%;
-            background: linear-gradient(180deg,
-                rgba(255,255,255,0.20),
-                rgba(255,255,255,0));
+            inset: 0;
+            background:
+                repeating-linear-gradient(115deg,
+                    rgba(255,230,160,0.18) 0 2px,
+                    transparent 2px 5px),
+                repeating-linear-gradient(65deg,
+                    rgba(0,0,0,0.20) 0 2px,
+                    transparent 2px 6px);
             pointer-events: none;
+            mix-blend-mode: overlay;
         }
         .sf-fill-bar::after {
-            /* moving sheen */
             content: '';
             position: absolute;
             top: 0; bottom: 0;
-            width: 30%;
-            left: -30%;
+            width: 35%;
+            left: -35%;
             background: linear-gradient(90deg,
                 transparent,
-                rgba(255,230,170,0.45),
+                rgba(255,240,200,0.55),
                 transparent);
             animation: sf-sheen 3.2s ease-in-out infinite;
             pointer-events: none;
         }
         @keyframes sf-sheen {
-            0%   { left: -30%; }
+            0%   { left: -35%; }
             55%  { left: 110%; }
             100% { left: 110%; }
         }
@@ -1486,48 +1572,75 @@
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg,
-                rgba(255,240,180,0.85),
+                rgba(255,240,180,0.9),
                 rgba(255,210,120,0.95));
             z-index: 2;
             opacity: 0;
             transition: width 0.05s linear;
-            box-shadow: 0 0 10px rgba(255,220,140,0.85);
+            box-shadow: 0 0 12px rgba(255,220,140,0.9);
         }
         /* Status row */
         .sf-status-row {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
-            margin-top: 8px;
+            gap: 12px;
+            margin-top: 10px;
         }
         .sf-status-ready {
             font-family: 'Palatino Linotype', Georgia, serif;
-            font-size: 10px;
-            letter-spacing: 3.5px;
+            font-size: 13px;
+            letter-spacing: 4px;
             text-transform: uppercase;
             color: #f0d490;
             text-shadow: 0 0 8px rgba(255,180,80,0.55);
             animation: sf-ready-breathe 2.4s ease-in-out infinite;
+            white-space: nowrap;
         }
         .sf-status-cooling {
             font-family: 'Palatino Linotype', Georgia, serif;
-            font-size: 10px;
-            letter-spacing: 3.5px;
+            font-size: 13px;
+            letter-spacing: 4px;
             text-transform: uppercase;
             color: rgba(150,110,60,0.70);
             text-shadow: none;
             animation: none;
         }
+        /* Divider ornament: thin gold line + small diamond pip */
+        .sf-status-divider {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+        .sf-status-divider .line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg,
+                rgba(190,150,75,0.65) 0%,
+                rgba(220,180,100,0.45) 60%,
+                transparent 100%);
+        }
+        .sf-status-divider .pip {
+            width: 6px; height: 6px;
+            background: linear-gradient(135deg,#6b5230,#e8c682,#5e4a30);
+            border: 1px solid rgba(0,0,0,0.7);
+            transform: rotate(45deg);
+            flex-shrink: 0;
+            box-shadow: inset 0 0 2px rgba(255,220,150,0.6);
+        }
         .sf-cd-timer {
             font-family: 'Palatino Linotype', Georgia, serif;
-            font-size: 11px;
-            color: rgba(220,180,110,0.85);
+            font-size: 12px;
+            color: rgba(230,200,140,0.9);
             letter-spacing: 1.5px;
             font-variant-numeric: tabular-nums;
+            margin-left: auto;
         }
         @keyframes sf-ready-breathe {
-            0%, 100% { opacity: 0.78; text-shadow: 0 0 4px rgba(255,180,80,0.30); }
-            50%      { opacity: 1.0;  text-shadow: 0 0 12px rgba(255,200,100,0.85); }
+            0%, 100% { opacity: 0.82; text-shadow: 0 0 4px rgba(255,180,80,0.35); }
+            50%      { opacity: 1.0;  text-shadow: 0 0 14px rgba(255,200,100,0.95); }
         }
     </style>
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
@@ -1619,20 +1732,121 @@
     <!-- Compass -->
     <canvas id="compass-canvas" width="640" height="80"
         style="pointer-events:none;z-index:15;display:none;border-radius:1px;"></canvas>
-    <!-- Quick Menu (D-Pad Cross) -->
+    <!-- Quick Menu — Gilded Cross (matches reference image, sits left of HUD) -->
+    <!-- Reusable SVG frame definition: dark ornate gilded square with mid-side
+         notches, corner studs (diamond shape) and inner bezel. Drawn once and
+         instantiated per slot via <use>. -->
+    <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;" aria-hidden="true">
+        <defs>
+            <linearGradient id="qm-bronze" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7a5a30"/>
+                <stop offset="50%" stop-color="#3a2a16"/>
+                <stop offset="100%" stop-color="#1a1208"/>
+            </linearGradient>
+            <linearGradient id="qm-stone" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1f160d"/>
+                <stop offset="55%" stop-color="#0c0805"/>
+                <stop offset="100%" stop-color="#1a1208"/>
+            </linearGradient>
+            <radialGradient id="qm-stone-recess" cx="50%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#241a10"/>
+                <stop offset="60%" stop-color="#0a0604"/>
+                <stop offset="100%" stop-color="#000"/>
+            </radialGradient>
+            <symbol id="qm-frame-sym" viewBox="0 0 100 100">
+                <!-- Outer dark bronze frame with mid-side notches (octogonal-ish) -->
+                <path d="M14 4 H86 L96 14 V40 L92 50 L96 60 V86 L86 96 H60 L50 92 L40 96 H14 L4 86 V60 L8 50 L4 40 V14 Z"
+                      fill="url(#qm-bronze)" stroke="#000" stroke-width="1.4"/>
+                <!-- Inner gilded bezel highlight -->
+                <path d="M14 4 H86 L96 14 V40 L92 50 L96 60 V86 L86 96 H60 L50 92 L40 96 H14 L4 86 V60 L8 50 L4 40 V14 Z"
+                      fill="none" stroke="#8a6a36" stroke-width="0.6" opacity="0.85"/>
+                <!-- Recessed dark stone interior -->
+                <path d="M20 12 H80 L88 20 V42 L84 50 L88 58 V80 L80 88 H58 L50 84 L42 88 H20 L12 80 V58 L16 50 L12 42 V20 Z"
+                      fill="url(#qm-stone-recess)" stroke="#5a4022" stroke-width="0.7"/>
+                <!-- Inner bezel hairline -->
+                <path d="M22 14 H78 L86 22 V40 L82 50 L86 60 V78 L78 86 H58 L50 82 L42 86 H22 L14 78 V60 L18 50 L14 40 V22 Z"
+                      fill="none" stroke="#000" stroke-width="0.4" opacity="0.8"/>
+                <!-- Corner studs (diamond) -->
+                <g fill="#7a5a30" stroke="#000" stroke-width="0.6">
+                    <rect x="-3" y="-3" width="9" height="9" transform="rotate(45 1.5 1.5)"/>
+                    <rect x="94" y="-3" width="9" height="9" transform="rotate(45 98.5 1.5)"/>
+                    <rect x="-3" y="94" width="9" height="9" transform="rotate(45 1.5 98.5)"/>
+                    <rect x="94" y="94" width="9" height="9" transform="rotate(45 98.5 98.5)"/>
+                </g>
+                <!-- Tiny rivets at the inner corners -->
+                <g fill="#5a4022" stroke="#000" stroke-width="0.3">
+                    <circle cx="22" cy="22" r="1.4"/>
+                    <circle cx="78" cy="22" r="1.4"/>
+                    <circle cx="22" cy="78" r="1.4"/>
+                    <circle cx="78" cy="78" r="1.4"/>
+                </g>
+                <!-- Top sheen -->
+                <path d="M22 14 H78 L84 20 V26 H16 V20 Z" fill="#ffffff" opacity="0.06"/>
+                <!-- Tint layer for hover/equipped (driven by CSS) -->
+                <path class="qm-frame-tint"
+                      d="M20 12 H80 L88 20 V42 L84 50 L88 58 V80 L80 88 H58 L50 84 L42 88 H20 L12 80 V58 L16 50 L12 42 V20 Z"
+                      fill="#c8a96e"/>
+            </symbol>
+        </defs>
+    </svg>
+
     <div id="quick-menu">
-        <div class="qm-slot qm-up" data-slot="0" title="Up slot">
-            <span class="qm-key-hint">1</span>
-        </div>
-        <div class="qm-slot qm-left" data-slot="1" title="Left slot">
-            <span class="qm-key-hint">3</span>
-        </div>
-        <div class="qm-center"></div>
-        <div class="qm-slot qm-right" data-slot="2" title="Right slot">
-            <span class="qm-key-hint">4</span>
-        </div>
-        <div class="qm-slot qm-down" data-slot="3" title="Down slot">
-            <span class="qm-key-hint">2</span>
+        <div class="qm-cross">
+            <div class="qm-bridge h"></div>
+            <div class="qm-bridge v"></div>
+
+            <div class="qm-slot qm-up" data-slot="0" title="Up slot">
+                <div class="qm-slot-inner">
+                    <svg class="qm-frame" viewBox="0 0 100 100"><use href="#qm-frame-sym"/></svg>
+                </div>
+                <span class="qm-key-hint"><span>1</span></span>
+            </div>
+            <div class="qm-slot qm-left" data-slot="1" title="Left slot">
+                <div class="qm-slot-inner">
+                    <svg class="qm-frame" viewBox="0 0 100 100"><use href="#qm-frame-sym"/></svg>
+                </div>
+                <span class="qm-key-hint"><span>3</span></span>
+            </div>
+            <div class="qm-slot qm-right" data-slot="2" title="Right slot">
+                <div class="qm-slot-inner">
+                    <svg class="qm-frame" viewBox="0 0 100 100"><use href="#qm-frame-sym"/></svg>
+                </div>
+                <span class="qm-key-hint"><span>4</span></span>
+            </div>
+            <div class="qm-slot qm-down" data-slot="3" title="Down slot">
+                <div class="qm-slot-inner">
+                    <svg class="qm-frame" viewBox="0 0 100 100"><use href="#qm-frame-sym"/></svg>
+                </div>
+                <span class="qm-key-hint"><span>2</span></span>
+            </div>
+            <div class="qm-center"></div>
+
+            <!-- Central round bronze medallion with heraldic crest -->
+            <div class="qm-medallion">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Outer bronze ring -->
+                    <circle cx="50" cy="50" r="48" fill="url(#qm-bronze)" stroke="#000" stroke-width="1.4"/>
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="#8a6a36" stroke-width="0.6"/>
+                    <!-- Inner dark stone disc -->
+                    <circle cx="50" cy="50" r="38" fill="url(#qm-stone-recess)" stroke="#5a4022" stroke-width="0.8"/>
+                    <!-- 4 cardinal diamond pips on the bezel -->
+                    <g fill="#c8a96e" stroke="#000" stroke-width="0.4">
+                        <rect x="47" y="0" width="6" height="6" transform="rotate(45 50 3)"/>
+                        <rect x="47" y="94" width="6" height="6" transform="rotate(45 50 97)"/>
+                        <rect x="0" y="47" width="6" height="6" transform="rotate(45 3 50)"/>
+                        <rect x="94" y="47" width="6" height="6" transform="rotate(45 97 50)"/>
+                    </g>
+                    <!-- Heraldic shield emblem -->
+                    <path d="M50 22 L66 28 L66 50 Q66 64 50 74 Q34 64 34 50 L34 28 Z"
+                          fill="#1a1208" stroke="#8a6e3e" stroke-width="0.9"/>
+                    <line x1="50" y1="32" x2="50" y2="68" stroke="#8a6e3e" stroke-width="1.2"/>
+                    <line x1="38" y1="48" x2="62" y2="48" stroke="#8a6e3e" stroke-width="1.2"/>
+                    <rect x="47" y="45" width="6" height="6" transform="rotate(45 50 48)"
+                          fill="#c8a96e" stroke="#1a1208" stroke-width="0.4"/>
+                    <!-- Top sheen -->
+                    <path d="M14 30 Q50 8 86 30 Q50 22 14 30 Z" fill="#ffffff" opacity="0.10"/>
+                </svg>
+            </div>
         </div>
     </div>
     <div id="quest-tracker">
@@ -2347,7 +2561,7 @@ let knightModel = null, knightMixer = null, knightActions = {};
 // dynamically when the GLB loads (defaults to 0.92 hip-height fallback).
 // This drives how high we lift the model off the ground so the feet sit on
 // the terrain instead of sinking into it.
-let KNIGHT_FOOT_OFFSET = 0.82;
+let KNIGHT_FOOT_OFFSET = 0.92;
 let clock = new THREE.Clock();
 let gameState = 'LOADING';
 let prevGameState = 'HOME';
@@ -2623,12 +2837,32 @@ let _plockPending = false;
 function safePointerLock() {
     if (_plockPending) return;
     if (typeof controls === 'undefined' || !controls) return;
+    // Pointer Lock can ONLY be acquired inside a user-gesture call stack.
+    // The original setTimeout chain breaks that gesture context, which is what
+    // produced the "A user gesture is required to request Pointer Lock" warning.
+    // We try synchronously first (when called directly from a click/keydown
+    // handler) and fall back to the delayed retry only if that throws or the
+    // returned Promise rejects — both cases are now caught silently.
+    const tryLock = () => {
+        try {
+            const r = controls.lock();
+            if (r && typeof r.then === 'function') r.catch(() => {});
+        } catch (_) { /* swallow — gesture lost or already locked */ }
+    };
+    // Synchronous attempt — succeeds when called from a real user gesture.
+    tryLock();
+    // Delayed retry for the "exit-then-relock" race the browser blocks for ~1.5s
     _plockPending = true;
     setTimeout(() => {
         _plockPending = false;
-        try { controls.lock(); } catch(_) {}
+        tryLock();
     }, 80);
 }
+// Catch any other stray pointer-lock rejection from anywhere on the page.
+window.addEventListener('unhandledrejection', (ev) => {
+    const msg = ev && ev.reason && (ev.reason.message || String(ev.reason));
+    if (msg && /pointer ?lock|user gesture/i.test(msg)) ev.preventDefault();
+});
 
 function init() {
     scene = new THREE.Scene();
@@ -6967,9 +7201,12 @@ function renderQuickMenu() {
     slots.forEach(slot => {
         const idx = parseInt(slot.dataset.slot);
         const item = quickSlots[idx];
-        const existingIcon = slot.querySelector('.qm-slot-icon');
+        // Mount icon/name inside .qm-slot-inner so they participate in the
+        // hover/equipped scale + glow animations.
+        const inner = slot.querySelector('.qm-slot-inner') || slot;
+        const existingIcon = inner.querySelector('.qm-slot-icon');
         if (existingIcon) existingIcon.remove();
-        const existingName = slot.querySelector('.qm-slot-name');
+        const existingName = inner.querySelector('.qm-slot-name');
         if (existingName) existingName.remove();
         slot.classList.toggle('qm-equipped', idx === activeQuickSlotIndex && !!item);
         if (item) {
@@ -6977,17 +7214,30 @@ function renderQuickMenu() {
             const icon = document.createElement('span');
             icon.className = 'qm-slot-icon';
             icon.innerHTML = iconHTML(item.icon);
-            slot.insertBefore(icon, slot.firstChild);
+            inner.appendChild(icon);
             const name = document.createElement('span');
             name.className = 'qm-slot-name';
             name.textContent = item.name || 'Equipped';
-            slot.appendChild(name);
+            inner.appendChild(name);
         } else {
             slot.classList.remove('qm-active');
             slot.classList.remove('qm-equipped');
         }
         slot.title = item ? (item.name || 'Quick slot') : 'Empty quick slot';
     });
+    // Update the right-side plaque with the equipped item's info
+    const plaqueTitle = document.getElementById('qm-plaque-title');
+    const plaqueSub   = document.getElementById('qm-plaque-sub');
+    if (plaqueTitle && plaqueSub) {
+        const equipped = (activeQuickSlotIndex >= 0) ? quickSlots[activeQuickSlotIndex] : null;
+        if (equipped) {
+            plaqueTitle.textContent = equipped.name || 'Equipped';
+            plaqueSub.textContent   = equipped.type ? ('— ' + equipped.type + ' —') : '— in hand —';
+        } else {
+            plaqueTitle.textContent = 'No item equipped';
+            plaqueSub.textContent   = 'Press 1 – 4 to use a quick slot';
+        }
+    }
 }
 
 // ——— Compass HUD (custom Skyrim-inspired fantasy bar) ———
@@ -8491,52 +8741,202 @@ function triggerPunch() {
 
 </script>
 
-<!-- ═══ SPREAD FLAME — ABILITY BAR (bottom-right) ═══════════════════════ -->
+<!-- ═══ SPREAD FLAME — ABILITY BAR (bottom-right) — Ember Blade redesign ═══ -->
 <div id="spread-flame-cooldown-bar" style="display:none;">
     <div class="sf-ability-wrap">
-        <!-- Ornamental gilded corner brackets -->
-        <span class="sf-corner tl"></span>
-        <span class="sf-corner tr"></span>
-        <span class="sf-corner bl"></span>
-        <span class="sf-corner br"></span>
-        <!-- Icon slot -->
-        <div class="sf-icon-ring">
-            <!-- Cooldown ring arc — drawn as an SVG circle border -->
-            <svg class="sf-ring-svg" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
-                <rect width="66" height="66" fill="none"/>
-                <circle cx="33" cy="33" r="26" fill="none" stroke="rgba(150,110,40,0.18)" stroke-width="2"/>
-                <circle id="sf-ring-arc" cx="33" cy="33" r="26" fill="none"
-                    stroke="rgba(180,138,55,0.65)" stroke-width="2"
-                    stroke-linecap="butt"
-                    stroke-dasharray="163.4" stroke-dashoffset="0"
-                    transform="rotate(-90 33 33)"/>
-            </svg>
-            <!-- Flame icon — Ember Sword power image, fits perfectly in the circular slot -->
-            <div class="sf-icon-inner">
-                <img src="https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/firepower.png"
-                     alt="Ember Sword Power"
-                     style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;pointer-events:none;"
-                     draggable="false">
+
+        <!-- Rectangular dark-stone plaque with gilded inner frame -->
+        <div class="sf-plaque">
+            <!-- Ornamental filigree corners (gilded fleur-de-lis style) -->
+            <span class="sf-corner tl">
+                <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <g fill="none" stroke="#d4b27a" stroke-width="1.2" stroke-linecap="round">
+                        <path d="M0 9 L4 9 L9 4 L9 0"/>
+                        <path d="M2 6 L6 2"/>
+                        <path d="M9 4 L7 4 M9 4 L9 6"/>
+                    </g>
+                    <path d="M9 4 L11 6 L9 8 L7 6 Z" fill="#e8c682" stroke="#3a2d18" stroke-width="0.4"/>
+                </svg>
+            </span>
+            <span class="sf-corner tr">
+                <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <g fill="none" stroke="#d4b27a" stroke-width="1.2" stroke-linecap="round">
+                        <path d="M0 9 L4 9 L9 4 L9 0"/>
+                        <path d="M2 6 L6 2"/>
+                        <path d="M9 4 L7 4 M9 4 L9 6"/>
+                    </g>
+                    <path d="M9 4 L11 6 L9 8 L7 6 Z" fill="#e8c682" stroke="#3a2d18" stroke-width="0.4"/>
+                </svg>
+            </span>
+            <span class="sf-corner bl">
+                <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <g fill="none" stroke="#d4b27a" stroke-width="1.2" stroke-linecap="round">
+                        <path d="M0 9 L4 9 L9 4 L9 0"/>
+                        <path d="M2 6 L6 2"/>
+                        <path d="M9 4 L7 4 M9 4 L9 6"/>
+                    </g>
+                    <path d="M9 4 L11 6 L9 8 L7 6 Z" fill="#e8c682" stroke="#3a2d18" stroke-width="0.4"/>
+                </svg>
+            </span>
+            <span class="sf-corner br">
+                <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <g fill="none" stroke="#d4b27a" stroke-width="1.2" stroke-linecap="round">
+                        <path d="M0 9 L4 9 L9 4 L9 0"/>
+                        <path d="M2 6 L6 2"/>
+                        <path d="M9 4 L7 4 M9 4 L9 6"/>
+                    </g>
+                    <path d="M9 4 L11 6 L9 8 L7 6 Z" fill="#e8c682" stroke="#3a2d18" stroke-width="0.4"/>
+                </svg>
+            </span>
+
+            <!-- Bar panel content -->
+            <div class="sf-bar-panel">
+                <div class="sf-title-row">
+                    <span class="sf-ability-name">Spread Flame</span>
+                    <span class="sf-bind-hint">RMB</span>
+                </div>
+                <div class="sf-track-outer">
+                    <div class="sf-track-groove">
+                        <div id="spread-flame-cooldown-fill" class="sf-fill-bar"></div>
+                        <div id="spread-flame-charge-fill" class="sf-charge-pulse"></div>
+                    </div>
+                </div>
+                <div class="sf-status-row">
+                    <span id="sf-status-text" class="sf-status-ready">Ready</span>
+                    <span class="sf-status-divider" aria-hidden="true">
+                        <span class="line"></span>
+                        <span class="pip"></span>
+                        <span class="line"></span>
+                    </span>
+                    <span id="sf-cd-timer" class="sf-cd-timer"></span>
+                </div>
             </div>
         </div>
 
-        <!-- Bar panel -->
-        <div class="sf-bar-panel">
-            <div class="sf-title-row">
-                <span class="sf-ability-name">Spread Flame</span>
-                <span class="sf-bind-hint">RMB</span>
-            </div>
-            <div class="sf-track-outer">
-                <div class="sf-track-groove">
-                    <div id="spread-flame-cooldown-fill" class="sf-fill-bar"></div>
-                    <div id="spread-flame-charge-fill" class="sf-charge-pulse"></div>
+        <!-- Circular medallion (overhangs left edge) — single SVG for crisp metal -->
+        <div class="sf-medallion">
+            <svg class="sf-frame" viewBox="-30 -30 260 260" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <!-- Bronze metal for the outer ring (warm angle gradient) -->
+                    <linearGradient id="sf-metal-outer" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%"   stop-color="#1a140a"/>
+                        <stop offset="20%"  stop-color="#5e4a2a"/>
+                        <stop offset="42%"  stop-color="#c8a96e"/>
+                        <stop offset="55%"  stop-color="#f1d99a"/>
+                        <stop offset="72%"  stop-color="#8a6f48"/>
+                        <stop offset="100%" stop-color="#1a140a"/>
+                    </linearGradient>
+                    <linearGradient id="sf-metal-inner" x1="100%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%"   stop-color="#2a2014"/>
+                        <stop offset="35%"  stop-color="#a78554"/>
+                        <stop offset="55%"  stop-color="#e8c682"/>
+                        <stop offset="80%"  stop-color="#5e4a2a"/>
+                        <stop offset="100%" stop-color="#1a140a"/>
+                    </linearGradient>
+                    <!-- Diamond point gradient (vertical for N/S) -->
+                    <linearGradient id="sf-point-v" x1="50%" y1="0%" x2="50%" y2="100%">
+                        <stop offset="0%"   stop-color="#0e0a05"/>
+                        <stop offset="18%"  stop-color="#5e4a2a"/>
+                        <stop offset="42%"  stop-color="#c8a96e"/>
+                        <stop offset="50%"  stop-color="#f1d99a"/>
+                        <stop offset="58%"  stop-color="#c8a96e"/>
+                        <stop offset="82%"  stop-color="#3a2d18"/>
+                        <stop offset="100%" stop-color="#0e0a05"/>
+                    </linearGradient>
+                    <!-- Diamond point gradient (horizontal for E/W) -->
+                    <linearGradient id="sf-point-h" x1="0%" y1="50%" x2="100%" y2="50%">
+                        <stop offset="0%"   stop-color="#0e0a05"/>
+                        <stop offset="18%"  stop-color="#5e4a2a"/>
+                        <stop offset="42%"  stop-color="#c8a96e"/>
+                        <stop offset="50%"  stop-color="#f1d99a"/>
+                        <stop offset="58%"  stop-color="#c8a96e"/>
+                        <stop offset="82%"  stop-color="#3a2d18"/>
+                        <stop offset="100%" stop-color="#0e0a05"/>
+                    </linearGradient>
+                    <!-- Inner ring inner shadow -->
+                    <radialGradient id="sf-cavity-shadow" cx="50%" cy="50%" r="50%">
+                        <stop offset="60%" stop-color="#000" stop-opacity="0"/>
+                        <stop offset="100%" stop-color="#000" stop-opacity="0.85"/>
+                    </radialGradient>
+                </defs>
+
+                <!-- 4 elongated diamond cardinal points (drawn first so ring overlaps base) -->
+                <!-- North -->
+                <polygon points="100,-22 116,30 100,50 84,30"
+                         fill="url(#sf-point-v)" stroke="#0a0703" stroke-width="1.5"
+                         stroke-linejoin="round"/>
+                <polyline points="100,-12 100,40" fill="none"
+                          stroke="rgba(255,230,170,0.35)" stroke-width="0.8"/>
+                <!-- South -->
+                <polygon points="100,222 116,170 100,150 84,170"
+                         fill="url(#sf-point-v)" stroke="#0a0703" stroke-width="1.5"
+                         stroke-linejoin="round"/>
+                <polyline points="100,212 100,160" fill="none"
+                          stroke="rgba(255,230,170,0.35)" stroke-width="0.8"/>
+                <!-- West -->
+                <polygon points="-22,100 30,116 50,100 30,84"
+                         fill="url(#sf-point-h)" stroke="#0a0703" stroke-width="1.5"
+                         stroke-linejoin="round"/>
+                <polyline points="-12,100 40,100" fill="none"
+                          stroke="rgba(255,230,170,0.35)" stroke-width="0.8"/>
+                <!-- East -->
+                <polygon points="222,100 170,116 150,100 170,84"
+                         fill="url(#sf-point-h)" stroke="#0a0703" stroke-width="1.5"
+                         stroke-linejoin="round"/>
+                <polyline points="212,100 160,100" fill="none"
+                          stroke="rgba(255,230,170,0.35)" stroke-width="0.8"/>
+
+                <!-- Outer bronze ring (thick) -->
+                <circle cx="100" cy="100" r="92"
+                        fill="none" stroke="url(#sf-metal-outer)" stroke-width="14"/>
+                <!-- Outer ring dark edges -->
+                <circle cx="100" cy="100" r="99" fill="none"
+                        stroke="rgba(0,0,0,0.95)" stroke-width="1.5"/>
+                <circle cx="100" cy="100" r="85" fill="none"
+                        stroke="rgba(0,0,0,0.85)" stroke-width="1"/>
+
+                <!-- Recessed gap between rings -->
+                <circle cx="100" cy="100" r="80"
+                        fill="none" stroke="rgba(0,0,0,0.9)" stroke-width="3"/>
+
+                <!-- Inner bronze ring (thinner, brighter) -->
+                <circle cx="100" cy="100" r="73"
+                        fill="none" stroke="url(#sf-metal-inner)" stroke-width="9"/>
+                <circle cx="100" cy="100" r="77.5" fill="none"
+                        stroke="rgba(0,0,0,0.8)" stroke-width="0.8"/>
+                <circle cx="100" cy="100" r="68.5" fill="none"
+                        stroke="rgba(0,0,0,0.85)" stroke-width="0.8"/>
+
+                <!-- Highlight glints on the rings (simulates polished metal) -->
+                <path d="M 30 70 A 75 75 0 0 1 80 25"
+                      fill="none" stroke="rgba(255,235,180,0.55)" stroke-width="2"
+                      stroke-linecap="round" opacity="0.7"/>
+                <path d="M 130 175 A 75 75 0 0 1 175 130"
+                      fill="none" stroke="rgba(255,225,160,0.35)" stroke-width="1.5"
+                      stroke-linecap="round" opacity="0.6"/>
+            </svg>
+
+            <!-- Dark inner cavity holds the flame and cooldown arc -->
+            <div class="sf-med-core">
+                <svg class="sf-ring-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(150,110,40,0.18)" stroke-width="2"/>
+                    <circle id="sf-ring-arc" cx="50" cy="50" r="46" fill="none"
+                        stroke="rgba(220,180,100,0.85)" stroke-width="2.2"
+                        stroke-linecap="butt"
+                        stroke-dasharray="289.0" stroke-dashoffset="0"
+                        transform="rotate(-90 50 50)"
+                        style="filter: drop-shadow(0 0 4px rgba(255,200,110,0.55));"/>
+                </svg>
+                <div class="sf-icon-inner">
+                    <img src="https://cdn.jsdelivr.net/gh/Ren23447/Black-Banner-The-Broken-Order@main/firepower.png"
+                         alt="Ember Sword Power"
+                         style="width:115%;height:115%;border-radius:50%;object-fit:cover;display:block;pointer-events:none;
+                                filter: drop-shadow(0 0 10px rgba(255,150,50,0.7));"
+                         draggable="false">
                 </div>
             </div>
-            <div class="sf-status-row">
-                <span id="sf-status-text" class="sf-status-ready">Ready</span>
-                <span id="sf-cd-timer" class="sf-cd-timer"></span>
-            </div>
         </div>
+
     </div>
 </div>
 
