@@ -1007,17 +1007,23 @@
             50%      { filter: drop-shadow(0 0 10px rgba(200,169,110,0.42)); }
         }
 
-        /* Item icon centered inside slot */
+        /* Item icon — fills the inner stone area of the slot without overflowing
+           the ornate frame (the inner dark area is ~76% of the 50px slot,
+           leaving room for the bronze border + corner studs). */
         .qm-slot-icon {
-            position: relative;
+            position: absolute;
             z-index: 2;
-            width: 26px; height: 26px;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 36px; height: 36px;
             display: inline-flex; align-items: center; justify-content: center;
-            font-size: 18px; line-height: 1;
+            font-size: 24px; line-height: 1;
+            overflow: hidden;
             filter: drop-shadow(0 0 4px rgba(255,231,172,0.55)) drop-shadow(0 1px 1px rgba(0,0,0,0.9));
         }
         .qm-slot-icon img {
-            width: 26px; height: 26px;
+            width: 100%; height: 100%;
+            max-width: 100%; max-height: 100%;
             object-fit: contain; display: block;
             image-rendering: -webkit-optimize-contrast;
         }
@@ -1760,9 +1766,9 @@
                 <!-- Inner gilded bezel highlight -->
                 <path d="M14 4 H86 L96 14 V40 L92 50 L96 60 V86 L86 96 H60 L50 92 L40 96 H14 L4 86 V60 L8 50 L4 40 V14 Z"
                       fill="none" stroke="#8a6a36" stroke-width="0.6" opacity="0.85"/>
-                <!-- Recessed dark stone interior -->
+                <!-- Recessed pitch-black interior (was tan stone gradient) -->
                 <path d="M20 12 H80 L88 20 V42 L84 50 L88 58 V80 L80 88 H58 L50 84 L42 88 H20 L12 80 V58 L16 50 L12 42 V20 Z"
-                      fill="url(#qm-stone-recess)" stroke="#5a4022" stroke-width="0.7"/>
+                      fill="#000" stroke="#5a4022" stroke-width="0.7"/>
                 <!-- Inner bezel hairline -->
                 <path d="M22 14 H78 L86 22 V40 L82 50 L86 60 V78 L78 86 H58 L50 82 L42 86 H22 L14 78 V60 L18 50 L14 40 V22 Z"
                       fill="none" stroke="#000" stroke-width="0.4" opacity="0.8"/>
@@ -7240,7 +7246,7 @@ function renderQuickMenu() {
     }
 }
 
-// ——— Compass HUD (custom Skyrim-inspired fantasy bar) ———
+// ——— Compass HUD (AAA dark gilded lozenge bar — matches reference) ———
 function updateCompass() {
     const canvas = document.getElementById('compass-canvas');
     if (!canvas || canvas.style.display === 'none') return;
@@ -7252,7 +7258,7 @@ function updateCompass() {
     const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
     const heading = -euler.y;
     const FOV_RAD = 92 * Math.PI / 180;
-    const pixPerRad = 500 / FOV_RAD;
+    const pixPerRad = 470 / FOV_RAD;
     const normalizeDiff = (angle) => {
         let diff = angle - heading;
         while (diff > Math.PI) diff -= Math.PI * 2;
@@ -7260,86 +7266,128 @@ function updateCompass() {
         return diff;
     };
 
-    const runeGlow = ctx.createRadialGradient(cx, 48, 18, cx, 48, 235);
-    runeGlow.addColorStop(0, 'rgba(238,223,177,0.10)');
-    runeGlow.addColorStop(0.42, 'rgba(238,223,177,0.035)');
-    runeGlow.addColorStop(1, 'rgba(238,223,177,0.00)');
-    ctx.fillStyle = runeGlow;
-    ctx.fillRect(70, 20, W - 140, 48);
+    // ─── Geometry: long horizontal lozenge with tapered ends ─────────
+    const MID_Y     = 40;
+    const TIP_LEFT  = 24, TIP_RIGHT = W - 24;     // outermost gilded spear-tips
+    const JOIN_L    = 70, JOIN_R    = W - 70;     // where taper meets the body
+    const BODY_HALF = 13;                         // half-height of the rectangular body
+    const BAR_TOP   = MID_Y - BODY_HALF;          // 27
+    const BAR_BOT   = MID_Y + BODY_HALF;          // 53
 
-    const line = ctx.createLinearGradient(66, 0, W - 66, 0);
-    line.addColorStop(0, 'rgba(215,198,154,0.00)');
-    line.addColorStop(0.18, 'rgba(215,198,154,0.30)');
-    line.addColorStop(0.50, 'rgba(238,223,177,0.72)');
-    line.addColorStop(0.82, 'rgba(215,198,154,0.30)');
-    line.addColorStop(1, 'rgba(215,198,154,0.00)');
-    ctx.strokeStyle = line;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(72, 49);
-    ctx.lineTo(W - 72, 49);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(238,223,177,0.34)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(96, 43);
-    ctx.quadraticCurveTo(cx, 31, W - 96, 43);
-    ctx.stroke();
-
-    const drawDiamond = (x, y, r, alpha) => {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(Math.PI * 0.25);
-        ctx.fillStyle = 'rgba(226,210,164,' + alpha + ')';
-        ctx.shadowColor = 'rgba(0,0,0,0.85)';
-        ctx.shadowBlur = 8;
-        ctx.fillRect(-r, -r, r * 2, r * 2);
-        ctx.restore();
+    // Lozenge outline path (used for fill + stroke)
+    const buildLozenge = (inset = 0) => {
+        ctx.beginPath();
+        ctx.moveTo(TIP_LEFT  + inset,        MID_Y);
+        ctx.lineTo(JOIN_L    + inset * 0.4, BAR_TOP + inset * 0.4);
+        ctx.lineTo(JOIN_R    - inset * 0.4, BAR_TOP + inset * 0.4);
+        ctx.lineTo(TIP_RIGHT - inset,        MID_Y);
+        ctx.lineTo(JOIN_R    - inset * 0.4, BAR_BOT - inset * 0.4);
+        ctx.lineTo(JOIN_L    + inset * 0.4, BAR_BOT - inset * 0.4);
+        ctx.closePath();
     };
-    drawDiamond(80, 49, 3.5, 0.36);
-    drawDiamond(W - 80, 49, 3.5, 0.36);
 
+    // ─── Dark stone interior fill ────────────────────────────────────
+    const stone = ctx.createLinearGradient(0, BAR_TOP, 0, BAR_BOT);
+    stone.addColorStop(0,    '#0a0806');
+    stone.addColorStop(0.45, '#181208');
+    stone.addColorStop(0.55, '#120c07');
+    stone.addColorStop(1,    '#060403');
+    buildLozenge(0);
+    ctx.fillStyle = stone;
+    ctx.fill();
+
+    // Vertical streak texture (subtle hammered iron)
+    ctx.save();
+    buildLozenge(2);
+    ctx.clip();
+    for (let i = 0; i < 80; i++) {
+        const sx = JOIN_L + Math.random() * (JOIN_R - JOIN_L);
+        ctx.fillStyle = 'rgba(255,225,180,' + (0.012 + Math.random() * 0.025) + ')';
+        ctx.fillRect(sx, BAR_TOP + 1, 0.6, BAR_BOT - BAR_TOP - 2);
+    }
+    ctx.restore();
+
+    // ─── Gilded bronze rails along the lozenge perimeter ─────────────
+    const goldGrad = ctx.createLinearGradient(TIP_LEFT, 0, TIP_RIGHT, 0);
+    goldGrad.addColorStop(0,    '#8a6a36');
+    goldGrad.addColorStop(0.20, '#d8b478');
+    goldGrad.addColorStop(0.50, '#f0d294');
+    goldGrad.addColorStop(0.80, '#d8b478');
+    goldGrad.addColorStop(1,    '#8a6a36');
+    buildLozenge(0);
+    ctx.strokeStyle = goldGrad;
+    ctx.lineWidth = 1.6;
+    ctx.lineJoin = 'miter';
+    ctx.stroke();
+    // Inner secondary rail (thinner gold trace inside the body)
+    ctx.beginPath();
+    ctx.moveTo(JOIN_L + 4, BAR_TOP + 2.5);
+    ctx.lineTo(JOIN_R - 4, BAR_TOP + 2.5);
+    ctx.moveTo(JOIN_L + 4, BAR_BOT - 2.5);
+    ctx.lineTo(JOIN_R - 4, BAR_BOT - 2.5);
+    ctx.strokeStyle = 'rgba(220,184,116,0.55)';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+
+    // ─── Tick marks (every 7.5°, longer at 15°) ──────────────────────
     const MINOR_RAD = 7.5 * Math.PI / 180;
     const baseMinor = Math.round(heading / MINOR_RAD) * MINOR_RAD;
-    for (let k = -11; k <= 11; k++) {
+    ctx.shadowBlur = 0;
+    for (let k = -16; k <= 16; k++) {
         const angle = baseMinor + k * MINOR_RAD;
         const diff = normalizeDiff(angle);
         const x = cx + diff * pixPerRad;
-        if (x < 78 || x > W - 78) continue;
-        const fade = Math.max(0, 1 - Math.abs(diff) / (FOV_RAD * 0.56));
-        const major = Math.abs((angle / (Math.PI / 4)) - Math.round(angle / (Math.PI / 4))) < 0.002;
-        ctx.strokeStyle = 'rgba(226,210,164,' + (fade * (major ? 0.70 : 0.30)) + ')';
-        ctx.lineWidth = major ? 2 : 1;
-        ctx.beginPath();
-        ctx.moveTo(x, 49);
-        ctx.lineTo(x, major ? 35 : 42);
-        ctx.stroke();
+        if (x < JOIN_L + 6 || x > JOIN_R - 6) continue;
+        const fade = Math.max(0, 1 - Math.abs(diff) / (FOV_RAD * 0.55));
+        const deg = ((angle * 180 / Math.PI) % 360 + 360) % 360;
+        const isMajor = Math.abs(deg % 15) < 0.5;
+        if (isMajor) {
+            ctx.strokeStyle = 'rgba(232,200,140,' + (fade * 0.75) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x, BAR_BOT - 1);
+            ctx.lineTo(x, BAR_BOT - 6);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = 'rgba(220,196,140,' + (fade * 0.55) + ')';
+            ctx.beginPath();
+            ctx.arc(x, BAR_BOT - 4, 0.9, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
-    const DIRS = [
-        {n:'N', b:0}, {n:'NE', b:Math.PI*0.25}, {n:'E', b:Math.PI*0.5},
-        {n:'SE', b:Math.PI*0.75}, {n:'S', b:Math.PI}, {n:'SW', b:-Math.PI*0.75},
-        {n:'W', b:-Math.PI*0.5}, {n:'NW', b:-Math.PI*0.25},
-        {n:'N', b:-Math.PI*2}, {n:'N', b:Math.PI*2}, {n:'S', b:-Math.PI}, {n:'S', b:Math.PI*3},
-        {n:'E', b:-Math.PI*1.5}, {n:'W', b:Math.PI*1.5}
-    ];
+    // ─── Numeric headings + cardinal letters ─────────────────────────
+    const CARDINAL = { 0:'N', 45:'NE', 90:'E', 135:'SE', 180:'S', 225:'SW', 270:'W', 315:'NW' };
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    for (const d of DIRS) {
-        const diff = normalizeDiff(d.b);
-        const x = cx + diff * pixPerRad;
-        if (x < 48 || x > W - 48) continue;
-        const fade = Math.max(0, 1 - Math.abs(diff) / (FOV_RAD * 0.48));
-        const isCard = d.n.length === 1;
-        ctx.font = (isCard ? 'bold 31px' : '16px') + ' "Palatino Linotype", Georgia, serif';
-        ctx.fillStyle = isCard ? 'rgba(242,229,188,' + fade + ')' : 'rgba(202,184,138,' + (fade * 0.84) + ')';
-        ctx.shadowColor = 'rgba(0,0,0,0.95)';
-        ctx.shadowBlur = 10;
-        ctx.fillText(d.n, x, isCard ? 31 : 39);
-        ctx.shadowBlur = 0;
+    ctx.textBaseline = 'middle';
+    for (let degLabel = 0; degLabel < 360; degLabel += 15) {
+        const angle = degLabel * Math.PI / 180;
+        for (const a of [angle, angle - Math.PI * 2, angle + Math.PI * 2]) {
+            const diff = normalizeDiff(a);
+            const x = cx + diff * pixPerRad;
+            if (x < JOIN_L + 18 || x > JOIN_R - 18) continue;
+            // Skip numbers within 24px of center (where the central ornament sits)
+            const card = CARDINAL[degLabel];
+            if (!card && Math.abs(x - cx) < 26) continue;
+            const fade = Math.max(0, 1 - Math.abs(diff) / (FOV_RAD * 0.50));
+            if (card) {
+                ctx.font = '600 14px "Palatino Linotype", Georgia, serif';
+                ctx.fillStyle = 'rgba(240,214,150,' + (fade * 0.96) + ')';
+                ctx.shadowColor = 'rgba(0,0,0,0.95)';
+                ctx.shadowBlur = 5;
+                ctx.fillText(card, x, MID_Y - 1);
+            } else {
+                ctx.font = '10px "Palatino Linotype", Georgia, serif';
+                ctx.fillStyle = 'rgba(206,184,140,' + (fade * 0.78) + ')';
+                ctx.shadowColor = 'rgba(0,0,0,0.95)';
+                ctx.shadowBlur = 3;
+                ctx.fillText(String(degLabel), x, MID_Y - 1);
+            }
+            ctx.shadowBlur = 0;
+        }
     }
 
+    // ─── Quest waypoint marker (small gold diamond below ticks) ──────
     const target = getQuestTargetPosition();
     if (target && controls) {
         const p = controls.getObject().position;
@@ -7349,41 +7397,193 @@ function updateCompass() {
         const diff = normalizeDiff(bearing);
         if (Math.abs(diff) <= FOV_RAD * 0.5) {
             const x = cx + diff * pixPerRad;
-            ctx.save();
-            ctx.translate(x, 56);
-            ctx.rotate(Math.PI * 0.25);
-            ctx.fillStyle = 'rgba(255,225,135,0.98)';
-            ctx.shadowColor = 'rgba(255,202,92,0.90)';
-            ctx.shadowBlur = 15;
-            ctx.fillRect(-5.5, -5.5, 11, 11);
-            ctx.restore();
+            if (x > JOIN_L + 6 && x < JOIN_R - 6) {
+                ctx.save();
+                ctx.translate(x, BAR_BOT + 4);
+                ctx.rotate(Math.PI * 0.25);
+                ctx.fillStyle = 'rgba(255,225,135,0.98)';
+                ctx.shadowColor = 'rgba(255,202,92,0.85)';
+                ctx.shadowBlur = 8;
+                ctx.fillRect(-3, -3, 6, 6);
+                ctx.restore();
+            }
         }
     }
 
-    const edge = ctx.createLinearGradient(0, 0, W, 0);
-    edge.addColorStop(0, 'rgba(0,0,0,0.00)');
-    edge.addColorStop(0.12, 'rgba(0,0,0,0.18)');
-    edge.addColorStop(0.30, 'rgba(0,0,0,0.00)');
-    edge.addColorStop(0.70, 'rgba(0,0,0,0.00)');
-    edge.addColorStop(0.88, 'rgba(0,0,0,0.18)');
-    edge.addColorStop(1, 'rgba(0,0,0,0.00)');
-    ctx.fillStyle = edge;
-    ctx.fillRect(0, 0, W, H);
+    // ─── Central ornament: tall flame + ringed 4-point star + pendant ─
+    const drawCenter = () => {
+        ctx.save();
+        ctx.translate(cx, MID_Y);
+        const goldStroke = 'rgba(232,200,140,0.95)';
+        const goldFill   = 'rgba(232,200,140,0.92)';
 
-    ctx.strokeStyle = 'rgba(242,229,188,0.94)';
-    ctx.lineWidth = 2.4;
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(cx - 17, 9);
-    ctx.lineTo(cx, 30);
-    ctx.lineTo(cx + 17, 9);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(242,229,188,0.22)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx, 31);
-    ctx.lineTo(cx, 66);
-    ctx.stroke();
+        // Backplate cartouche (vertical pointed oval behind the star)
+        ctx.beginPath();
+        ctx.moveTo(0, -28);
+        ctx.bezierCurveTo( 14, -18,  14,  18,  0,  28);
+        ctx.bezierCurveTo(-14,  18, -14, -18,  0, -28);
+        ctx.fillStyle = 'rgba(8,6,4,0.92)';
+        ctx.fill();
+        ctx.strokeStyle = goldStroke;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Tall flame spike rising above the cartouche (5-flame)
+        ctx.beginPath();
+        ctx.moveTo(0, -32);
+        ctx.lineTo(-3, -22); ctx.lineTo(-1.4, -24);
+        ctx.lineTo(-2.2, -18); ctx.lineTo(0, -20);
+        ctx.lineTo( 2.2, -18); ctx.lineTo( 1.4, -24);
+        ctx.lineTo( 3,   -22); ctx.closePath();
+        ctx.fillStyle = goldFill;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+
+        // Side wing flourishes (sweeping out to either side)
+        ctx.strokeStyle = goldStroke;
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        // Upper wing — left
+        ctx.moveTo(-10, -10);
+        ctx.quadraticCurveTo(-22, -10, -32, -2);
+        ctx.moveTo(-14, -8);
+        ctx.quadraticCurveTo(-22, -4, -28,  2);
+        // Upper wing — right
+        ctx.moveTo( 10, -10);
+        ctx.quadraticCurveTo( 22, -10,  32, -2);
+        ctx.moveTo( 14, -8);
+        ctx.quadraticCurveTo( 22, -4,  28,  2);
+        ctx.stroke();
+        // Wingtip leaves
+        ctx.fillStyle = goldFill;
+        ctx.beginPath();
+        ctx.moveTo(-32, -2); ctx.lineTo(-36, -4); ctx.lineTo(-34, 1); ctx.closePath();
+        ctx.moveTo( 32, -2); ctx.lineTo( 36, -4); ctx.lineTo( 34, 1); ctx.closePath();
+        ctx.fill();
+
+        // Ring around the central star
+        ctx.beginPath();
+        ctx.arc(0, -2, 9, 0, Math.PI * 2);
+        ctx.strokeStyle = goldStroke;
+        ctx.lineWidth = 1.1;
+        ctx.stroke();
+
+        // 4-point star inside the ring
+        ctx.beginPath();
+        ctx.moveTo(0, -11);
+        ctx.lineTo(2.2, -3.5); ctx.lineTo(9, -2);
+        ctx.lineTo(2.2, -0.5); ctx.lineTo(0, 7);
+        ctx.lineTo(-2.2, -0.5); ctx.lineTo(-9, -2);
+        ctx.lineTo(-2.2, -3.5); ctx.closePath();
+        ctx.fillStyle = goldFill;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        // Hanging pendant (small diamond) at bottom of cartouche
+        ctx.beginPath();
+        ctx.moveTo(0, 18); ctx.lineTo(3, 22); ctx.lineTo(0, 26); ctx.lineTo(-3, 22);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(8,6,4,0.95)';
+        ctx.fill();
+        ctx.strokeStyle = goldStroke;
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+        // Tiny gold dot inside pendant
+        ctx.fillStyle = goldFill;
+        ctx.beginPath();
+        ctx.arc(0, 22, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    };
+    drawCenter();
+
+    // ─── Spiked starburst endcaps with blue gem (matches reference) ──
+    const drawEndcap = (x, mirror) => {
+        ctx.save();
+        ctx.translate(x, MID_Y);
+        if (mirror) ctx.scale(-1, 1);
+        const goldStroke = 'rgba(232,200,140,0.95)';
+        const goldFill   = 'rgba(232,200,140,0.92)';
+
+        // Spiky 6-point star body (long outward + short up/down + inward)
+        ctx.beginPath();
+        ctx.moveTo(  18,   0);   // outward spear tip
+        ctx.lineTo(   6,  -3);
+        ctx.lineTo(   8, -14);   // upper-outer spike
+        ctx.lineTo(   2,  -6);
+        ctx.lineTo(  -4, -14);   // upper-inner spike
+        ctx.lineTo(  -8,  -4);
+        ctx.lineTo( -16,  -2);   // inward spike (toward bar)
+        ctx.lineTo(  -8,   4);
+        ctx.lineTo(  -4,  14);   // lower-inner spike
+        ctx.lineTo(   2,   6);
+        ctx.lineTo(   8,  14);   // lower-outer spike
+        ctx.lineTo(   6,   3);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(14,10,6,0.95)';
+        ctx.fill();
+        ctx.strokeStyle = goldStroke;
+        ctx.lineWidth = 1.4;
+        ctx.lineJoin = 'miter';
+        ctx.stroke();
+
+        // Inner small diamond housing the gem
+        ctx.beginPath();
+        ctx.moveTo( 0, -5); ctx.lineTo( 5, 0); ctx.lineTo( 0, 5); ctx.lineTo(-5, 0);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(6,5,3,0.98)';
+        ctx.fill();
+        ctx.strokeStyle = goldStroke;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        // Blue square gem (rotated 45°) — bright sapphire
+        ctx.save();
+        ctx.rotate(Math.PI / 4);
+        const gem = ctx.createLinearGradient(-3, -3, 3, 3);
+        gem.addColorStop(0,    '#cfe3ff');
+        gem.addColorStop(0.45, '#3f78c8');
+        gem.addColorStop(1,    '#0c1d3e');
+        ctx.fillStyle = gem;
+        ctx.fillRect(-2.6, -2.6, 5.2, 5.2);
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(-2.6, -2.6, 5.2, 5.2);
+        // Specular highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillRect(-2.2, -2.2, 1.4, 1.4);
+        ctx.restore();
+
+        // Tiny gold flecks at the spike joints
+        ctx.fillStyle = goldFill;
+        for (const [px, py] of [[8, -14], [-4, -14], [8, 14], [-4, 14], [-16, -2]]) {
+            ctx.beginPath();
+            ctx.arc(px, py, 0.9, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    };
+    drawEndcap(TIP_LEFT  + 2, true);    // left endcap (mirrored)
+    drawEndcap(TIP_RIGHT - 2, false);   // right endcap
+
+    // ─── Soft inner darkening at the bar ends so labels fade out ─────
+    const edge = ctx.createLinearGradient(JOIN_L, 0, JOIN_R, 0);
+    edge.addColorStop(0,    'rgba(0,0,0,0.65)');
+    edge.addColorStop(0.10, 'rgba(0,0,0,0)');
+    edge.addColorStop(0.90, 'rgba(0,0,0,0)');
+    edge.addColorStop(1,    'rgba(0,0,0,0.65)');
+    ctx.save();
+    buildLozenge(2);
+    ctx.clip();
+    ctx.fillStyle = edge;
+    ctx.fillRect(JOIN_L, BAR_TOP, JOIN_R - JOIN_L, BAR_BOT - BAR_TOP);
+    ctx.restore();
 }
 
 // ======================================================
