@@ -4,6 +4,9 @@ A dark medieval-fantasy action game where steel and sorcery collide.
 
 You begin as a soldier in the Black Banner—an elite army sworn to the Church-Crown. After a siege goes wrong, a forbidden relic brands you with demon-like Arcane Arts. Now hunted by the broken Order and feared by the faithful, you must master unstable magic, survive brutal battles, and decide what the Black Banner becomes.
 
+
+latest game in the file BlackBannerV2.html --- STILL IN DEVELOPMENT
+
 ## Features
 - Sword-focused combat with Arcane-powered abilities
 - Dark medieval setting with factions, betrayal, and war
